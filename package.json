@@ -1,0 +1,51 @@
+{
+  "name": "foundry",
+  "version": "0.0.1",
+  "description": "CLI-based technical specification constructor with AI-driven Q&A and visual artifacts",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "next": "^14.0.0",
+    "zustand": "^4.4.0",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@headlessui/react": "^1.7.0",
+    "@anthropic-ai/sdk": "^0.27.0",
+    "@anthropic-ai/claude-agent-sdk": "^0.1.0",
+    "@xyflow/react": "^12.0.0",
+    "@scalar/api-reference": "^1.24.0",
+    "better-sqlite3": "^9.2.0",
+    "@dbml/core": "^3.11.0",
+    "zod": "^3.22.0",
+    "js-yaml": "^4.1.0",
+    "handlebars": "^4.7.0",
+    "gray-matter": "^4.0.0",
+    "postcss": "^8.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/node": "^20.10.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/js-yaml": "^4.0.0",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.0.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "prettier": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

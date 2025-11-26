@@ -1,0 +1,177 @@
+{
+  "env": {
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": 50000,
+    "BASH_DEFAULT_TIMEOUT_MS": 60000
+  },
+  "permissions": {
+    "allow": [
+      "Bash(bash ./.claude/scripts/analyze-ci-failures.sh)",
+      "Bash(bash ./.claude/scripts/analyze-changelog-requirement.sh)",
+      "Bash(bash ./.claude/scripts/check-precommit-status.sh)",
+      "Bash(bash ./.claude/scripts/categorize-changes.sh)",
+      "Bash(bash ./.claude/scripts/check-protected-branch.sh)",
+      "Bash(bash ./.claude/scripts/analyze-pr-context.sh)",
+      "Bash(bash ./.claude/scripts/setup-db-env.sh)",
+      "Bash(cd:*)",
+      "Bash(grep:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(head:*)",
+      "Bash(xargs:*)",
+      "Bash(jq:*)",
+      "Bash(rg:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(mv:*)",
+      "Bash(chmod:*)",
+      "Bash(make:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git branch:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git log:*)",
+      "Bash(gh:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh api:*)",
+      "Bash(gh project item-list:*)",
+      "Bash(gh project list:*)",
+      "Bash(gh label list:*)",
+      "Bash(pnpm i:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm update:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm outdated:*)",
+      "Bash(pnpm audit:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm build:css:*)",
+      "Bash(pnpm run test:*)",
+      "Bash(pnpm run lint:*)",
+      "Bash(pnpm run dev:*)",
+      "Bash(pnpm run build:css:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm run preview:*)",
+      "Bash(pnpm run typecheck:*)",
+      "Bash(pnpm run codegen:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm -v:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx prettier:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx next:*)",
+      "Bash(npx madge:*)",
+      "Bash(npx ts-prune:*)",
+      "Bash(vite:*)",
+      "Bash(tsc:*)",
+      "Bash(tailwindcss:*)",
+      "Bash(node -v:*)",
+      "Bash(node --version:*)",
+      "Bash(node:*)",
+      "Bash(railway:*)",
+      "Bash(railway service:*)",
+      "Bash(railway logs:*)",
+      "Bash(railway environment:*)",
+      "Bash(railway whoami:*)",
+      "Bash(railway variables:*)",
+      "Bash(cc-token:*)",
+      "Bash(shy-tools:*)",
+      "Bash(sed:*)",
+      "Bash(echo:*)",
+      "Bash(command:*)",
+      "Bash(export:*)",
+      "Bash(curl -s:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git bisect:*)",
+      "Bash(docker images:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker pull:*)",
+      "Bash(docker stats:*)",
+      "Bash(docker system df:*)",
+      "Bash(docker version:*)",
+      "Bash(rm /tmp/*:*)",
+      "Bash(rm //tmp/*:*)",
+      "Bash(rm -f /tmp/*:*)",
+      "Bash(rm -f //tmp/*:*)",
+      "Read(/tmp/**)",
+      "Read(//tmp/**)",
+      "Write(/tmp/**)",
+      "Write(//tmp/**)",
+      "Edit(/tmp/**)",
+      "Edit(//tmp/**)",
+      "Write(.claude/dumps/**)",
+      "Edit(.claude/dumps/**)",
+      "WebSearch",
+      "WebFetch(domain:nextjs.org)",
+      "WebFetch(domain:react.dev)",
+      "WebFetch(domain:reactflow.dev)",
+      "WebFetch(domain:tailwindcss.com)",
+      "WebFetch(domain:headlessui.com)",
+      "WebFetch(domain:docs.pmnd.rs)",
+      "WebFetch(domain:vitest.dev)",
+      "WebFetch(domain:zod.dev)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:code.claude.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:npmjs.com)",
+      "mcp__sequential-thinking__sequentialthinking"
+    ],
+    "deny": [
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(**/credentials*)",
+      "Bash(sudo:*)"
+    ],
+    "ask": [
+      "Bash(rm:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p .claude/dumps .claude/backlog .claude/specs"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm lint && pnpm typecheck"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm lint && pnpm typecheck"
+          }
+        ]
+      }
+    ]
+  }
+}
