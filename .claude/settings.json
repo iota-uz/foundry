@@ -158,7 +158,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm lint && pnpm typecheck"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm lint -- --quiet && pnpm typecheck"
           }
         ]
       }
@@ -168,7 +168,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm lint && pnpm typecheck"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm lint -- --quiet && pnpm typecheck"
           }
         ]
       }
