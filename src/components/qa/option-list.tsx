@@ -12,13 +12,13 @@ import type { QuestionOption } from '@/types/ai';
 
 interface OptionListProps {
   options: QuestionOption[];
-  selected?: string | string[];
+  selected?: string | string[] | undefined;
   mode: 'single' | 'multiple';
   onSelect: (optionId: string | string[], isMultiple: boolean) => void;
-  onHoverOption?: (optionId: string | null) => void;
-  showNumbers?: boolean;
-  showIcons?: boolean;
-  disabled?: boolean;
+  onHoverOption?: ((optionId: string | null) => void) | undefined;
+  showNumbers?: boolean | undefined;
+  showIcons?: boolean | undefined;
+  disabled?: boolean | undefined;
 }
 
 export function OptionList({
@@ -70,7 +70,9 @@ export function OptionList({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
-      const optionId = options[index].id;
+      const option = options[index];
+      if (!option) return;
+      const optionId = option.id;
 
       if (e.key === 'Enter') {
         handleOptionClick(optionId);

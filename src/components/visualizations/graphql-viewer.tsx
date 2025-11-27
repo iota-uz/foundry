@@ -221,7 +221,7 @@ export function GraphQLViewer({
         </Controls>
 
         <MiniMap
-          nodeColor={(node) => '#8b5cf6'}
+          nodeColor={() => '#8b5cf6'}
           nodeStrokeColor="#6d28d9"
           nodeStrokeWidth={2}
           nodeBorderRadius={4}

@@ -117,7 +117,11 @@ export function DependencyGraph({
       const circularEdgeIds = new Set<string>();
       circular.forEach((cycle) => {
         for (let i = 0; i < cycle.length - 1; i++) {
-          circularEdgeIds.add(generateEdgeId(cycle[i], cycle[i + 1]));
+          const current = cycle[i];
+          const next = cycle[i + 1];
+          if (current && next) {
+            circularEdgeIds.add(generateEdgeId(current, next));
+          }
         }
       });
 

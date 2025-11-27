@@ -13,15 +13,15 @@ import type { ValidationRule } from '@/types/ai';
 interface TextInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit?: () => void;
-  placeholder?: string;
-  validation?: ValidationRule;
-  multiline?: boolean;
-  maxLength?: number;
-  rows?: number;
-  showCharCount?: boolean;
-  disabled?: boolean;
-  autoFocus?: boolean;
+  onSubmit?: (() => void) | undefined;
+  placeholder?: string | undefined;
+  validation?: ValidationRule | undefined;
+  multiline?: boolean | undefined;
+  maxLength?: number | undefined;
+  rows?: number | undefined;
+  showCharCount?: boolean | undefined;
+  disabled?: boolean | undefined;
+  autoFocus?: boolean | undefined;
 }
 
 export function TextInput({

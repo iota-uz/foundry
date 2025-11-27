@@ -221,6 +221,10 @@ export function FirstRun({ onComplete }: FirstRunProps) {
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === steps.length - 1;
 
+  if (!currentStep) {
+    return null; // Safety check for array access
+  }
+
   const handleNext = () => {
     if (isLastStep) {
       onComplete?.();

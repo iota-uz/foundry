@@ -14,12 +14,18 @@ interface QuickActionsProps {
   projectPhase: string;
   onNewFeature?: () => void;
   onNewModule?: () => void;
+  onStartCPO?: () => void;
+  onStartCTO?: () => void;
+  disabled?: boolean;
 }
 
 export function QuickActions({
   projectPhase,
   onNewFeature,
   onNewModule,
+  onStartCPO,
+  onStartCTO,
+  disabled = false,
 }: QuickActionsProps) {
   return (
     <section>
@@ -66,27 +72,23 @@ export function QuickActions({
           href="/git"
         />
 
-        {projectPhase === 'cpo' && (
+        {projectPhase === 'cpo' && onStartCPO && (
           <ActionButton
             icon={<SparklesIcon className="h-6 w-6" />}
             title="Start CPO Phase"
             description="Begin Q&A"
-            onClick={() => {
-              // TODO: Start CPO workflow
-              console.log('Start CPO phase');
-            }}
+            onClick={onStartCPO}
+            disabled={disabled}
           />
         )}
 
-        {projectPhase === 'cto' && (
+        {projectPhase === 'cto' && onStartCTO && (
           <ActionButton
             icon={<SparklesIcon className="h-6 w-6" />}
             title="Start CTO Phase"
             description="Technical Q&A"
-            onClick={() => {
-              // TODO: Start CTO workflow
-              console.log('Start CTO phase');
-            }}
+            onClick={onStartCTO}
+            disabled={disabled}
           />
         )}
       </div>
@@ -99,20 +101,24 @@ function ActionButton({
   title,
   description,
   onClick,
+  disabled = false,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className="
         p-4 text-left
         bg-bg-secondary border border-border-default
         rounded-lg transition-colors
         hover:border-accent-primary hover:bg-bg-tertiary
+        disabled:opacity-50 disabled:cursor-not-allowed
       "
     >
       <div className="text-accent-primary mb-2">{icon}</div>

@@ -99,7 +99,7 @@ function FeatureListItem({
   feature: Feature;
   modules: Module[];
 }) {
-  const module = modules.find((m) => m.id === feature.moduleId);
+  const moduleData = modules.find((m) => m.id === feature.moduleId);
   const statusColor = {
     draft: 'bg-gray-900/30 text-gray-300',
     in_progress: 'bg-blue-900/30 text-blue-300',
@@ -146,9 +146,9 @@ function FeatureListItem({
               >
                 {feature.phase}
               </span>
-              {module && (
+              {moduleData && (
                 <span className="text-xs px-2 py-0.5 rounded bg-bg-tertiary text-text-secondary">
-                  {module.name}
+                  {moduleData.name}
                 </span>
               )}
             </div>

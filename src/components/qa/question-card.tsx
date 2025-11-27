@@ -20,12 +20,12 @@ import { Explainer } from './explainer';
 interface QuestionCardProps {
   question: AIQuestion;
   onAnswer: (answer: any) => void;
-  onSkip?: () => void;
-  disabled?: boolean;
-  showRecommendation?: boolean;
-  showExplainer?: boolean;
-  showKeyboardHints?: boolean;
-  onImpactPreview?: (optionId: string | null) => void;
+  onSkip?: (() => void) | undefined;
+  disabled?: boolean | undefined;
+  showRecommendation?: boolean | undefined;
+  showExplainer?: boolean | undefined;
+  showKeyboardHints?: boolean | undefined;
+  onImpactPreview?: ((optionId: string | null) => void) | undefined;
 }
 
 export function QuestionCard({

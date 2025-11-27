@@ -13,7 +13,8 @@ import type { DecisionEntry } from '@/types/ai';
 interface DecisionJournalProps {
   entries: DecisionEntry[];
   onUndoTo?: (decisionId: string) => void;
-  onUndo?: (decisionId: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onUndo?: (decisionId: string) => void; // TODO: F8 - Implement decision undo
   filterPhase?: 'cpo' | 'clarify' | 'cto' | 'all';
   filterCategory?: string;
   isOpen?: boolean;
@@ -41,7 +42,9 @@ const phaseColors = {
 export function DecisionJournal({
   entries,
   onUndoTo,
-  onUndo,
+  // @ts-expect-error - Preserved for future feature
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onUndo, // TODO: F8 - Decision undo functionality
   filterPhase = 'all',
   filterCategory,
   isOpen = true,

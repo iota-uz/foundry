@@ -57,10 +57,11 @@ export function QuestionBatch({
 
       // Move to next unanswered question
       let nextIndex = currentQuestionIndex + 1;
-      while (
-        nextIndex < batch.questions.length &&
-        answeredQuestions.has(batch.questions[nextIndex].id)
-      ) {
+      while (nextIndex < batch.questions.length) {
+        const nextQuestion = batch.questions[nextIndex];
+        if (!nextQuestion || !answeredQuestions.has(nextQuestion.id)) {
+          break;
+        }
         nextIndex++;
       }
 
@@ -68,7 +69,7 @@ export function QuestionBatch({
         setCurrentQuestionIndex(nextIndex);
       }
     },
-    [currentQuestion.id, onAnswer, currentQuestionIndex, batch.questions, answeredQuestions]
+    [currentQuestion?.id, onAnswer, currentQuestionIndex, batch.questions, answeredQuestions]
   );
 
   const handleSkip = useCallback(() => {
@@ -79,17 +80,18 @@ export function QuestionBatch({
 
     // Move to next unanswered question
     let nextIndex = currentQuestionIndex + 1;
-    while (
-      nextIndex < batch.questions.length &&
-      answeredQuestions.has(batch.questions[nextIndex].id)
-    ) {
+    while (nextIndex < batch.questions.length) {
+      const nextQuestion = batch.questions[nextIndex];
+      if (!nextQuestion || !answeredQuestions.has(nextQuestion.id)) {
+        break;
+      }
       nextIndex++;
     }
 
     if (nextIndex < batch.questions.length) {
       setCurrentQuestionIndex(nextIndex);
     }
-  }, [currentQuestion.id, onSkip, currentQuestionIndex, batch.questions, answeredQuestions]);
+  }, [currentQuestion?.id, onSkip, currentQuestionIndex, batch.questions, answeredQuestions]);
 
   const handlePrevious = useCallback(() => {
     if (currentQuestionIndex > 0) {

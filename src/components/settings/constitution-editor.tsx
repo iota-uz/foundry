@@ -3,11 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '@/store';
 import { Button } from '@/components/shared';
+import { HookConfiguration } from './hook-configuration';
 import { Constitution } from '@/types';
 import {
   PlusIcon,
   DocumentTextIcon,
   CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from '@heroicons/react/24/outline';
 
 const CONSTITUTION_TEMPLATES = {
@@ -94,6 +97,7 @@ interface ConstitutionEditorState {
   isEditing: boolean;
   isSaving: boolean;
   showPreview: boolean;
+  showHooks: boolean;
   content: string;
 }
 
@@ -103,6 +107,7 @@ export function ConstitutionEditor() {
     isEditing: false,
     isSaving: false,
     showPreview: false,
+    showHooks: false,
     content: constitution ? JSON.stringify(constitution, null, 2) : '',
   });
 
@@ -418,6 +423,35 @@ export function ConstitutionEditor() {
               </div>
             </div>
           )}
+
+          {/* Hooks Configuration */}
+          <div>
+            <button
+              onClick={() => setState(prev => ({ ...prev, showHooks: !prev.showHooks }))}
+              className="w-full flex items-center justify-between p-3 bg-bg-tertiary rounded-lg hover:bg-bg-tertiary/80 transition-colors"
+            >
+              <h4 className="font-semibold text-text-primary">
+                Agent Hooks
+              </h4>
+              {state.showHooks ? (
+                <ChevronUpIcon className="h-5 w-5 text-text-secondary" />
+              ) : (
+                <ChevronDownIcon className="h-5 w-5 text-text-secondary" />
+              )}
+            </button>
+
+            {state.showHooks && (
+              <div className="mt-4">
+                <HookConfiguration
+                  hooks={constitution.hooks}
+                  onChange={(newHooks) => {
+                    const updated = { ...constitution, hooks: newHooks };
+                    updateConstitution(updated);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

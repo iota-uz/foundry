@@ -11,8 +11,8 @@ import type { QuestionExplainer } from '@/types/ai';
 
 interface ExplainerProps {
   explainer: QuestionExplainer;
-  expanded?: boolean;
-  onToggle?: () => void;
+  expanded?: boolean | undefined;
+  onToggle?: (() => void) | undefined;
 }
 
 export function Explainer({

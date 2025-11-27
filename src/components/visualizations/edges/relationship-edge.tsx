@@ -53,7 +53,7 @@ export function RelationshipEdgeComponent({
       <BaseEdge
         id={id}
         path={edgePath}
-        markerEnd={markerEnd}
+        {...(markerEnd && { markerEnd })}
         style={{
           stroke: strokeColor,
           strokeWidth,
