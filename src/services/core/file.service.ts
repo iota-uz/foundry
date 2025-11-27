@@ -10,10 +10,14 @@ import {
   readYaml,
   writeYaml,
   atomicWrite,
-  watch,
-  type WatchEvent,
 } from '@/lib/fs';
 import { ensureDir, fileExists } from '@/lib/fs/paths';
+
+// Define WatchEvent type inline to avoid importing watcher module
+export interface WatchEvent {
+  type: 'add' | 'change' | 'unlink';
+  path: string;
+}
 
 /**
  * FileService interface
@@ -145,12 +149,20 @@ export class FileService implements IFileService {
 
   /**
    * Watch a file or directory for changes
+   * Only available in Node.js environment
    */
   watch(
     targetPath: string,
     callback: (event: WatchEvent) => void
   ): () => void {
-    return watch(targetPath, callback);
+    // Dynamically import watcher to avoid bundling in client builds
+    if (typeof window === 'undefined') {
+      // Server-side only
+      const { watch } = require('@/lib/fs/watcher');
+      return watch(targetPath, callback);
+    }
+    // Client-side: return no-op cleanup function
+    return () => {};
   }
 
   /**

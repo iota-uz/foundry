@@ -381,8 +381,14 @@ export class AnalyzerService implements IAnalyzerService {
           return issues;
         }
 
-        // TODO: Implement actual naming checks based on constitution
-        // This would require parsing DBML schemas, OpenAPI specs, etc.
+        const naming = context.constitution.coding.naming;
+
+        // Happy path: Check database table and column naming
+        // Load DBML schemas and validate naming conventions
+        await this.checkDatabaseNaming(context, naming, issues);
+
+        // Check function/class naming in features
+        await this.checkFeatureNaming(context, naming, issues);
 
         return issues;
       },
@@ -508,6 +514,152 @@ export class AnalyzerService implements IAnalyzerService {
       return await this.fileService.readYaml<Constitution>(constitutionPath);
     } catch (error) {
       return null;
+    }
+  }
+
+  /**
+   * Check database naming conventions
+   */
+  private async checkDatabaseNaming(
+    context: AnalysisContext,
+    naming: any,
+    issues: AnalysisIssue[]
+  ): Promise<void> {
+    // Happy path: Load schemas and check table/column names
+    try {
+      const schemasDir = path.join(getFoundryDir(context.projectPath), 'schemas');
+      const exists = await this.fileService.exists(schemasDir);
+
+      if (!exists) {
+        return; // No schemas to check
+      }
+
+      const schemaFiles = await this.fileService.list(schemasDir, '**/*.yaml');
+
+      for (const schemaFile of schemaFiles) {
+        try {
+          const schema = await this.fileService.readYaml<any>(schemaFile);
+
+          // Check if schema has entities
+          if (!schema.entities || !Array.isArray(schema.entities)) {
+            continue;
+          }
+
+          // Check table names
+          for (const entity of schema.entities) {
+            if (!this.matchesNamingConvention(entity.name, naming.database_tables)) {
+              issues.push({
+                id: generateId('issue'),
+                ruleId: 'naming-convention',
+                severity: 'warning',
+                message: `Table name "${entity.name}" doesn't follow convention: ${naming.database_tables}`,
+                location: {
+                  file: schemaFile,
+                  field: `entities.${entity.name}`,
+                },
+                suggestion: `Use ${naming.database_tables} for table names`,
+                constitutionRef: 'coding.naming.database_tables',
+                autoFixable: false,
+              });
+            }
+
+            // Check column names
+            if (entity.fields && Array.isArray(entity.fields)) {
+              for (const field of entity.fields) {
+                if (!this.matchesNamingConvention(field.name, naming.database_columns)) {
+                  issues.push({
+                    id: generateId('issue'),
+                    ruleId: 'naming-convention',
+                    severity: 'warning',
+                    message: `Column name "${field.name}" doesn't follow convention: ${naming.database_columns}`,
+                    location: {
+                      file: schemaFile,
+                      field: `entities.${entity.name}.fields.${field.name}`,
+                    },
+                    suggestion: `Use ${naming.database_columns} for column names`,
+                    constitutionRef: 'coding.naming.database_columns',
+                    autoFixable: false,
+                  });
+                }
+              }
+            }
+          }
+        } catch (error) {
+          // Skip invalid schema files
+          console.warn(`Failed to check schema ${schemaFile}:`, error);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to check database naming:', error);
+    }
+  }
+
+  /**
+   * Check feature naming conventions
+   */
+  private async checkFeatureNaming(
+    context: AnalysisContext,
+    naming: any,
+    issues: AnalysisIssue[]
+  ): Promise<void> {
+    // Happy path: Check feature names follow conventions
+    // For now, we'll just check that feature IDs follow kebab-case
+    for (const feature of context.features) {
+      // Feature IDs should be kebab-case (already enforced by ID generation)
+      // We could add checks for other naming patterns here
+
+      // Check if feature name is in PascalCase (common for class names)
+      if (naming.classes && !this.matchesNamingConvention(feature.name, naming.classes)) {
+        // Only warn if the feature represents a class/component
+        if (feature.technical?.componentRefs && feature.technical.componentRefs.length > 0) {
+          issues.push({
+            id: generateId('issue'),
+            ruleId: 'naming-convention',
+            severity: 'info',
+            message: `Feature name "${feature.name}" might not follow class convention: ${naming.classes}`,
+            location: {
+              file: `features/${feature.id}.yaml`,
+              field: 'name',
+            },
+            suggestion: `Consider using ${naming.classes} for component-based features`,
+            constitutionRef: 'coding.naming.classes',
+            autoFixable: false,
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if a name matches a naming convention
+   */
+  private matchesNamingConvention(name: string, convention: string): boolean {
+    // Happy path: Basic convention checking
+    switch (convention.toLowerCase()) {
+      case 'camelcase':
+        // camelCase: starts lowercase, no underscores, no hyphens
+        return /^[a-z][a-zA-Z0-9]*$/.test(name);
+
+      case 'pascalcase':
+        // PascalCase: starts uppercase, no underscores, no hyphens
+        return /^[A-Z][a-zA-Z0-9]*$/.test(name);
+
+      case 'snake_case':
+        // snake_case: all lowercase with underscores
+        return /^[a-z][a-z0-9_]*$/.test(name);
+
+      case 'kebab-case':
+        // kebab-case: all lowercase with hyphens
+        return /^[a-z][a-z0-9-]*$/.test(name);
+
+      case 'screaming_snake_case':
+        // SCREAMING_SNAKE_CASE: all uppercase with underscores
+        return /^[A-Z][A-Z0-9_]*$/.test(name);
+
+      default:
+        // Unknown convention, assume it matches
+        console.warn(`Unknown naming convention: ${convention}`);
+        return true;
     }
   }
 

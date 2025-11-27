@@ -346,8 +346,8 @@ export class HookService implements IHookService {
           }
 
           // Parse and save
-          const YAML = await import('yaml');
-          const spec = YAML.parse(apiSpec);
+          const YAML = await import('js-yaml');
+          const spec = YAML.load(apiSpec) as Record<string, unknown>;
           await specService.updateOpenAPI(context.projectPath, spec);
         } else if (apiStyle === 'graphql') {
           // Generate GraphQL schema
@@ -431,14 +431,24 @@ export class HookService implements IHookService {
           },
         };
 
+        // Determine analysis status
+        const hasWarnings =
+          schemaValidation.warnings?.length > 0 ||
+          openapiValidation.warnings?.length > 0 ||
+          graphqlValidation.warnings?.length > 0;
+        const hasErrors = !results.passed;
+        const status = hasErrors ? 'errors' : (hasWarnings ? 'warnings' : 'valid');
+
         // Save analysis results to database
         const analysisId = `analysis_${Date.now()}`;
         await dbService.saveAnalysisResults({
           id: analysisId,
           projectId: context.projectPath,
           scope,
-          results: JSON.stringify(results),
-          analyzedAt: new Date().toISOString(),
+          status,
+          results: results,
+          createdAt: new Date().toISOString(),
+          expiresAt: null,
         });
 
         return {
