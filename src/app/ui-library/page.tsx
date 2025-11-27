@@ -150,7 +150,7 @@ export default function UILibraryPage() {
                 <Select
                   label="Choose an option"
                   value={selectValue}
-                  onChange={(e) => setSelectValue(e.target.value)}
+                  onChange={(value) => setSelectValue(value)}
                   options={[
                     { value: 'option1', label: 'Option 1' },
                     { value: 'option2', label: 'Option 2' },
@@ -215,20 +215,22 @@ export default function UILibraryPage() {
             >
               <div className="space-y-2">
                 <Button onClick={() => setToastVisible(true)}>Show Toast</Button>
-                <Toast
-                  message="Operation successful!"
-                  type="success"
-                  visible={toastVisible}
-                  onDismiss={() => setToastVisible(false)}
-                />
+                {toastVisible && (
+                  <Toast
+                    message="Operation successful!"
+                    type="success"
+                    onClose={() => setToastVisible(false)}
+                  />
+                )}
               </div>
 
-              <CodeBlock code={`<Toast
-  message="Operation successful!"
-  type="success"
-  visible={visible}
-  onDismiss={() => setVisible(false)}
-/>`} />
+              <CodeBlock code={`{visible && (
+  <Toast
+    message="Success!"
+    type="success"
+    onClose={() => setVisible(false)}
+  />
+)}`} />
             </ComponentSection>
 
             <ComponentSection
@@ -259,18 +261,20 @@ export default function UILibraryPage() {
                 }
                 title="No items found"
                 description="Get started by creating your first item"
-                action={
-                  <Button variant="primary">
-                    Create Item
-                  </Button>
-                }
+                action={{
+                  label: 'Create Item',
+                  onClick: () => console.log('Create clicked'),
+                }}
               />
 
               <CodeBlock code={`<EmptyState
   icon={<FolderIcon />}
   title="No items found"
   description="Get started by creating your first item"
-  action={<Button>Create Item</Button>}
+  action={{
+    label: 'Create Item',
+    onClick: () => console.log('Create clicked')
+  }}
 />`} />
             </ComponentSection>
           </div>
@@ -285,26 +289,30 @@ export default function UILibraryPage() {
             >
               <div className="space-y-4">
                 <ProgressIndicator
-                  currentPhase="cpo"
-                  currentStep={3}
-                  totalSteps={8}
+                  current={3}
+                  total={8}
+                  label="CPO Phase"
+                  variant="default"
                 />
                 <ProgressIndicator
-                  currentPhase="clarify"
-                  currentStep={5}
-                  totalSteps={8}
+                  current={5}
+                  total={8}
+                  label="Clarify Phase"
+                  variant="warning"
                 />
                 <ProgressIndicator
-                  currentPhase="cto"
-                  currentStep={2}
-                  totalSteps={8}
+                  current={8}
+                  total={8}
+                  label="CTO Phase - Complete"
+                  variant="success"
                 />
               </div>
 
               <CodeBlock code={`<ProgressIndicator
-  currentPhase="cpo"
-  currentStep={3}
-  totalSteps={8}
+  current={3}
+  total={8}
+  label="CPO Phase"
+  variant="default"
 />`} />
             </ComponentSection>
 
@@ -314,18 +322,31 @@ export default function UILibraryPage() {
             >
               <div className="space-y-2">
                 <RecommendationBadge
-                  reason="This option follows industry best practices and reduces complexity"
-                  confidence={0.95}
+                  recommendation={{
+                    recommendedOptionId: 'option-1',
+                    confidence: 'high',
+                    reasoning: 'This option follows industry best practices and reduces complexity',
+                    source: 'best_practice',
+                  }}
                 />
                 <RecommendationBadge
-                  reason="Medium confidence recommendation"
-                  confidence={0.7}
+                  recommendation={{
+                    recommendedOptionId: 'option-2',
+                    confidence: 'medium',
+                    reasoning: 'Context-based recommendation with moderate confidence',
+                    source: 'context_inference',
+                    caveats: ['Requires additional validation', 'May need customization'],
+                  }}
                 />
               </div>
 
               <CodeBlock code={`<RecommendationBadge
-  reason="This option follows best practices"
-  confidence={0.95}
+  recommendation={{
+    recommendedOptionId: 'option-1',
+    confidence: 'high',
+    reasoning: 'Follows best practices',
+    source: 'best_practice'
+  }}
 />`} />
             </ComponentSection>
 
@@ -334,19 +355,20 @@ export default function UILibraryPage() {
               description="Keyboard shortcut indicators"
             >
               <KeyboardHints
-                hints={[
-                  { key: 'Enter', action: 'Submit answer' },
-                  { key: 'S', action: 'Skip question' },
-                  { key: '?', action: 'Show explainer' },
-                  { key: 'Cmd+P', action: 'Toggle preview' },
-                ]}
+                questionType="single_choice"
+                optionCount={5}
+                showSkip={true}
+                showExplainer={true}
+                showRecommendation={true}
+                compact={false}
+                visible={true}
               />
 
               <CodeBlock code={`<KeyboardHints
-  hints={[
-    { key: 'Enter', action: 'Submit' },
-    { key: 'S', action: 'Skip' },
-  ]}
+  questionType="single_choice"
+  optionCount={5}
+  showSkip={true}
+  showExplainer={true}
 />`} />
             </ComponentSection>
           </div>
