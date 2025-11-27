@@ -2,8 +2,10 @@
  * Utility functions for visualization components
  */
 
-// @ts-ignore - dagre doesn't have TypeScript definitions
+// @ts-ignore - dagre doesn't have complete TypeScript definitions
 import dagre from '@dagrejs/dagre';
+// @ts-ignore - graphlib doesn't have complete TypeScript definitions
+import { graphlib } from '@dagrejs/graphlib';
 import { Position } from '@xyflow/react';
 import { CustomNode, CustomEdge } from '@/types/visualization';
 
@@ -27,7 +29,7 @@ export function getLayoutedElements(
   edges: CustomEdge[],
   direction: 'TB' | 'LR' = 'TB'
 ): { nodes: CustomNode[]; edges: CustomEdge[] } {
-  const dagreGraph = new dagre.graphlib.Graph();
+  const dagreGraph = new graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
   // Configure layout
@@ -139,8 +141,8 @@ export function parseDBML(dbml: string) {
   let relMatch;
 
   while ((relMatch = relRegex.exec(dbml)) !== null) {
-    const sourceTable = relMatch[1];
-    const targetTable = relMatch[4];
+    const sourceTable = relMatch[1] ?? 'Unknown';
+    const targetTable = relMatch[4] ?? 'Unknown';
 
     relationships.push({
       source: sourceTable,
