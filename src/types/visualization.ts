@@ -86,8 +86,9 @@ export type FeatureNode = Node<FeatureNodeData, 'feature'>;
  */
 export interface GroupNodeData {
   label: string;
-  module?: string;
-  color?: string;
+  module?: string | undefined;
+  color?: string | undefined;
+  [key: string]: unknown;
 }
 
 export type GroupNode = Node<GroupNodeData, 'group'>;
@@ -110,9 +111,10 @@ export type CustomNode =
  * Database relationship edge
  */
 export interface RelationshipEdgeData {
-  cardinality?: '1:1' | '1:N' | 'N:M';
-  relationshipType?: 'FK' | 'REFERENCE';
-  label?: string;
+  cardinality?: '1:1' | '1:N' | 'N:M' | undefined;
+  relationshipType?: 'FK' | 'REFERENCE' | undefined;
+  label?: string | undefined;
+  [key: string]: unknown;
 }
 
 export type RelationshipEdge = Edge<RelationshipEdgeData, 'relationship'>;

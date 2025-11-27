@@ -177,6 +177,28 @@ export interface ErrorEvent extends BaseSSEEvent {
 }
 
 /**
+ * Workflow paused event
+ */
+export interface WorkflowPauseEvent extends BaseSSEEvent {
+  type: 'workflow_pause';
+  data: {
+    sessionId: string;
+    currentStepId: string;
+  };
+}
+
+/**
+ * Workflow resumed event
+ */
+export interface WorkflowResumeEvent extends BaseSSEEvent {
+  type: 'workflow_resume';
+  data: {
+    sessionId: string;
+    currentStepId: string;
+  };
+}
+
+/**
  * Workflow complete event
  */
 export interface CompleteEvent extends BaseSSEEvent {
@@ -206,4 +228,6 @@ export type SSEEvent =
   | ProgressEvent
   | StepErrorEvent
   | ErrorEvent
+  | WorkflowPauseEvent
+  | WorkflowResumeEvent
   | CompleteEvent;

@@ -16,6 +16,7 @@ export interface Project {
   settings: ProjectSettings;
   createdAt: string;
   updatedAt: string;
+  completedAt?: string;
 }
 
 /**
