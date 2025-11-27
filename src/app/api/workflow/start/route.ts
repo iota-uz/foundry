@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { StartWorkflowRequest } from '@/types/api/requests';
 import type { WorkflowStateResponse } from '@/types/api/responses';
 import { createErrorResponse, ErrorStatusCodes } from '@/types/api/errors';
+import { getWorkflowEngine } from '@/services/workflow/engine';
 
 // Validation schema
 const startWorkflowSchema = z.object({
@@ -23,33 +24,35 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as StartWorkflowRequest;
     const validatedData = startWorkflowSchema.parse(body);
 
-    // TODO: Get WorkflowEngine instance
-    // const workflowEngine = getWorkflowEngine();
+    // Get WorkflowEngine instance
+    const workflowEngine = getWorkflowEngine();
 
-    // TODO: Start workflow execution
-    // const sessionId = await workflowEngine.start(
-    //   validatedData.workflowId,
-    //   validatedData.projectId,
-    //   {
-    //     mode: validatedData.mode,
-    //     initialPrompt: validatedData.initialPrompt,
-    //     targetPath: validatedData.targetPath,
-    //   }
-    // );
+    // Generate unique session ID
+    const sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-    // Mock response for now
-    const sessionId = `session-${Date.now()}`;
-    const status = 'running';
+    // Start workflow execution asynchronously (don't await - it runs in background)
+    workflowEngine.execute(
+      validatedData.workflowId,
+      sessionId,
+      {
+        projectId: validatedData.projectId,
+      }
+    ).catch((error) => {
+      console.error(`Workflow ${sessionId} failed:`, error);
+    });
+
+    // Get initial state
+    const state = await workflowEngine.getState(sessionId);
 
     // Return workflow state
     const response: WorkflowStateResponse = {
       sessionId,
       workflowId: validatedData.workflowId,
-      currentStepId: 'init',
-      status,
+      currentStepId: state?.currentStepId || 'init',
+      status: 'running',
       progress: {
-        topicsCompleted: 0,
-        totalTopics: 8,
+        topicsCompleted: state?.currentTopicIndex || 0,
+        totalTopics: state ? Object.keys(state.topicQuestionCounts).length : 8,
         percentComplete: 0,
       },
     };

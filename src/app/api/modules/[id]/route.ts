@@ -37,10 +37,10 @@ export async function GET(
     const specService = getSpecService(fileService);
 
     // params.id is the module slug
-    const module = await specService.getModule(projectPath, params.id);
+    const moduleData = await specService.getModule(projectPath, params.id);
     const features = await specService.listFeatures(projectPath, params.id);
 
-    const response: ModuleResponse = { module, features };
+    const response: ModuleResponse = { module: moduleData, features };
     return NextResponse.json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -102,7 +102,7 @@ export async function PUT(
     if (parsed.description !== undefined) updates.description = parsed.description;
     if (parsed.order !== undefined) updates.order = parsed.order;
 
-    const module = await specService.updateModule(
+    const moduleData = await specService.updateModule(
       projectPath,
       params.id,
       updates as any
@@ -110,7 +110,7 @@ export async function PUT(
 
     const features = await specService.listFeatures(projectPath, params.id);
 
-    const response: ModuleResponse = { module, features };
+    const response: ModuleResponse = { module: moduleData, features };
     return NextResponse.json(response);
   } catch (error) {
     if (error instanceof z.ZodError) {

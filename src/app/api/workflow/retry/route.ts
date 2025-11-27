@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { RetryStepRequest } from '@/types/api/requests';
 import type { SuccessResponse } from '@/types/api/responses';
 import { createErrorResponse, ErrorStatusCodes } from '@/types/api/errors';
+import { getWorkflowEngine } from '@/services/workflow/engine-singleton';
 
 // Validation schema
 const retryStepRequestSchema = z.object({
@@ -20,18 +21,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as RetryStepRequest;
     const validatedData = retryStepRequestSchema.parse(body);
 
-    // TODO: Get WorkflowEngine instance
-    // const workflowEngine = getWorkflowEngine();
-
-    // TODO: Retry failed step
-    // await workflowEngine.retryStep(
-    //   validatedData.sessionId,
-    //   validatedData.stepId
-    // );
-
-    console.log('Retrying step:', {
-      sessionId: validatedData.sessionId,
-      stepId: validatedData.stepId,
+    // Get WorkflowEngine instance and retry step (runs in background)
+    const workflowEngine = getWorkflowEngine();
+    workflowEngine.retryStep(validatedData.sessionId, validatedData.stepId).catch((error) => {
+      console.error(`Failed to retry step ${validatedData.stepId}:`, error);
     });
 
     // Return success response

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { ClarifyResolveRequest } from '@/types/api/requests';
 import type { SuccessResponse } from '@/types/api/responses';
 import { createErrorResponse, ErrorStatusCodes } from '@/types/api/errors';
+import { getWorkflowEngine } from '@/services/workflow/engine-singleton';
 
 // Validation schema
 const clarifyResolveSchema = z.object({
@@ -21,21 +22,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as ClarifyResolveRequest;
     const validatedData = clarifyResolveSchema.parse(body);
 
-    // TODO: Get WorkflowEngine instance
-    // const workflowEngine = getWorkflowEngine();
-
-    // TODO: Resolve ambiguity and continue clarify workflow
-    // await workflowEngine.resolveAmbiguity(
-    //   validatedData.sessionId,
-    //   validatedData.ambiguityId,
-    //   validatedData.resolution
-    // );
-
-    console.log('Resolving ambiguity:', {
-      sessionId: validatedData.sessionId,
-      ambiguityId: validatedData.ambiguityId,
-      resolution: validatedData.resolution,
-    });
+    // Get WorkflowEngine instance and submit resolution as answer
+    const workflowEngine = getWorkflowEngine();
+    workflowEngine.submitAnswer(
+      validatedData.sessionId,
+      validatedData.ambiguityId,
+      { action: 'resolve', resolution: validatedData.resolution }
+    );
 
     // Return success response
     const response: SuccessResponse = {

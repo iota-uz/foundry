@@ -4,6 +4,8 @@
 
 import { NextRequest } from 'next/server';
 import type { SSEEvent } from '@/types/workflow/events';
+import { getWorkflowEngine } from '@/services/workflow/engine';
+import { questionEvents } from '@/services/workflow/handlers/question.handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,6 +19,8 @@ export async function GET(request: NextRequest) {
     return new Response('Session ID is required', { status: 400 });
   }
 
+  const workflowEngine = getWorkflowEngine();
+
   // Create a new ReadableStream for SSE
   const stream = new ReadableStream({
     async start(controller) {
@@ -24,45 +28,87 @@ export async function GET(request: NextRequest) {
 
       // Helper function to send SSE event
       const sendEvent = (event: SSEEvent) => {
-        const eventString = `event: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`;
-        controller.enqueue(encoder.encode(eventString));
+        try {
+          const eventString = `event: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`;
+          controller.enqueue(encoder.encode(eventString));
+        } catch (err) {
+          console.error('Error sending SSE event:', err);
+        }
       };
 
       // Helper function to send keepalive comment
       const sendKeepalive = () => {
-        controller.enqueue(encoder.encode(':keepalive\n\n'));
+        try {
+          controller.enqueue(encoder.encode(':keepalive\n\n'));
+        } catch (err) {
+          // Controller might be closed, ignore
+        }
       };
-
-      // TODO: Get WorkflowEngine instance
-      // const workflowEngine = getWorkflowEngine();
-
-      // TODO: Subscribe to workflow events
-      // const unsubscribe = workflowEngine.subscribe(sessionId, (event: SSEEvent) => {
-      //   sendEvent(event);
-      // });
-
-      // TODO: In production, WorkflowEngine would emit events
-      // Example event handler registration:
-      // workflowEngine.on('step_start', (data) => sendEvent({ type: 'step_start', data }));
-      // workflowEngine.on('step_complete', (data) => sendEvent({ type: 'step_complete', data }));
-      // workflowEngine.on('question', (data) => sendEvent({ type: 'question', data }));
-      // workflowEngine.on('spec_update', (data) => sendEvent({ type: 'spec_update', data }));
-      // workflowEngine.on('topic_complete', (data) => sendEvent({ type: 'topic_complete', data }));
-      // workflowEngine.on('phase_change', (data) => sendEvent({ type: 'phase_change', data }));
-      // workflowEngine.on('generator_start', (data) => sendEvent({ type: 'generator_start', data }));
-      // workflowEngine.on('generator_complete', (data) => sendEvent({ type: 'generator_complete', data }));
-      // workflowEngine.on('clarify_start', (data) => sendEvent({ type: 'clarify_start', data }));
-      // workflowEngine.on('ambiguity', (data) => sendEvent({ type: 'ambiguity', data }));
-      // workflowEngine.on('llm_progress', (data) => sendEvent({ type: 'llm_progress', data }));
-      // workflowEngine.on('progress', (data) => sendEvent({ type: 'progress', data }));
-      // workflowEngine.on('step_error', (data) => sendEvent({ type: 'step_error', data }));
-      // workflowEngine.on('error', (data) => sendEvent({ type: 'error', data }));
-      // workflowEngine.on('complete', (data) => sendEvent({ type: 'complete', data }));
 
       // Set up keepalive interval (every 15 seconds)
       const keepaliveInterval = setInterval(() => {
         sendKeepalive();
       }, 15000);
+
+      // WorkflowEngine event handlers
+      const onStepStart = (data: any) => {
+        if (data.sessionId === sessionId) {
+          sendEvent({ type: 'step_start', data });
+        }
+      };
+
+      const onStepComplete = (data: any) => {
+        if (data.sessionId === sessionId) {
+          sendEvent({ type: 'step_complete', data });
+        }
+      };
+
+      const onStepError = (data: any) => {
+        if (data.sessionId === sessionId) {
+          sendEvent({ type: 'step_error', data });
+        }
+      };
+
+      const onWorkflowPause = (data: any) => {
+        if (data.sessionId === sessionId) {
+          sendEvent({ type: 'workflow_pause', data });
+        }
+      };
+
+      const onWorkflowResume = (data: any) => {
+        if (data.sessionId === sessionId) {
+          sendEvent({ type: 'workflow_resume', data });
+        }
+      };
+
+      const onWorkflowComplete = (data: any) => {
+        if (data.sessionId === sessionId) {
+          sendEvent({ type: 'complete', data });
+        }
+      };
+
+      const onWorkflowError = (data: any) => {
+        if (data.sessionId === sessionId) {
+          sendEvent({ type: 'error', data });
+        }
+      };
+
+      // Question handler event
+      const onQuestion = (data: any) => {
+        if (data.sessionId === sessionId) {
+          sendEvent({ type: 'question', data });
+        }
+      };
+
+      // Register all event listeners
+      workflowEngine.on('step:start', onStepStart);
+      workflowEngine.on('step:complete', onStepComplete);
+      workflowEngine.on('step:error', onStepError);
+      workflowEngine.on('workflow:pause', onWorkflowPause);
+      workflowEngine.on('workflow:resume', onWorkflowResume);
+      workflowEngine.on('workflow:complete', onWorkflowComplete);
+      workflowEngine.on('workflow:error', onWorkflowError);
+      questionEvents.on('question', onQuestion);
 
       // Send initial connection event
       sendEvent({
@@ -72,12 +118,34 @@ export async function GET(request: NextRequest) {
         },
       });
 
+      // Load current state and send if exists
+      try {
+        const state = await workflowEngine.getState(sessionId);
+        if (state) {
+          sendEvent({
+            type: 'progress',
+            data: {
+              message: `Loaded existing session: ${state.workflowId} (Step: ${state.currentStepId}, Status: ${state.status})`,
+            },
+          });
+        }
+      } catch (err) {
+        console.error('Error loading workflow state:', err);
+      }
+
       // Handle client disconnect
-      request.signal.addEventListener('abort', () => {
+      const cleanup = () => {
         clearInterval(keepaliveInterval);
 
-        // TODO: Unsubscribe from WorkflowEngine events
-        // unsubscribe();
+        // Unsubscribe from all events
+        workflowEngine.off('step:start', onStepStart);
+        workflowEngine.off('step:complete', onStepComplete);
+        workflowEngine.off('step:error', onStepError);
+        workflowEngine.off('workflow:pause', onWorkflowPause);
+        workflowEngine.off('workflow:resume', onWorkflowResume);
+        workflowEngine.off('workflow:complete', onWorkflowComplete);
+        workflowEngine.off('workflow:error', onWorkflowError);
+        questionEvents.off('question', onQuestion);
 
         console.log('Client disconnected from SSE stream:', sessionId);
 
@@ -87,10 +155,9 @@ export async function GET(request: NextRequest) {
           // Controller might already be closed
           console.error('Error closing controller:', err);
         }
-      });
+      };
 
-      // TODO: In production, events would be emitted by WorkflowEngine
-      // For now, this stream will stay open waiting for events
+      request.signal.addEventListener('abort', cleanup);
     },
   });
 

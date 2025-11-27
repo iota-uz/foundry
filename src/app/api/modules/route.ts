@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const fileService = getFileService();
     const specService = getSpecService(fileService);
-    const module = await specService.createModule(projectPath, {
+    const moduleData = await specService.createModule(projectPath, {
       slug,
       name: parsed.name,
       description: parsed.description,
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     });
 
     const response: ModuleResponse = {
-      module,
+      module: moduleData,
       features: [],
     };
 

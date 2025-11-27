@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { WorkflowStateResponse } from '@/types/api/responses';
 import { createErrorResponse, ErrorStatusCodes } from '@/types/api/errors';
+import { getWorkflowEngine } from '@/services/workflow/engine-singleton';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,30 +21,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(errorResponse, { status: ErrorStatusCodes.VALIDATION_ERROR });
     }
 
-    // TODO: Get WorkflowEngine instance
-    // const workflowEngine = getWorkflowEngine();
+    // Get WorkflowEngine instance and current state
+    const workflowEngine = getWorkflowEngine();
+    const state = await workflowEngine.getState(sessionId);
 
-    // TODO: Get current workflow state
-    // const state = await workflowEngine.getState(sessionId);
+    if (!state) {
+      const errorResponse = createErrorResponse(
+        'NOT_FOUND',
+        `Workflow session not found: ${sessionId}`
+      );
+      return NextResponse.json(errorResponse, { status: 404 });
+    }
 
-    console.log('Getting workflow state for session:', sessionId);
-
-    // Mock response
+    const totalTopics = Object.keys(state.topicQuestionCounts).length;
     const response: WorkflowStateResponse = {
       sessionId,
-      workflowId: 'cpo-phase',
-      currentStepId: 'question-step-1',
-      status: 'waiting_user',
-      currentTopic: {
-        id: 'product-vision',
-        name: 'Product Vision',
-        questionIndex: 3,
-        totalQuestions: 5,
-      },
+      workflowId: (state.workflowId as any) || 'unknown',
+      currentStepId: state.currentStepId,
+      status: (state.status as any) || 'unknown',
       progress: {
-        topicsCompleted: 1,
-        totalTopics: 8,
-        percentComplete: 12.5,
+        topicsCompleted: state.currentTopicIndex,
+        totalTopics,
+        percentComplete: totalTopics ? Math.round((state.currentTopicIndex / totalTopics) * 100) : 0,
       },
     };
 

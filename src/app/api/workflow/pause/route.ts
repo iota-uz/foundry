@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { SuccessResponse } from '@/types/api/responses';
 import { createErrorResponse, ErrorStatusCodes } from '@/types/api/errors';
+import { getWorkflowEngine } from '@/services/workflow/engine-singleton';
 
 // Validation schema
 const pauseWorkflowSchema = z.object({
@@ -18,13 +19,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = pauseWorkflowSchema.parse(body);
 
-    // TODO: Get WorkflowEngine instance
-    // const workflowEngine = getWorkflowEngine();
-
-    // TODO: Pause workflow
-    // await workflowEngine.pause(validatedData.sessionId);
-
-    console.log('Pausing workflow:', validatedData.sessionId);
+    // Get WorkflowEngine instance and pause workflow
+    const workflowEngine = getWorkflowEngine();
+    await workflowEngine.pause(validatedData.sessionId);
 
     // Return success response
     const response: SuccessResponse = {

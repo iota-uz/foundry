@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { WorkflowStateResponse } from '@/types/api/responses';
 import { createErrorResponse, ErrorStatusCodes } from '@/types/api/errors';
+import { getWorkflowEngine } from '@/services/workflow/engine-singleton';
 
 // Validation schema
 const resumeWorkflowSchema = z.object({
@@ -18,24 +19,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = resumeWorkflowSchema.parse(body);
 
-    // TODO: Get WorkflowEngine instance
-    // const workflowEngine = getWorkflowEngine();
+    // Get WorkflowEngine instance and resume workflow (runs in background)
+    const workflowEngine = getWorkflowEngine();
+    workflowEngine.resume(validatedData.sessionId).catch((error) => {
+      console.error(`Failed to resume workflow ${validatedData.sessionId}:`, error);
+    });
 
-    // TODO: Resume workflow
-    // await workflowEngine.resume(validatedData.sessionId);
+    // Get current state
+    const state = await workflowEngine.getState(validatedData.sessionId);
 
-    console.log('Resuming workflow:', validatedData.sessionId);
-
-    // Mock response
+    const totalTopics = state ? Object.keys(state.topicQuestionCounts).length : 8;
     const response: WorkflowStateResponse = {
       sessionId: validatedData.sessionId,
-      workflowId: 'cpo-phase',
-      currentStepId: 'resumed-step',
+      workflowId: (state?.workflowId as any) || 'cpo-phase',
+      currentStepId: state?.currentStepId || 'unknown',
       status: 'running',
       progress: {
-        topicsCompleted: 2,
-        totalTopics: 8,
-        percentComplete: 25,
+        topicsCompleted: state?.currentTopicIndex || 0,
+        totalTopics,
+        percentComplete: state ? Math.round((state.currentTopicIndex / totalTopics) * 100) : 0,
       },
     };
 

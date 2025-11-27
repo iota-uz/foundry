@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { ClarifyDeferRequest } from '@/types/api/requests';
 import type { SuccessResponse } from '@/types/api/responses';
 import { createErrorResponse, ErrorStatusCodes } from '@/types/api/errors';
+import { getWorkflowEngine } from '@/services/workflow/engine-singleton';
 
 // Validation schema
 const clarifyDeferSchema = z.object({
@@ -20,19 +21,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as ClarifyDeferRequest;
     const validatedData = clarifyDeferSchema.parse(body);
 
-    // TODO: Get WorkflowEngine instance
-    // const workflowEngine = getWorkflowEngine();
-
-    // TODO: Defer ambiguity to CTO phase
-    // await workflowEngine.deferAmbiguity(
-    //   validatedData.sessionId,
-    //   validatedData.ambiguityId
-    // );
-
-    console.log('Deferring ambiguity to CTO phase:', {
-      sessionId: validatedData.sessionId,
-      ambiguityId: validatedData.ambiguityId,
-    });
+    // Get WorkflowEngine instance and defer ambiguity as answer
+    const workflowEngine = getWorkflowEngine();
+    workflowEngine.submitAnswer(
+      validatedData.sessionId,
+      validatedData.ambiguityId,
+      { action: 'defer' }
+    );
 
     // Return success response
     const response: SuccessResponse = {

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { SkipRequest } from '@/types/api/requests';
 import type { SuccessResponse } from '@/types/api/responses';
 import { createErrorResponse, ErrorStatusCodes } from '@/types/api/errors';
+import { getWorkflowEngine } from '@/services/workflow/engine';
 
 // Validation schema
 const skipRequestSchema = z.object({
@@ -20,19 +21,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as SkipRequest;
     const validatedData = skipRequestSchema.parse(body);
 
-    // TODO: Get WorkflowEngine instance
-    // const workflowEngine = getWorkflowEngine();
-
-    // TODO: Skip question and continue workflow
-    // await workflowEngine.skipQuestion(
-    //   validatedData.sessionId,
-    //   validatedData.questionId
-    // );
-
-    console.log('Skipping question:', {
-      sessionId: validatedData.sessionId,
-      questionId: validatedData.questionId,
-    });
+    // Get WorkflowEngine instance and skip question
+    const workflowEngine = getWorkflowEngine();
+    workflowEngine.skipQuestion(validatedData.sessionId, validatedData.questionId);
 
     // Return success response
     const response: SuccessResponse = {

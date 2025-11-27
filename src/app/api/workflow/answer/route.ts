@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { AnswerRequest } from '@/types/api/requests';
 import type { SuccessResponse } from '@/types/api/responses';
 import { createErrorResponse, ErrorStatusCodes } from '@/types/api/errors';
+import { getWorkflowEngine } from '@/services/workflow/engine';
 
 // Validation schema
 const answerRequestSchema = z.object({
@@ -27,21 +28,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as AnswerRequest;
     const validatedData = answerRequestSchema.parse(body);
 
-    // TODO: Get WorkflowEngine instance
-    // const workflowEngine = getWorkflowEngine();
+    // Get WorkflowEngine instance
+    const workflowEngine = getWorkflowEngine();
 
-    // TODO: Submit answer and continue workflow
-    // await workflowEngine.submitAnswer(
-    //   validatedData.sessionId,
-    //   validatedData.questionId,
-    //   validatedData.answer
-    // );
-
-    console.log('Submitting answer:', {
-      sessionId: validatedData.sessionId,
-      questionId: validatedData.questionId,
-      answer: validatedData.answer,
-    });
+    // Submit answer and continue workflow
+    workflowEngine.submitAnswer(
+      validatedData.sessionId,
+      validatedData.questionId,
+      validatedData.answer
+    );
 
     // Return success response
     const response: SuccessResponse = {
