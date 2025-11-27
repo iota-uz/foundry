@@ -1,0 +1,38 @@
+## Product Requirements to Analyze
+
+Below is the product specification gathered from the CPO phase. Analyze it for ambiguities that should be clarified before technical design begins.
+
+### Gathered Requirements
+
+{{#each features}}
+**Feature: {{this.name}}**
+- {{this.description}}
+- User Story: {{this.business.userStory}}
+- Acceptance Criteria:
+{{#each this.business.acceptanceCriteria}}
+  - {{this}}
+{{/each}}
+
+{{/each}}
+
+## Previous Answers Context
+
+For reference, here are the main product decisions made:
+
+{{#each cpoAnswers}}
+- {{@key}}: {{this}}
+{{/each}}
+
+## Your Task
+
+1. Scan the above requirements for vague language, missing edge cases, ambiguous flows, and conflicts
+2. Identify up to 5 critical ambiguities that should be resolved before technical design
+3. For each ambiguity:
+   - Specify the type (vague_language, missing_edge_case, ambiguous_flow, conflict)
+   - Rate severity (high/medium/low)
+   - Generate a clarifying question
+   - Suggest 2-4 concrete answers if applicable
+
+Focus on **high-severity** items first - those that would block technical design or create risk if not resolved.
+
+Return your analysis as a JSON object following the schema provided in the system prompt.

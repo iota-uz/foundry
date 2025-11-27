@@ -1,0 +1,40 @@
+## Current Topic
+
+**Topic:** {{currentTopic.name}}
+**Description:** {{currentTopic.description}}
+**Estimated Questions:** {{currentTopic.estimatedQuestions}}
+
+## Your Progress
+
+We're working on the "{{currentTopic.name}}" topic. This is question {{questionCount}} in this topic.
+
+{{#if previousAnswers}}
+## Previous Answers (Context)
+
+Here's what we've already learned:
+
+{{#each previousAnswers}}
+- **Q: {{this.question}}**
+  A: {{this.answer}}
+
+{{/each}}
+
+Build on these answers when asking your next question. Look for:
+- Gaps or follow-ups not yet covered
+- Dependencies or connections between previous answers
+- Clarifications that might help detail what we've discussed
+{{else}}
+## No Previous Answers Yet
+
+This is the first question on this topic. Ask a foundational question that establishes the key aspect of {{currentTopic.name}}.
+{{/if}}
+
+## Your Task
+
+Generate ONE clear, conversational question for the "{{currentTopic.name}}" topic. The question should:
+1. Be specific and answerable
+2. Build naturally on previous context if available
+3. Help us understand the business requirement better
+4. Be formatted as JSON following the output schema provided in the system prompt
+
+Respond with ONLY the JSON object, no additional text.

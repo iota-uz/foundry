@@ -1,0 +1,62 @@
+## UI Component Requirements
+
+**Screen/Component:** {{currentScreen.name}}
+**Description:** {{currentScreen.description}}
+**UI Framework:** {{uiFramework}}
+
+## What This Screen Does
+
+{{#if currentScreen.purpose}}
+{{currentScreen.purpose}}
+{{/if}}
+
+## Data This Screen Works With
+
+The screen needs to display and interact with:
+
+{{#if currentScreen.dataRequirements}}
+{{currentScreen.dataRequirements}}
+{{/if}}
+
+## User Interactions
+
+Users should be able to:
+
+{{#if currentScreen.interactions}}
+{{#each currentScreen.interactions}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+## Related Features
+
+This component implements:
+
+{{#if currentScreen.features}}
+{{#each currentScreen.features}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+## Constitution Rules (if defined)
+
+{{#if constitution}}
+Follow these design and implementation rules:
+{{constitution}}
+{{/if}}
+
+## Your Task
+
+Generate a complete HTML component with Tailwind CSS that:
+1. Matches the screen description and purpose
+2. Is fully responsive (mobile-first design)
+3. Includes proper semantic HTML elements
+4. Has accessibility attributes (aria-*, labels, roles)
+5. Includes hover, focus, and active states
+6. Supports dark mode with dark: variants
+7. Uses Tailwind utilities exclusively (no custom CSS)
+8. Includes placeholder data/text for demonstration
+9. Is well-commented for developers
+10. Creates helpful variants (loading, empty, error states)
+
+Generate the HTML component with Tailwind classes. Keep it production-ready.

@@ -1,0 +1,79 @@
+## Codebase to Analyze
+
+**Project Type:** {{projectType}}
+**Scope:** {{scope}}
+
+### Directory Structure
+
+{{#if directoryTree}}
+{{directoryTree}}
+{{/if}}
+
+### Project Configuration Files
+
+{{#if configFilesContent}}
+{{configFilesContent}}
+{{/if}}
+
+## Your Task
+
+Analyze this codebase and extract specification information.
+
+{{#if analysisType}}
+## Focus: {{analysisType}}
+
+{{#if analysisType == "architecture"}}
+Identify:
+1. The overall architecture pattern (MVC, REST, layered, hexagonal, DDD, etc.)
+2. Major module boundaries and their responsibilities
+3. How code is organized (by feature, by layer, by domain)
+4. Key design patterns used throughout the codebase
+5. Technology choices and framework usage patterns
+
+Return the analysis as a JSON object with modules, detected architecture, patterns, and characteristics.
+{{/if}}
+
+{{#if analysisType == "features"}}
+Extract:
+1. All implemented features visible in the code
+2. Feature names and their descriptions
+3. Which files implement each feature
+4. Whether each feature is complete, partial, or experimental
+5. Your confidence level for each extraction
+
+Return a JSON object with the features array.
+{{/if}}
+
+{{#if analysisType == "schema"}}
+Convert:
+1. Database table definitions (from migrations, models, ORM)
+2. Columns, types, and constraints
+3. Relationships between tables
+4. Key indexes and constraints
+5. Convert to valid DBML format
+
+Return a JSON object with DBML schema and entity list.
+{{/if}}
+
+{{#if analysisType == "api"}}
+Extract:
+1. All API endpoints (REST routes, GraphQL operations)
+2. HTTP methods and paths (for REST)
+3. Request and response shapes
+4. Authentication requirements
+5. Which file defines each endpoint
+
+Return a JSON object with endpoints array.
+{{/if}}
+{{/if}}
+
+## Guidelines
+
+- Be specific and cite code locations when possible
+- Note areas where implementation is incomplete or experimental
+- Flag outdated or legacy code patterns
+- Identify potential technical debt
+- Rate your confidence level (high/medium/low) for each finding
+- Group related items together
+
+Respond with a JSON object following the format specified in the system prompt.

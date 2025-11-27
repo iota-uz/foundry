@@ -1,0 +1,65 @@
+## API Requirements
+
+Based on the CTO phase and business requirements, we need to build these endpoints:
+
+### Required Operations
+
+{{#each endpoints}}
+- {{this.name}}: {{this.description}}
+  - Type: {{this.type}}
+  {{#if this.method}}
+  - Method: {{this.method}}
+  {{/if}}
+  {{#if this.path}}
+  - Path: {{this.path}}
+  {{/if}}
+
+{{/each}}
+
+## Data Model Context
+
+Here's the database schema these endpoints will work with:
+
+{{#if schema}}
+{{schema}}
+{{/if}}
+
+## API Design Decisions
+
+These decisions were made during the CTO phase:
+
+{{#if apiAnswers}}
+{{#each apiAnswers}}
+- {{@key}}: {{this}}
+{{/each}}
+{{/if}}
+
+## Existing API (if any)
+
+{{#if existingAPI}}
+Here's the current API to extend:
+
+{{existingAPI}}
+{{/if}}
+
+## Constitution Rules (if defined)
+
+{{#if constitution}}
+Follow these project rules for API design:
+{{constitution}}
+{{/if}}
+
+## Your Task
+
+Generate a complete API specification that:
+1. Implements all required operations from above
+2. {{#if apiStyle}}Uses {{apiStyle}} style{{/if}}
+3. Includes proper request/response schemas
+4. Documents all parameters (path, query, body)
+5. Specifies authentication requirements
+6. Uses appropriate HTTP methods and status codes
+7. Includes meaningful documentation and examples
+8. Groups related endpoints with tags/namespaces
+9. Respects constitution rules and naming conventions
+
+Return the specification as a JSON object with either OpenAPI 3.0 YAML or GraphQL SDL.

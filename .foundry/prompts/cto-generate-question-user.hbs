@@ -1,0 +1,45 @@
+## Current Topic
+
+**Topic:** {{currentTopic.name}}
+**Description:** {{currentTopic.description}}
+**Estimated Questions:** {{currentTopic.estimatedQuestions}}
+
+## Business Context
+
+To ground your question in the product vision, here's what we learned in the CPO phase:
+
+{{#if businessContext}}
+{{businessContext}}
+{{else}}
+[Business context not yet available]
+{{/if}}
+
+## Previous Technical Decisions
+
+Here's what we've already decided on:
+
+{{#if previousAnswers}}
+{{#each previousAnswers}}
+- {{@key}}: {{this}}
+{{/each}}
+{{else}}
+[No previous technical decisions yet - this is the first question]
+{{/if}}
+
+## Your Task
+
+Generate ONE clear, technical question for the "{{currentTopic.name}}" topic. The question should:
+1. Build on the business requirements established in the CPO phase
+2. Reference previous technical decisions where relevant
+3. Provide concrete, specific options (3-5 for single choice)
+4. Explain the trade-offs between options
+5. Be formatted as JSON following the output schema in the system prompt
+
+Consider the impact of this decision on:
+- The data model and database design
+- API endpoints and contract
+- UI components and pages
+- Performance and scalability
+- Security and compliance
+
+Respond with ONLY the JSON object, no additional text.

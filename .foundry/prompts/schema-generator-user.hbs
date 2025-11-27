@@ -1,0 +1,59 @@
+## Data Model Requirements
+
+Based on the CTO phase Q&A, here's what we need to model:
+
+### Entities to Create
+
+{{#each entities}}
+**{{this.name}}**
+- {{this.description}}
+- Fields needed: {{this.fields}}
+
+{{/each}}
+
+### Relationships
+
+{{#each relationships}}
+- {{this.from}} → {{this.to}} ({{this.type}})
+{{/each}}
+
+## Technical Decisions Context
+
+These decisions were made during the CTO phase and should influence your schema:
+
+{{#if technicalAnswers}}
+{{#each technicalAnswers}}
+- {{@key}}: {{this}}
+{{/each}}
+{{/if}}
+
+## Existing Schema (if any)
+
+{{#if existingSchema}}
+Here's the current schema to extend or modify:
+
+{{existingSchema}}
+{{else}}
+[No existing schema - starting fresh]
+{{/if}}
+
+## Constitution Rules (if defined)
+
+{{#if constitution}}
+Follow these project rules for schema design:
+{{constitution}}
+{{/if}}
+
+## Your Task
+
+Generate a complete DBML database schema that:
+1. Models all required entities and relationships
+2. Uses snake_case for tables and columns
+3. Includes primary keys (prefer UUID)
+4. Adds created_at and updated_at timestamps
+5. Defines all relationships with proper cardinality
+6. Includes indexes on frequently queried columns
+7. Has meaningful table and column documentation
+8. Respects any constitution rules or technical constraints
+
+Return a JSON object with the DBML schema, table list, and relationship definitions.

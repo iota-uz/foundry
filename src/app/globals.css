@@ -1,9 +1,47 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #3b82f6;
-  --color-secondary: #8b5cf6;
-  --font-sans: system-ui, -apple-system, sans-serif;
+  /* Font */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+
+  /* Background colors */
+  --color-bg-primary: #0f0f0f;
+  --color-bg-secondary: #1a1a1a;
+  --color-bg-tertiary: #262626;
+
+  /* Text colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a3a3a3;
+  --color-text-tertiary: #737373;
+
+  /* Accent colors */
+  --color-accent-primary: #3b82f6;
+  --color-accent-success: #22c55e;
+  --color-accent-warning: #f59e0b;
+  --color-accent-error: #ef4444;
+
+  /* Border colors */
+  --color-border-default: #333333;
+  --color-border-focus: #3b82f6;
+}
+
+:root {
+  /* CSS custom properties for use in components */
+  --bg-primary: var(--color-bg-primary);
+  --bg-secondary: var(--color-bg-secondary);
+  --bg-tertiary: var(--color-bg-tertiary);
+
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-tertiary: var(--color-text-tertiary);
+
+  --accent-primary: var(--color-accent-primary);
+  --accent-success: var(--color-accent-success);
+  --accent-warning: var(--color-accent-warning);
+  --accent-error: var(--color-accent-error);
+
+  --border-default: var(--color-border-default);
+  --border-focus: var(--color-border-focus);
 }
 
 html {
@@ -11,5 +49,38 @@ html {
 }
 
 body {
-  @apply bg-gray-950 text-gray-50;
+  @apply bg-bg-primary text-text-primary;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Scrollbar styling for dark theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-tertiary) var(--bg-secondary);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #333333;
+}
+
+/* Focus visible outline for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
