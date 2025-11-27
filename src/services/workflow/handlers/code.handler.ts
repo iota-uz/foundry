@@ -89,6 +89,12 @@ const handlers: Record<string, CodeStepHandler> = {
   applyResolutionToSpec,
   markAsTBD,
   deferToCTO,
+  presentAmbiguitySummary,
+  deferAmbiguity,
+  applyResolution,
+  generateClarifySummary,
+  markClarifyComplete,
+  updateProjectPhase,
 
   // Reverse engineering
   scanDirectoryStructure,
@@ -394,7 +400,7 @@ async function validateAnswerCompleteness(
   const required = input.required !== false;
 
   let isComplete = false;
-  let errors: string[] = [];
+  const errors: string[] = [];
 
   if (required && (answer === null || answer === undefined || answer === '')) {
     errors.push('Answer is required');
@@ -719,6 +725,198 @@ async function deferToCTO(
     ambiguityId: ambiguity.id,
     deferredCount: context.state.data.deferredAmbiguities.length,
   };
+}
+
+async function presentAmbiguitySummary(
+  _input: Record<string, any>,
+  context: WorkflowContext
+): Promise<Record<string, any>> {
+  if (!context.state.clarifyState) {
+    throw new Error('Clarify state not initialized');
+  }
+
+  const { ambiguities } = context.state.clarifyState;
+
+  // Group by severity
+  const highSeverity = ambiguities.filter(a => a.severity === 'high');
+  const mediumSeverity = ambiguities.filter(a => a.severity === 'medium');
+  const lowSeverity = ambiguities.filter(a => a.severity === 'low');
+
+  return {
+    summary: {
+      total: ambiguities.length,
+      high: highSeverity.length,
+      medium: mediumSeverity.length,
+      low: lowSeverity.length,
+    },
+    ambiguities,
+  };
+}
+
+async function deferAmbiguity(
+  input: Record<string, any>,
+  context: WorkflowContext
+): Promise<Record<string, any>> {
+  const ambiguityId = input.currentAmbiguity?.id;
+
+  if (!context.state.clarifyState || !ambiguityId) {
+    throw new Error('Clarify state or ambiguity ID not provided');
+  }
+
+  const ambiguity = context.state.clarifyState.ambiguities.find(a => a.id === ambiguityId);
+  if (!ambiguity) {
+    throw new Error(`Ambiguity not found: ${ambiguityId}`);
+  }
+
+  ambiguity.status = 'deferred';
+  ambiguity.resolution = '[TBD - Deferred to CTO phase]';
+  context.state.clarifyState.deferredCount++;
+
+  // Also store in deferredAmbiguities array for CTO phase
+  if (!context.state.data.deferredAmbiguities) {
+    context.state.data.deferredAmbiguities = [];
+  }
+  context.state.data.deferredAmbiguities.push(ambiguity);
+
+  return {
+    deferred: true,
+    ambiguityId,
+  };
+}
+
+async function applyResolution(
+  input: Record<string, any>,
+  context: WorkflowContext
+): Promise<Record<string, any>> {
+  const fileService = getFileService();
+  const specService = getSpecService(fileService);
+
+  const currentAmbiguity = input.currentAmbiguity as Ambiguity;
+  const userAnswer = input.userAnswer;
+
+  if (!userAnswer || !currentAmbiguity) {
+    throw new Error('User answer and ambiguity are required');
+  }
+
+  // Update ambiguity with resolution
+  currentAmbiguity.resolution = userAnswer;
+  currentAmbiguity.status = 'resolved';
+
+  if (context.state.clarifyState) {
+    context.state.clarifyState.resolvedCount++;
+  }
+
+  // Load feature and update based on ambiguity context
+  const features = await specService.listFeatures(context.projectId);
+  const feature = features.find(f => f.id === currentAmbiguity.featureId);
+
+  if (!feature) {
+    console.warn(`Feature not found for ambiguity: ${currentAmbiguity.featureId}`);
+    return {
+      applied: false,
+      ambiguityId: currentAmbiguity.id,
+    };
+  }
+
+  const [moduleSlug, featureSlug] = feature.id.split('/');
+
+  if (!moduleSlug || !featureSlug) {
+    console.warn(`Invalid feature id format: ${feature.id}`);
+    return { applied: false, ambiguityId: currentAmbiguity.id };
+  }
+  const updates: Partial<Feature> = {};
+
+  // Apply resolution to appropriate field
+  if (currentAmbiguity.context.includes('description')) {
+    updates.description = userAnswer;
+  } else if (currentAmbiguity.context.includes('user story')) {
+    updates.business = {
+      userStory: userAnswer,
+      acceptanceCriteria: feature.business?.acceptanceCriteria || [],
+      priority: feature.business?.priority || 'medium',
+      ...feature.business,
+    };
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await specService.updateFeature(context.projectId, moduleSlug, featureSlug, updates);
+  }
+
+  return {
+    applied: true,
+    ambiguityId: currentAmbiguity.id,
+    featureId: feature.id,
+  };
+}
+
+async function generateClarifySummary(
+  _input: Record<string, any>,
+  context: WorkflowContext
+): Promise<Record<string, any>> {
+  if (!context.state.clarifyState) {
+    throw new Error('Clarify state not initialized');
+  }
+
+  const { ambiguities, resolvedCount, deferredCount } = context.state.clarifyState;
+
+  return {
+    summary: {
+      phase: 'clarify',
+      completedAt: new Date().toISOString(),
+      totalAmbiguities: ambiguities.length,
+      resolved: resolvedCount,
+      deferred: deferredCount,
+      highSeverityResolved: ambiguities.filter(a => a.severity === 'high' && a.status === 'resolved').length,
+    },
+  };
+}
+
+async function markClarifyComplete(
+  _input: Record<string, any>,
+  context: WorkflowContext
+): Promise<Record<string, any>> {
+  if (context.state.clarifyState) {
+    context.state.clarifyState.status = 'complete';
+  }
+
+  return {
+    complete: true,
+    message: 'No ambiguities detected - proceeding to CTO phase',
+  };
+}
+
+async function updateProjectPhase(
+  _input: Record<string, any>,
+  context: WorkflowContext
+): Promise<Record<string, any>> {
+  const fileService = getFileService();
+  const projectFile = path.join(context.projectId, 'project.yaml');
+
+  try {
+    const content = await fileService.readText(projectFile);
+    const lines = content.split('\n');
+
+    // Update currentPhase line
+    const updatedLines = lines.map(line => {
+      if (line.trim().startsWith('currentPhase:')) {
+        return 'currentPhase: clarify_complete';
+      }
+      return line;
+    });
+
+    await fileService.writeText(projectFile, updatedLines.join('\n'));
+
+    return {
+      updated: true,
+      phase: 'clarify_complete',
+    };
+  } catch (error) {
+    console.warn('Failed to update project phase:', error);
+    return {
+      updated: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
 
 // ============================================================================
@@ -1342,7 +1540,7 @@ async function writeOpenAPIFile(
 ): Promise<Record<string, any>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
-  const YAML = await import('yaml');
+  const yaml = await import('js-yaml');
 
   const openapi = input.openapi;
 
@@ -1351,7 +1549,7 @@ async function writeOpenAPIFile(
   }
 
   // Parse YAML to object
-  const spec = YAML.parse(openapi);
+  const spec = yaml.load(openapi) as Record<string, unknown>;
 
   await specService.updateOpenAPI(context.projectId, spec);
 

@@ -3,10 +3,14 @@
  */
 
 import type { LLMStep, StepResult } from '@/types/workflow/step';
+import type { Decision } from '@/lib/db/queries/decisions';
 import type { WorkflowContext } from '@/types/workflow/state';
 import { getLLMService } from '@/services/ai/llm.service';
 import { getPromptService } from '@/services/ai/prompt.service';
+import { getCostService } from '@/services/support/cost.service';
+import { getDatabaseService } from '@/services/core/database.service';
 import type { LLMCallParams } from '@/types/ai';
+import { nanoid } from 'nanoid';
 
 /**
  * Execute an LLM step
@@ -74,6 +78,30 @@ export async function executeLLMStep(
     );
 
     const duration = Date.now() - startTime;
+
+    // Track token usage
+    if (response.tokensUsed) {
+      try {
+        const costService = getCostService();
+        const inputTokens = Math.floor(response.tokensUsed * 0.3); // Estimate input
+        const outputTokens = Math.floor(response.tokensUsed * 0.7); // Estimate output
+
+        await costService.trackUsage({
+          operationId: step.id,
+          operationType: context.workflowId,
+          projectId: context.projectId,
+          sessionId: context.sessionId,
+          model: step.model,
+          inputTokens,
+          outputTokens,
+          totalTokens: response.tokensUsed,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        // Don't fail the step if tracking fails
+        console.warn('Failed to track token usage:', error);
+      }
+    }
 
     return {
       stepId: step.id,
@@ -177,13 +205,20 @@ function formatAnswersSummary(answers: Record<string, any>): string {
  * Parse output schema string to Zod schema
  */
 function parseOutputSchema(schemaString: string): any {
-  // TODO: Implement proper JSON schema to Zod conversion
-  // For now, return a generic schema
+  // Happy path: Parse JSON schema and return for Claude API
+  // Claude API supports JSON schema natively, no need to convert to Zod
   try {
     const schema = JSON.parse(schemaString);
+
+    // Basic validation of JSON schema structure
+    if (!schema.type && !schema.properties && !schema.$ref) {
+      console.warn('Invalid JSON schema structure, missing type/properties/$ref');
+      return null;
+    }
+
     return schema;
-  } catch {
-    // If not valid JSON, assume it's a Zod schema reference
+  } catch (error) {
+    console.warn('Failed to parse output schema:', error);
     return null;
   }
 }
@@ -193,10 +228,9 @@ function parseOutputSchema(schemaString: string): any {
  */
 export function validateStructuredOutput(
   output: any,
-  _schema: any
+  schema: any
 ): { valid: boolean; errors?: string[] } {
-  // TODO: Implement proper Zod validation
-  // For now, just check if output exists
+  // Happy path validation: basic type checking
   if (!output) {
     return {
       valid: false,
@@ -204,7 +238,145 @@ export function validateStructuredOutput(
     };
   }
 
-  return {
-    valid: true,
-  };
+  // If no schema provided, just check output exists
+  if (!schema) {
+    return { valid: true };
+  }
+
+  const errors: string[] = [];
+
+  try {
+    // Basic schema validation
+    if (schema.type === 'object' && typeof output !== 'object') {
+      errors.push(`Expected object, got ${typeof output}`);
+    }
+
+    if (schema.type === 'array' && !Array.isArray(output)) {
+      errors.push(`Expected array, got ${typeof output}`);
+    }
+
+    if (schema.type === 'string' && typeof output !== 'string') {
+      errors.push(`Expected string, got ${typeof output}`);
+    }
+
+    if (schema.type === 'number' && typeof output !== 'number') {
+      errors.push(`Expected number, got ${typeof output}`);
+    }
+
+    if (schema.type === 'boolean' && typeof output !== 'boolean') {
+      errors.push(`Expected boolean, got ${typeof output}`);
+    }
+
+    // Check required properties for objects
+    if (schema.type === 'object' && schema.required && Array.isArray(schema.required)) {
+      for (const requiredProp of schema.required) {
+        if (!(requiredProp in output)) {
+          errors.push(`Missing required property: ${requiredProp}`);
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      return { valid: false, errors };
+    }
+
+    return { valid: true };
+  } catch (error) {
+    return {
+      valid: false,
+      errors: [`Validation error: ${(error as Error).message}`],
+    };
+  }
 }
+
+/**
+ * Log decision to database (F17 - Decision Journal)
+ */
+export async function logDecision(
+  context: WorkflowContext,
+  questionId: string,
+  questionText: string,
+  answer: any,
+  recommendation?: any
+): Promise<void> {
+  try {
+    const dbService = getDatabaseService();
+
+    // Determine category from question text
+    const category = categorizeQuestion(questionText);// Build decision entry
+    const decision: Decision = {
+      id: nanoid(),
+      projectId: context.projectId,
+      featureId: null,
+      sessionId: context.sessionId,
+      questionId,
+      questionText,
+      answerGiven: answer,
+      alternatives: null,
+      category,
+      phase: (context.workflowId.replace('-phase', '') as 'cpo' | 'clarify' | 'cto'),
+      batchId: null,
+      artifactsAffected: null,
+      specChanges: null,
+      cascadeGroup: null,
+      canUndo: true,
+      undoneAt: null,
+      undoneBy: null,
+      aiRecommendation: recommendation ? JSON.stringify({
+        optionId: recommendation.recommendedOptionId,
+        confidence: recommendation.confidence || 'medium',
+        reasoning: recommendation.reasoning || '',
+      }) : null,
+      recommendationFollowed: recommendation ? (answer === recommendation.recommendedOptionId) : null,
+      rationaleExplicit: null,
+      rationaleInferred: null,
+      rationaleConfidence: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Record to database
+    await dbService.recordDecision(decision);
+  } catch (error) {
+    // Don't fail the workflow if logging fails
+    console.warn('Failed to log decision:', error);
+  }
+}
+
+/**
+ * Categorize question for decision journal
+ */
+function categorizeQuestion(questionText: string): string {
+  const text = questionText.toLowerCase();
+
+  if (text.includes('feature') || text.includes('capability')) {
+    return 'product_scope';
+  }
+  if (text.includes('user') || text.includes('interface') || text.includes('ui')) {
+    return 'user_experience';
+  }
+  if (text.includes('database') || text.includes('schema') || text.includes('entity')) {
+    return 'data_model';
+  }
+  if (text.includes('api') || text.includes('endpoint') || text.includes('rest') || text.includes('graphql')) {
+    return 'api_design';
+  }
+  if (text.includes('technology') || text.includes('stack') || text.includes('framework')) {
+    return 'technology';
+  }
+  if (text.includes('security') || text.includes('authentication') || text.includes('authorization')) {
+    return 'security';
+  }
+  if (text.includes('performance') || text.includes('speed') || text.includes('cache')) {
+    return 'performance';
+  }
+  if (text.includes('integration') || text.includes('third-party') || text.includes('external')) {
+    return 'integration';
+  }
+
+  return 'general';
+}
+
+/**
+ * Calculate reversibility of a decision
+ */
