@@ -40,12 +40,12 @@ Features organized by user journey phase:
 
 | Document | Purpose | Features | Status |
 |----------|---------|----------|--------|
-| features/features-setup.md | Project initialization and configuration | F6, F12, Cost Management, API Key Setup | Draft |
+| features/features-setup.md | Project initialization and configuration | F6, F12, API Key Setup | Draft |
 | features/features-qa.md | Enhanced Q&A experience during CPO/Clarify/CTO | F7, F14-F20 (8 features) | Draft |
 | features/features-management.md | Spec review, validation, and tracking | F1-F5, F8-F10 (8 features) | Draft |
 | features/features-maintenance.md | Long-term spec-code alignment | F11, F13, Git Integration (3 features) | Draft |
 
-**Total:** 23 features across 4 journey-based files
+**Total:** 22 features across 4 journey-based files
 
 ## Research Documents
 
@@ -87,4 +87,4 @@ Captured from specification Q&A:
 
 ## Open Questions
 
-None - all TBDs have been resolved. See decisions.md for details on D21, D22, and D23.
+None - all TBDs have been resolved. See decisions.md for details on D21 and D22.

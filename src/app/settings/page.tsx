@@ -4,18 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { Breadcrumbs } from '@/components/layout';
 import {
   ConstitutionEditor,
-  CostManagement,
   ApiKeySetup,
   LessonsLearned,
 } from '@/components/settings';
 import {
   CogIcon,
   ShieldCheckIcon,
-  SparklesIcon,
   BookOpenIcon,
 } from '@heroicons/react/24/outline';
 
-type SettingsTab = 'api-key' | 'constitution' | 'cost' | 'lessons';
+type SettingsTab = 'api-key' | 'constitution' | 'lessons';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('api-key');
@@ -43,11 +41,6 @@ export default function SettingsPage() {
       id: 'constitution',
       label: 'Constitution',
       icon: <CogIcon className="h-5 w-5" />,
-    },
-    {
-      id: 'cost',
-      label: 'Cost Management',
-      icon: <SparklesIcon className="h-5 w-5" />,
     },
     {
       id: 'lessons',
@@ -98,7 +91,6 @@ export default function SettingsPage() {
         <div className="max-w-4xl">
           {activeTab === 'api-key' && <ApiKeySetup />}
           {activeTab === 'constitution' && <ConstitutionEditor />}
-          {activeTab === 'cost' && <CostManagement />}
           {activeTab === 'lessons' && <LessonsLearned />}
         </div>
       </div>

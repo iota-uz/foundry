@@ -8,7 +8,6 @@ import type {
   LLMCallParams,
   LLMResponse,
   StreamEvent,
-  TokenUsage,
 } from '@/types/ai';
 import { MODEL_NAMES, LLMError as LLMErrorClass } from '@/types/ai';
 
@@ -84,7 +83,7 @@ export class LLMService {
       // Extract text content
       const textContent = response.content
         .filter((block) => block.type === 'text')
-        .map((block: any) => block.text)
+        .map((block: unknown) => block.text)
         .join('\n');
 
       return {
@@ -93,7 +92,7 @@ export class LLMService {
         model: response.model,
         finishReason: this.mapStopReason(response.stop_reason),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw this.handleError(error);
     }
   }
@@ -105,7 +104,7 @@ export class LLMService {
     modelName: string,
     systemPrompt: string,
     userPrompt: string,
-    _outputSchema: any,
+    _outputSchema: unknown,
     maxTokens: number,
     temperature: number,
     topP?: number
@@ -137,11 +136,11 @@ ${JSON.stringify(jsonSchema, null, 2)}`;
       // Extract text content
       const textContent = response.content
         .filter((block) => block.type === 'text')
-        .map((block: any) => block.text)
+        .map((block: unknown) => block.text)
         .join('\n');
 
       // Parse structured output
-      let structured: any;
+      let structured: unknown;
       try {
         // Try to extract JSON from markdown code blocks if present
         const jsonMatch = textContent.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
@@ -150,7 +149,7 @@ ${JSON.stringify(jsonSchema, null, 2)}`;
 
         // Validate with Zod schema
         structured = _outputSchema.parse(structured);
-      } catch (parseError: any) {
+      } catch (parseError: unknown) {
         throw new LLMErrorClass(
           'structured_output_failed',
           `Failed to parse structured output: ${parseError.message}`,
@@ -165,7 +164,7 @@ ${JSON.stringify(jsonSchema, null, 2)}`;
         model: response.model,
         finishReason: this.mapStopReason(response.stop_reason),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof LLMErrorClass) {
         throw error;
       }
@@ -230,7 +229,7 @@ ${JSON.stringify(jsonSchema, null, 2)}`;
                 type: 'structured',
                 data: structured,
               };
-            } catch (parseError: any) {
+            } catch (parseError: unknown) {
               yield {
                 type: 'error',
                 data: `Failed to parse structured output: ${parseError.message}`,
@@ -243,7 +242,7 @@ ${JSON.stringify(jsonSchema, null, 2)}`;
           };
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       yield {
         type: 'error',
         data: this.handleError(error).message,
@@ -254,7 +253,7 @@ ${JSON.stringify(jsonSchema, null, 2)}`;
   /**
    * Build final system prompt with constitution
    */
-  private buildSystemPrompt(basePrompt: string, constitution?: any): string {
+  private buildSystemPrompt(basePrompt: string, constitution?: unknown): string {
     if (!constitution) {
       return basePrompt;
     }
@@ -272,7 +271,7 @@ You MUST follow all constitution rules.`;
   /**
    * Format constitution object as readable text
    */
-  private formatConstitution(constitution: any): string {
+  private formatConstitution(constitution: unknown): string {
     const parts: string[] = [];
 
     if (constitution.principles?.length) {
@@ -337,7 +336,7 @@ You MUST follow all constitution rules.`;
   /**
    * Convert Zod schema to JSON schema
    */
-  private zodToJsonSchema(schema: any): any {
+  private zodToJsonSchema(schema: unknown): unknown {
     return zodToJsonSchema(schema, {
       name: 'StructuredOutput',
       $refStrategy: 'none', // Inline all definitions
@@ -365,7 +364,7 @@ You MUST follow all constitution rules.`;
   /**
    * Handle and classify errors
    */
-  private handleError(error: any): LLMErrorClass {
+  private handleError(error: unknown): LLMErrorClass {
     if (error instanceof LLMErrorClass) {
       return error;
     }
@@ -399,25 +398,6 @@ You MUST follow all constitution rules.`;
     return new LLMErrorClass('api_error', error.message || 'Unknown error', false);
   }
 
-  /**
-   * Calculate token usage metrics
-   */
-  getTokenUsage(inputTokens: number, outputTokens: number): TokenUsage {
-    // Pricing as of early 2025 (approximate)
-    const SONNET_INPUT_COST_PER_1M = 3.0;
-    const SONNET_OUTPUT_COST_PER_1M = 15.0;
-
-    const cost =
-      (inputTokens / 1_000_000) * SONNET_INPUT_COST_PER_1M +
-      (outputTokens / 1_000_000) * SONNET_OUTPUT_COST_PER_1M;
-
-    return {
-      inputTokens,
-      outputTokens,
-      totalTokens: inputTokens + outputTokens,
-      cost,
-    };
-  }
 }
 
 /**

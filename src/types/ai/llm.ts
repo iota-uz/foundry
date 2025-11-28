@@ -38,7 +38,7 @@ export interface LLMCallParams {
   maxTokens: number;
   temperature?: number;
   topP?: number;
-  constitution?: any; // Constitution object if available
+  constitution?: Record<string, unknown>; // Constitution object if available
 }
 
 /**
@@ -46,7 +46,7 @@ export interface LLMCallParams {
  */
 export interface LLMResponse {
   content: string;
-  structured?: any; // Parsed structured output if schema provided
+  structured?: unknown; // Parsed structured output if schema provided
   tokensUsed: number;
   model: string;
   finishReason: 'end_turn' | 'max_tokens' | 'stop_sequence';
@@ -62,18 +62,9 @@ export type StreamEventType = 'content' | 'structured' | 'error' | 'done';
  */
 export interface StreamEvent {
   type: StreamEventType;
-  data: any;
+  data: unknown;
 }
 
-/**
- * Token usage tracking
- */
-export interface TokenUsage {
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-  cost?: number; // Optional cost calculation
-}
 
 /**
  * LLM error types

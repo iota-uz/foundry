@@ -244,66 +244,6 @@ See: [decisions.md](../decisions.md) D20 (Agent Hooks - Event-driven)
 
 ---
 
-## Cost Management Configuration
-
-### Overview
-
-Multi-tier budget system with warnings and hard limits to track and control AI costs, especially for expensive operations like reverse engineering with Opus.
-
-### Budget Tiers
-
-| Tier | Monthly Tokens | Use Case | Warning At |
-|------|----------------|----------|------------|
-| Development | 500K | Testing, small projects | 400K (80%) |
-| Professional | 2M | Medium projects, teams | 1.6M (80%) |
-| Enterprise | 10M | Large codebases, heavy RE | 8M (80%) |
-| Custom | User-defined | Flexible limits | User-defined |
-
-### Per-Operation Limits
-
-| Operation | Model | Estimated Tokens | Hard Limit |
-|-----------|-------|------------------|------------|
-| CPO Workflow | Sonnet | 20-30K | 50K |
-| CTO Workflow | Sonnet | 30-50K | 75K |
-| Clarify Workflow | Sonnet | 5-10K | 20K |
-| Schema Generator | Sonnet | 3-5K | 10K |
-| API Generator | Sonnet | 5-8K | 15K |
-| Component Generator | Sonnet | 3-5K | 10K |
-| Reverse Engineering | Opus | 100-200K | 500K |
-| Actualize (Sync) | Opus | 50-150K | 300K |
-
-### UI Indicators
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Token Usage: 450K / 500K (90%)                        [⚠️]   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Warning Behavior
-
-- **80% threshold**: Show yellow warning badge
-- **95% threshold**: Confirm before expensive operations (RE, Actualize)
-- **100% limit**: Block new AI operations, allow view/edit
-- **Reset**: Monthly automatic reset, or user can adjust limits
-
-### Cost Estimation
-
-- Use Claude's token pricing (updated quarterly)
-- Show estimated cost before expensive operations
-- Monthly usage report exportable to CSV
-
-### Opt-Out
-
-- Setting: "Disable budget limits" (for enterprise users)
-- Warning: "This may result in unexpected charges"
-
-### Decision Reference
-
-See: [decisions.md](../decisions.md) D23 (AI Cost Management)
-
----
-
 ## API Key Setup
 
 ### Description
@@ -360,10 +300,6 @@ See: [decisions.md](../decisions.md) D13 (API Authentication)
 - **F12 (Agent Hooks)** uses:
   - [F2: Validation Engine](features-management.md#f2-validation-engine) - validateSchema action
   - [F9: Enhanced Analyzer](features-management.md#f9-enhanced-consistency-analyzer) - runAnalyzer action
-
-- **Cost Management** affects:
-  - All AI workflows (CPO, CTO, Clarify, RE, Actualize)
-  - Budget warnings before expensive operations
 
 - **API Key Setup** required for:
   - All AI-driven features and workflows

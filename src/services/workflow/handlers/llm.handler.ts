@@ -7,7 +7,6 @@ import type { Decision } from '@/lib/db/queries/decisions';
 import type { WorkflowContext } from '@/types/workflow/state';
 import { getLLMService } from '@/services/ai/llm.service';
 import { getPromptService } from '@/services/ai/prompt.service';
-import { getCostService } from '@/services/support/cost.service';
 import { getDatabaseService } from '@/services/core/database.service';
 import type { LLMCallParams } from '@/types/ai';
 import { nanoid } from 'nanoid';
@@ -79,30 +78,6 @@ export async function executeLLMStep(
 
     const duration = Date.now() - startTime;
 
-    // Track token usage
-    if (response.tokensUsed) {
-      try {
-        const costService = getCostService();
-        const inputTokens = Math.floor(response.tokensUsed * 0.3); // Estimate input
-        const outputTokens = Math.floor(response.tokensUsed * 0.7); // Estimate output
-
-        await costService.trackUsage({
-          operationId: step.id,
-          operationType: context.workflowId,
-          projectId: context.projectId,
-          sessionId: context.sessionId,
-          model: step.model,
-          inputTokens,
-          outputTokens,
-          totalTokens: response.tokensUsed,
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        // Don't fail the step if tracking fails
-        console.warn('Failed to track token usage:', error);
-      }
-    }
-
     return {
       stepId: step.id,
       status: 'completed',
@@ -113,7 +88,7 @@ export async function executeLLMStep(
       duration,
       tokensUsed: response.tokensUsed,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
     return {
       stepId: step.id,
@@ -143,14 +118,14 @@ async function executeWithTimeout<T>(
  * Execute LLM call with exponential backoff retry
  */
 async function executeLLMWithRetry(
-  llmService: any,
+  llmService: unknown,
   params: LLMCallParams,
   maxRetries: number,
   attempt: number = 0
-): Promise<any> {
+): Promise<unknown> {
   try {
     return await llmService.call(params);
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Check if error is retryable
     if (!isRetryableError(error) || attempt >= maxRetries) {
       throw error;
@@ -172,7 +147,7 @@ async function executeLLMWithRetry(
 /**
  * Check if error is retryable
  */
-function isRetryableError(error: any): boolean {
+function isRetryableError(error: unknown): boolean {
   // Retry on rate limits, timeouts, and server errors
   if (error.type === 'rate_limit') return true;
   if (error.type === 'timeout') return true;
@@ -183,7 +158,7 @@ function isRetryableError(error: any): boolean {
 /**
  * Format answers as human-readable summary
  */
-function formatAnswersSummary(answers: Record<string, any>): string {
+function formatAnswersSummary(answers: Record<string, unknown>): string {
   const entries = Object.entries(answers);
   if (entries.length === 0) {
     return 'No previous answers yet.';
@@ -204,7 +179,7 @@ function formatAnswersSummary(answers: Record<string, any>): string {
 /**
  * Parse output schema string to Zod schema
  */
-function parseOutputSchema(schemaString: string): any {
+function parseOutputSchema(schemaString: string): unknown {
   // Happy path: Parse JSON schema and return for Claude API
   // Claude API supports JSON schema natively, no need to convert to Zod
   try {
@@ -227,8 +202,8 @@ function parseOutputSchema(schemaString: string): any {
  * Validate structured output against schema
  */
 export function validateStructuredOutput(
-  output: any,
-  schema: any
+  output: unknown,
+  schema: unknown
 ): { valid: boolean; errors?: string[] } {
   // Happy path validation: basic type checking
   if (!output) {
@@ -296,8 +271,8 @@ export async function logDecision(
   context: WorkflowContext,
   questionId: string,
   questionText: string,
-  answer: any,
-  recommendation?: any
+  answer: unknown,
+  recommendation?: unknown
 ): Promise<void> {
   try {
     const dbService = getDatabaseService();
