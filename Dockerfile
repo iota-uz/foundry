@@ -21,6 +21,9 @@ RUN bun install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
+# Install dependencies needed for better-sqlite3 during build
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
