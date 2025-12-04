@@ -10,6 +10,7 @@ import type {
   WorkflowState,
   AgentNodeDefinition,
   CommandNodeDefinition,
+  ClaudeCodeNodeDefinition,
   Transition,
   ToolReference,
 } from './types';
@@ -34,7 +35,7 @@ export function AgentNode<TContext extends Record<string, unknown> = Record<stri
   /** System prompt for the AI agent */
   system: string;
   /** Tools available to the agent (stdlib names or inline definitions) */
-  tools?: ToolReference[];
+  tools?: ToolReference[] | undefined;
   /** Transition to next node (static string or dynamic function) */
   next: Transition<TContext>;
 }): AgentNodeDefinition<TContext> {
@@ -73,12 +74,42 @@ export function CommandNode<TContext extends Record<string, unknown> = Record<st
 }
 
 /**
+ * Creates a ClaudeCodeNode definition.
+ * ClaudeCodeNodes execute Claude Code slash commands (/edit, /test, etc.).
+ *
+ * @example
+ * ```typescript
+ * nodes.ClaudeCodeNode({
+ *   command: 'edit',
+ *   args: 'Add error handling to src/utils.ts',
+ *   next: 'TEST'
+ * })
+ * ```
+ */
+export function ClaudeCodeNode<TContext extends Record<string, unknown> = Record<string, unknown>>(config: {
+  /** The slash command to run (without the leading /) */
+  command: string;
+  /** Arguments/instructions for the command */
+  args: string;
+  /** Transition to next node (static string or dynamic function) */
+  next: Transition<TContext>;
+}): ClaudeCodeNodeDefinition<TContext> {
+  return {
+    type: 'claude-code',
+    command: config.command,
+    args: config.args,
+    next: config.next,
+  };
+}
+
+/**
  * Node factory functions for use in workflow configurations.
  * These provide a clean API for defining different node types.
  */
 export const nodes = {
   AgentNode,
   CommandNode,
+  ClaudeCodeNode,
 } as const;
 
 /**
@@ -158,6 +189,14 @@ export function defineWorkflow<TContext extends Record<string, unknown> = Record
       const commandNode = node as CommandNodeDefinition<TContext>;
       if (!commandNode.command || typeof commandNode.command !== 'string') {
         throw new Error(`CommandNode "${nodeName}" must have a string "command" property`);
+      }
+    } else if (node.type === 'claude-code') {
+      const claudeCodeNode = node as ClaudeCodeNodeDefinition<TContext>;
+      if (!claudeCodeNode.command || typeof claudeCodeNode.command !== 'string') {
+        throw new Error(`ClaudeCodeNode "${nodeName}" must have a string "command" property`);
+      }
+      if (!claudeCodeNode.args || typeof claudeCodeNode.args !== 'string') {
+        throw new Error(`ClaudeCodeNode "${nodeName}" must have a string "args" property`);
       }
     }
   }

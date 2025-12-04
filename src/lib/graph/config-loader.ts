@@ -7,6 +7,7 @@
 
 import type {
   WorkflowConfig,
+  WorkflowState,
   LoadedConfig,
   Transition,
 } from './types';
@@ -141,10 +142,10 @@ function validateNodeDefinition(nodeName: string, node: unknown): string[] {
     errors.push(`Node "${nodeName}" must have a "type" property`);
   } else if (typeof n.type !== 'string') {
     errors.push(`Node "${nodeName}" type must be a string`);
-  } else if (!['agent', 'command'].includes(n.type)) {
+  } else if (!['agent', 'command', 'claude-code'].includes(n.type)) {
     errors.push(
       `Node "${nodeName}" has unknown type "${n.type}". ` +
-        `Valid types are: agent, command`
+        `Valid types are: agent, command, claude-code`
     );
   }
 
@@ -182,6 +183,20 @@ function validateNodeDefinition(nodeName: string, node: unknown): string[] {
       errors.push(`CommandNode "${nodeName}" must have a "command" property`);
     } else if (typeof n.command !== 'string') {
       errors.push(`CommandNode "${nodeName}" command must be a string`);
+    }
+  }
+
+  if (n.type === 'claude-code') {
+    if (!n.command) {
+      errors.push(`ClaudeCodeNode "${nodeName}" must have a "command" property`);
+    } else if (typeof n.command !== 'string') {
+      errors.push(`ClaudeCodeNode "${nodeName}" command must be a string`);
+    }
+
+    if (!n.args) {
+      errors.push(`ClaudeCodeNode "${nodeName}" must have an "args" property`);
+    } else if (typeof n.args !== 'string') {
+      errors.push(`ClaudeCodeNode "${nodeName}" args must be a string`);
     }
   }
 
@@ -352,7 +367,7 @@ export function validateRuntimeTransition(
  */
 export function resolveTransition<TContext extends Record<string, unknown>>(
   transition: Transition<TContext>,
-  state: { context: TContext },
+  state: WorkflowState<TContext>,
   validNodeNames: Set<string>,
   currentNode: string
 ): string {

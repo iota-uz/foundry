@@ -5,8 +5,9 @@
  * with the following phases:
  * - PLAN: Tech lead analyzes and creates a development plan
  * - IMPLEMENT: Developer implements the planned tasks
+ * - TEST: Run automated tests using Claude Code
  * - QA: QA engineer verifies the implementation
- * - FIX: Developer fixes bugs found in QA
+ * - FIX: Developer fixes bugs found in QA (using Claude Code /edit)
  * - SUBMIT: Creates a PR and submits the work
  *
  * @example Usage with CLI:
@@ -15,14 +16,14 @@
  * ```
  */
 
-import { defineWorkflow, nodes } from './src/lib/graph';
+import { defineWorkflow, nodes, type ClaudeCodeResult, type CommandResult } from './src/lib/graph';
 import { z } from 'zod';
 
 /**
  * Context type for the feature development workflow.
  * This stores state that persists across nodes.
  */
-interface FeatureContext {
+interface FeatureContext extends Record<string, unknown> {
   /** GitHub issue ID being worked on */
   issueId?: number;
 
@@ -54,6 +55,12 @@ interface FeatureContext {
 
   /** Number of fix attempts */
   fixAttempts?: number;
+
+  /** Result from last command execution */
+  lastCommandResult?: CommandResult;
+
+  /** Result from last Claude Code command */
+  lastClaudeCodeResult?: ClaudeCodeResult;
 }
 
 /**
@@ -61,11 +68,11 @@ interface FeatureContext {
  *
  * This workflow implements an iterative development loop:
  *
- *   PLAN → IMPLEMENT ←→ (loop until done)
- *            ↓
- *           QA ←→ FIX (loop until passed)
- *            ↓
- *         SUBMIT → END
+ *   PLAN → IMPLEMENT → TEST ←→ (loop until tests pass)
+ *                        ↓
+ *                       QA ←→ FIX (loop until passed)
+ *                        ↓
+ *                     SUBMIT → END
  */
 export default defineWorkflow<FeatureContext>({
   id: 'feature-development',
@@ -154,13 +161,40 @@ Follow best practices:
         },
       ],
 
-      // Dynamic transition - loop back to IMPLEMENT until all tasks done
+      // Dynamic transition - go to TEST when tasks done, or loop back
       next: (state) => {
         if (state.context.allTasksDone) {
-          return 'QA';
+          return 'TEST';
         }
         return 'IMPLEMENT';
       },
+    }),
+
+    // =========================================================================
+    // Phase 2.5: Automated Testing (using ClaudeCodeNode)
+    // =========================================================================
+    TEST: nodes.ClaudeCodeNode({
+      command: 'test',
+      args: 'Run all tests and report any failures',
+
+      // Dynamic transition - go to QA if tests pass, back to FIX_CODE if they fail
+      next: (state) => {
+        if (state.context.lastClaudeCodeResult?.success) {
+          return 'QA';
+        }
+        return 'FIX_CODE';
+      },
+    }),
+
+    // =========================================================================
+    // Phase 2.6: Fix code issues found by tests (using ClaudeCodeNode)
+    // =========================================================================
+    FIX_CODE: nodes.ClaudeCodeNode({
+      command: 'edit',
+      args: 'Fix the failing tests based on the test output. Make minimal changes to resolve the issues.',
+
+      // Always go back to TEST after fixing
+      next: 'TEST',
     }),
 
     // =========================================================================
