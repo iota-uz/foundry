@@ -3,6 +3,8 @@ node_modules/
 .pnp
 .pnp.js
 .bun/
+package-lock.json
+pnpm-lock.yaml
 
 # Testing
 coverage/
