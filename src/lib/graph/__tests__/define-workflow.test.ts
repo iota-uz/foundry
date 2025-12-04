@@ -8,6 +8,7 @@ import {
   nodes,
   AgentNode,
   CommandNode,
+  ClaudeCodeNode,
   createInitialState,
 } from '../define-workflow';
 
@@ -52,6 +53,32 @@ describe('define-workflow', () => {
     });
   });
 
+  describe('nodes.ClaudeCodeNode', () => {
+    it('should create a claude-code node definition', () => {
+      const node = nodes.ClaudeCodeNode({
+        command: 'edit',
+        args: 'Add error handling to src/utils.ts',
+        next: 'TEST',
+      });
+
+      expect(node.type).toBe('claude-code');
+      expect(node.command).toBe('edit');
+      expect(node.args).toBe('Add error handling to src/utils.ts');
+      expect(node.next).toBe('TEST');
+    });
+
+    it('should support dynamic transitions', () => {
+      const node = nodes.ClaudeCodeNode<{ success: boolean }>({
+        command: 'test',
+        args: 'all tests',
+        next: (state) => (state.context.success ? 'DEPLOY' : 'FIX'),
+      });
+
+      expect(node.type).toBe('claude-code');
+      expect(typeof node.next).toBe('function');
+    });
+  });
+
   describe('AgentNode (direct export)', () => {
     it('should be the same as nodes.AgentNode', () => {
       expect(AgentNode).toBe(nodes.AgentNode);
@@ -61,6 +88,12 @@ describe('define-workflow', () => {
   describe('CommandNode (direct export)', () => {
     it('should be the same as nodes.CommandNode', () => {
       expect(CommandNode).toBe(nodes.CommandNode);
+    });
+  });
+
+  describe('ClaudeCodeNode (direct export)', () => {
+    it('should be the same as nodes.ClaudeCodeNode', () => {
+      expect(ClaudeCodeNode).toBe(nodes.ClaudeCodeNode);
     });
   });
 
@@ -151,6 +184,30 @@ describe('define-workflow', () => {
           },
         });
       }).toThrow(/command/i);
+    });
+
+    it('should throw for ClaudeCodeNode without command', () => {
+      expect(() => {
+        defineWorkflow({
+          id: 'test',
+          nodes: {
+            // @ts-expect-error - intentionally invalid
+            TEST: { type: 'claude-code', args: 'test args', next: 'END' },
+          },
+        });
+      }).toThrow(/command/i);
+    });
+
+    it('should throw for ClaudeCodeNode without args', () => {
+      expect(() => {
+        defineWorkflow({
+          id: 'test',
+          nodes: {
+            // @ts-expect-error - intentionally invalid
+            TEST: { type: 'claude-code', command: 'test', next: 'END' },
+          },
+        });
+      }).toThrow(/args/i);
     });
 
     it('should accept valid workflow with multiple nodes', () => {
