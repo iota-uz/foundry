@@ -21,11 +21,14 @@
  *   start: {
  *     name: 'start',
  *     async execute(state, context) {
- *       const result = await context.agent.runStep(
+ *       // Use the agent to perform AI operations
+ *       // The result contains the response and updated conversation history
+ *       const { response } = await context.agent.runStep(
  *         state,
  *         'Increment the counter',
  *         []
  *       );
+ *       context.logger.info('AI response:', response);
  *       return { counter: state.counter + 1 };
  *     },
  *     next(state) {
@@ -40,13 +43,15 @@
  *   apiKey: process.env.ANTHROPIC_API_KEY!,
  * });
  *
- * const result = await engine.run('my-workflow', {
+ * const finalState = await engine.run('my-workflow', {
  *   currentNode: 'start',
  *   status: 'pending',
  *   updatedAt: new Date().toISOString(),
  *   conversationHistory: [],
  *   counter: 0,
  * });
+ *
+ * console.log('Final counter:', finalState.counter);
  * ```
  */
 
@@ -55,7 +60,7 @@ export type {
   BaseState,
   GraphNode,
   GraphContext,
-  AgentWrapper,
+  IAgentWrapper,
   GraphEngineConfig,
 } from './types';
 
@@ -73,7 +78,7 @@ export type { AgentWrapperConfig } from './agent/wrapper';
 
 // Tool utilities
 export { toSdkTool, toSdkTools } from './agent/tools';
-export type { GraphTool } from './agent/tools';
+export type { GraphTool, SdkToolDefinition } from './agent/tools';
 
 // Utilities
 export { createLogger } from './utils/logger';

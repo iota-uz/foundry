@@ -32,7 +32,7 @@ export interface BaseState {
  */
 export interface GraphContext {
   /** Wrapper around the Claude Agent SDK for executing AI operations */
-  agent: AgentWrapper;
+  agent: IAgentWrapper;
 
   /** Structured logger for debugging and observability */
   logger: Console;
@@ -70,7 +70,7 @@ export interface GraphNode<TState extends BaseState> {
  * Agent wrapper interface for dependency injection.
  * Allows mocking in tests and provides a clean abstraction.
  */
-export interface AgentWrapper {
+export interface IAgentWrapper {
   /**
    * Runs a single turn of the agent.
    *
@@ -82,7 +82,7 @@ export interface AgentWrapper {
   runStep<T extends BaseState>(
     state: T,
     userInstruction: string,
-    tools: any[]
+    tools: unknown[]
   ): Promise<{
     response: string;
     updatedHistory: Message[];

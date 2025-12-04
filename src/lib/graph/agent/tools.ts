@@ -12,7 +12,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
  * A type-safe tool definition using Zod for schema validation.
  * This provides better DX than raw JSON schemas.
  */
-export interface GraphTool<TInput = any> {
+export interface GraphTool<TInput = unknown> {
   /** Unique tool name (used by the AI to invoke it) */
   name: string;
 
@@ -26,7 +26,46 @@ export interface GraphTool<TInput = any> {
    * Tool execution function.
    * Input is automatically validated against the schema before execution.
    */
-  execute: (args: TInput) => Promise<any>;
+  execute: (args: TInput) => Promise<unknown>;
+}
+
+/**
+ * SDK tool definition format expected by the Claude Agent SDK.
+ * This interface documents the expected structure for SDK compatibility.
+ */
+export interface SdkToolDefinition {
+  /** Unique tool name */
+  name: string;
+  /** Human-readable description */
+  description: string;
+  /** JSON Schema for input validation */
+  input_schema: Record<string, unknown>;
+  /** Tool execution function */
+  func: (args: unknown) => Promise<unknown>;
+}
+
+/**
+ * Sanitizes a JSON schema for SDK compatibility.
+ * Removes properties that the SDK doesn't expect while preserving
+ * the core schema structure.
+ *
+ * @param schema - Raw JSON schema from zod-to-json-schema
+ * @returns Sanitized schema compatible with SDK expectations
+ */
+function sanitizeJsonSchemaForSdk(schema: Record<string, unknown>): Record<string, unknown> {
+  if (!schema || typeof schema !== 'object') return {};
+
+  // These are the properties the SDK expects at the top level
+  const allowedKeys = ['type', 'properties', 'required', 'description', 'title', 'default', 'items', 'enum'];
+  const sanitized: Record<string, unknown> = {};
+
+  for (const key of allowedKeys) {
+    if (key in schema && schema[key] !== undefined) {
+      sanitized[key] = schema[key];
+    }
+  }
+
+  return sanitized;
 }
 
 /**
@@ -36,15 +75,17 @@ export interface GraphTool<TInput = any> {
  * @param tool - The tool definition with Zod schema
  * @returns SDK-compatible tool definition
  */
-export function toSdkTool(tool: GraphTool): any {
+export function toSdkTool(tool: GraphTool): SdkToolDefinition {
+  const rawSchema = zodToJsonSchema(tool.schema, {
+    // Remove $schema property as SDK doesn't expect it
+    $refStrategy: 'none',
+  }) as Record<string, unknown>;
+
   return {
     name: tool.name,
     description: tool.description,
-    input_schema: zodToJsonSchema(tool.schema, {
-      // Remove $schema property as SDK doesn't expect it
-      $refStrategy: 'none',
-    }),
-    func: tool.execute,
+    input_schema: sanitizeJsonSchemaForSdk(rawSchema),
+    func: tool.execute as (args: unknown) => Promise<unknown>,
   };
 }
 
@@ -52,6 +93,6 @@ export function toSdkTool(tool: GraphTool): any {
  * Converts an array of GraphTools to SDK-compatible format.
  * Convenience function for batch conversion.
  */
-export function toSdkTools(tools: GraphTool[]): any[] {
+export function toSdkTools(tools: GraphTool[]): SdkToolDefinition[] {
   return tools.map(toSdkTool);
 }
