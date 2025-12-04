@@ -31,10 +31,10 @@ Identify root cause from error logs above:
 
 Local testing (if applicable):
 ```bash
-pnpm typecheck
-pnpm lint
-pnpm test -- path/to/file.test.ts
-pnpm build
+bun typecheck
+bun lint
+bun test -- path/to/file.test.ts
+bun build
 ```
 
 Re-run workflow (ask user first):

@@ -6,8 +6,8 @@ disable-model-invocation: true
 
 You are tasked with fixing all linting and type errors in the codebase:
 
-All type errors: !`pnpm typecheck 2>&1 | head -50 || true`
-All linting errors: !`pnpm lint 2>&1 | head -50 || true`
+All type errors: !`bun typecheck 2>&1 | head -50 || true`
+All linting errors: !`bun lint 2>&1 | head -50 || true`
 
 ## Workflow
 
@@ -16,8 +16,8 @@ All linting errors: !`pnpm lint 2>&1 | head -50 || true`
     - Each agent fixes assigned linting/type errors
 
 2. Verification:
-    - Run `pnpm typecheck` to verify no remaining type errors
-    - Run `pnpm lint` to verify linting passes
+    - Run `bun typecheck` to verify no remaining type errors
+    - Run `bun lint` to verify linting passes
     - Check for any new issues introduced
 
 ## Important Notes

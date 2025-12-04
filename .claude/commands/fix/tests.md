@@ -10,10 +10,10 @@ Systematically identify and fix broken tests using structured iteration.
 ## Current State
 
 Static analysis status:
-!`pnpm typecheck 2>&1 | head -30`
+!`bun typecheck 2>&1 | head -30`
 
 Test status:
-!`pnpm test 2>&1 | head -100`
+!`bun test 2>&1 | head -100`
 
 Recent changes:
 !`git log --oneline -5 -- src/`
@@ -46,15 +46,15 @@ Per failure:
 One test at a time:
 
 1. Minimal fix to compile
-2. Verify: `pnpm typecheck`
-3. Test: `pnpm test -- path/to/file.test.ts`
+2. Verify: `bun typecheck`
+3. Test: `bun test -- path/to/file.test.ts`
 4. Iterate incrementally
 5. Use `editor` agent for complex fixes
 
 ### 4. Validation
 
-- Verify no new issues: `pnpm typecheck`
-- Ensure no regressions: `pnpm test`
+- Verify no new issues: `bun typecheck`
+- Ensure no regressions: `bun test`
 
 ## Best Practices
 

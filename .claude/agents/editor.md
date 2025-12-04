@@ -1,7 +1,7 @@
 ---
 name: editor
 description: Unified full-stack development expert. Handles React components, API routes, Zustand stores, database operations, and comprehensive testing. Intelligently routes to appropriate workflows based on task context.
-tools: Read, Write, Edit, Grep, Glob, mcp__sequential-thinking__sequentialthinking, WebFetch, WebSearch, TodoWrite, BashOutput, KillShell, Bash(pnpm:*), Bash(npx tsc:*), Bash(npx eslint:*), Bash(pnpm test:*), Bash(pnpm build:*)
+tools: Read, Write, Edit, Grep, Glob, mcp__sequential-thinking__sequentialthinking, WebFetch, WebSearch, TodoWrite, BashOutput, KillShell, Bash(bun:*), Bash(npx tsc:*), Bash(npx eslint:*), Bash(bun test:*), Bash(bun build:*)
 model: inherit
 color: purple
 ---
@@ -317,24 +317,25 @@ export async function writeSpec(slug: string, spec: Spec) {
 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 ```
 
-## 3. Write tests (Vitest + React Testing Library)
+## 3. Write tests (Bun Test + Testing Library)
 
 **Component Tests**:
 ```tsx
 // src/components/FeatureCard.test.tsx
 import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, mock } from 'bun:test';
 import { FeatureCard } from './FeatureCard';
 
 describe('FeatureCard', () => {
   it('renders title and description', () => {
     render(<FeatureCard title="Test" description="Description" />);
 
-    expect(screen.getByText('Test')).toBeInTheDocument();
-    expect(screen.getByText('Description')).toBeInTheDocument();
+    expect(screen.getByText('Test')).toBeDefined();
+    expect(screen.getByText('Description')).toBeDefined();
   });
 
   it('calls onSelect when clicked', () => {
-    const onSelect = vi.fn();
+    const onSelect = mock(() => {});
     render(<FeatureCard title="Test" description="Desc" onSelect={onSelect} />);
 
     fireEvent.click(screen.getByText('Test'));
@@ -346,6 +347,7 @@ describe('FeatureCard', () => {
 **Store Tests**:
 ```tsx
 // src/store/workflow.test.ts
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { useWorkflowStore } from './workflow';
 
 describe('workflowStore', () => {
@@ -388,32 +390,32 @@ describe('/api/specs', () => {
 **After Each Change**:
 ```bash
 # Type check
-pnpm typecheck
+bun typecheck
 
 # Lint
-pnpm lint
+bun lint
 
 # Test specific file
-pnpm test src/components/FeatureCard.test.tsx
+bun test src/components/FeatureCard.test.tsx
 ```
 
 **For Build Verification**:
 ```bash
 # Full build
-pnpm build
+bun build
 
 # Dev server
-pnpm dev
+bun dev
 ```
 
 ## 5. Finalize and coverage
 
 **Final Validation**:
 ```bash
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
+bun typecheck
+bun lint
+bun test
+bun build
 ```
 
 # Critical validation checklist
@@ -452,10 +454,10 @@ Before completing work, verify:
 - Edge cases covered
 
 ## Validation Commands
-- `pnpm typecheck` passes
-- `pnpm lint` passes
-- `pnpm test` passes
-- `pnpm build` passes
+- `bun typecheck` passes
+- `bun lint` passes
+- `bun test` passes
+- `bun build` passes
 
 ## Layer Boundaries
 - Server components don't use client hooks

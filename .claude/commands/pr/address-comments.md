@@ -1,6 +1,6 @@
 ---
 allowed-tools: |
-  Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(pnpm typecheck:*), Bash(pnpm test:*), Bash(pnpm lint:*),
+  Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(bun typecheck:*), Bash(bun test:*), Bash(bun lint:*),
   Bash(gh pr view:*), Bash(gh api:*),
   Read, Edit, Write, Grep, Glob, Task
 argument-hint: PR URL or PR number (e.g., https://github.com/owner/repo/pull/123 or 123)
@@ -28,9 +28,9 @@ gh api repos/{owner}/{repo}/pulls/{number}/comments
 gh api repos/{owner}/{repo}/pulls/{number}/reviews
 
 # Validate changes locally
-pnpm typecheck
-pnpm lint
-pnpm test
+bun typecheck
+bun lint
+bun test
 
 # Commit and push
 git add .
@@ -43,7 +43,7 @@ git push
 **For each unresolved comment:**
 - Read the relevant file and understand reviewer feedback
 - Make necessary code changes
-- Validate locally (pnpm typecheck, pnpm lint, pnpm test)
+- Validate locally (bun typecheck, bun lint, bun test)
 - Repeat until all actionable comments addressed
 
 **Commit:**

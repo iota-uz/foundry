@@ -31,7 +31,7 @@ software requirements through AI-driven Q&A. Transforms vague product ideas into
 
 | Layer | Technology |
 |-------|------------|
-| Runtime | Node.js |
+| Runtime | Bun |
 | Framework | Next.js 14+ (App Router) |
 | Styling | Tailwind CSS v4 + Headless UI |
 | State | Zustand |
@@ -133,15 +133,15 @@ Feature: `editor(haiku)` && `refactoring-expert(sonnet)`
 
 ```bash
 # Development
-pnpm dev                      # Start development server (hot reload)
-pnpm build                    # Production build
-pnpm start                    # Start production server
+bun dev                       # Start development server (hot reload)
+bun build                     # Production build
+bun start                     # Start production server
 
 # Code Quality & Testing
-pnpm lint                     # Run ESLint
-pnpm typecheck                # Run TypeScript type checking
-pnpm test                     # Run tests (Vitest)
-pnpm test --watch             # Run tests in watch mode
+bun lint                      # Run ESLint
+bun typecheck                 # Run TypeScript type checking
+bun test                      # Run tests
+bun test --watch              # Run tests in watch mode
 
 # CLI Commands (Planned)
 foundry init                  # Initialize new project
@@ -153,7 +153,7 @@ foundry open [path]           # Open existing project
 ## 3.2 Code Rules
 
 - Use `// TODO` comments for unimplemented parts or future enhancements
-- Run `pnpm lint` before committing to catch unused code
+- Run `bun lint` before committing to catch unused code
 - Use YAML for all spec files (not JSON)
 - Features use human-readable slugs scoped per module
 - Bidirectional refs: Features link to schemas/APIs/components and vice versa

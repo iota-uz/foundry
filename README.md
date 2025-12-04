@@ -19,14 +19,13 @@ Foundry transforms vague product ideas into detailed technical specifications in
 
 ### Prerequisites
 
-- Node.js >= 20.0.0
-- pnpm >= 8.0.0
+- Bun >= 1.0.0
 
 ### Installation
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Set up environment variables (copy example file)
 cp .env.example .env.local
@@ -37,16 +36,16 @@ cp .env.example .env.local
 
 ```bash
 # Start development server
-pnpm dev
+bun dev
 
 # Run type checking
-pnpm typecheck
+bun typecheck
 
 # Lint code
-pnpm lint
+bun lint
 
 # Format code
-pnpm format
+bun format
 ```
 
 Visit `http://localhost:3000` to see the application.
@@ -55,10 +54,10 @@ Visit `http://localhost:3000` to see the application.
 
 ```bash
 # Build for production
-pnpm build
+bun build
 
 # Start production server
-pnpm start
+bun start
 ```
 
 ## Architecture
@@ -108,12 +107,13 @@ See `.env.example` for available configuration options.
 
 | Command | Description |
 |---------|-------------|
-| `pnpm dev` | Start development server with hot reload |
-| `pnpm build` | Create production build |
-| `pnpm start` | Start production server |
-| `pnpm typecheck` | Check TypeScript types |
-| `pnpm lint` | Run ESLint |
-| `pnpm format` | Format code with Prettier |
+| `bun dev` | Start development server with hot reload |
+| `bun build` | Create production build |
+| `bun start` | Start production server |
+| `bun typecheck` | Check TypeScript types |
+| `bun lint` | Run ESLint |
+| `bun format` | Format code with Prettier |
+| `bun test` | Run tests |
 
 ## License
 

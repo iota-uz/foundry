@@ -56,9 +56,8 @@ e) **Actionable Synthesis**: Provide concrete, implementation-ready insights
 
 **Build & Tooling:**
 - TypeScript: https://www.typescriptlang.org/docs
-- Vitest: https://vitest.dev
 - ESLint: https://eslint.org/docs
-- pnpm: https://pnpm.io
+- Bun: https://bun.sh/docs
 
 **AI Integration:**
 - Claude Agent SDK: https://docs.anthropic.com
@@ -151,7 +150,7 @@ You should explicitly state when:
 cat package.json | grep "package-name"
 
 # Check latest version
-pnpm view package-name version
+bun x npm view package-name version
 
 # Check changelog
 WebFetch https://github.com/owner/repo/blob/main/CHANGELOG.md
