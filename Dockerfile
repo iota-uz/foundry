@@ -2,7 +2,7 @@
 # Multi-stage build for optimized production image
 
 # Base stage with Bun
-FROM oven/bun:1 AS base
+FROM oven/bun:1.3.3 AS base
 
 # Dependencies stage - install all dependencies
 FROM base AS deps
