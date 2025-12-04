@@ -5,8 +5,8 @@
  * The key responsibility is restoring agent memory from persisted conversation history.
  */
 
-import { Agent, type AgentOptions, type Message } from '@anthropic-ai/claude-agent-sdk';
-import type { BaseState, IAgentWrapper } from '../types';
+import { query, type Options, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { BaseState, IAgentWrapper, Message, StoredMessage } from '../types';
 
 /**
  * Configuration for the AgentWrapper.
@@ -15,11 +15,11 @@ export interface AgentWrapperConfig {
   /** Anthropic API key */
   apiKey: string;
 
-  /** Claude model to use (default: claude-3-5-sonnet-20241022) */
+  /** Claude model to use (default: claude-sonnet-4-5-20250929) */
   model?: string | undefined;
 
   /** Additional SDK options */
-  sdkOptions?: Partial<AgentOptions> | undefined;
+  sdkOptions?: Partial<Options> | undefined;
 }
 
 /**
@@ -31,7 +31,7 @@ export class AgentWrapper implements IAgentWrapper {
 
   constructor(config: AgentWrapperConfig) {
     this.config = {
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-5-20250929',
       ...config,
     };
   }
@@ -40,52 +40,99 @@ export class AgentWrapper implements IAgentWrapper {
    * Runs a single turn of the agent with proper memory hydration.
    *
    * This is the core of the resumability feature:
-   * 1. Creates a fresh Agent instance
-   * 2. Pre-loads it with conversation history from state
-   * 3. Executes the tool loop via SDK
-   * 4. Returns the new history for persistence
-   *
-   * PERFORMANCE NOTE: A fresh Agent instance is created on each runStep call
-   * to ensure clean state and proper hydration from persisted conversation
-   * history. While this has some overhead, it ensures predictable behavior
-   * and correct resumability semantics. For high-frequency workflows,
-   * consider batching operations within a single step.
+   * 1. Builds context from conversation history
+   * 2. Executes the tool loop via SDK query
+   * 3. Returns the new history for persistence
    *
    * @param state - Current workflow state containing conversation history
    * @param userInstruction - The instruction/prompt for this turn
-   * @param tools - SDK-compatible tool definitions
+   * @param _tools - SDK-compatible tool definitions (unused in this implementation)
    * @returns Response text and updated conversation history
    */
   async runStep<T extends BaseState>(
     state: T,
     userInstruction: string,
-    tools: unknown[]
+    _tools: unknown[]
   ): Promise<{
     response: string;
-    updatedHistory: Message[];
+    updatedHistory: Array<Message | StoredMessage>;
   }> {
-    // HYDRATION: Create a fresh agent instance pre-loaded with past context
-    const agent = new Agent({
-      apiKey: this.config.apiKey,
-      model: this.config.model,
-      tools: tools,
-      messages: state.conversationHistory || [],
-      ...this.config.sdkOptions,
+    // Build prompt with context from previous conversation
+    const contextPrompt = this.buildContextFromHistory(state.conversationHistory || []);
+    const fullPrompt = contextPrompt ? `${contextPrompt}\n\n${userInstruction}` : userInstruction;
+
+    // Build SDK options - only set defined values
+    const sdkOptions: Options = {};
+    if (this.config.model) {
+      sdkOptions.model = this.config.model;
+    }
+    if (this.config.sdkOptions) {
+      Object.assign(sdkOptions, this.config.sdkOptions);
+    }
+
+    // Execute the query
+    const queryResult = query({
+      prompt: fullPrompt,
+      options: sdkOptions,
     });
 
-    // EXECUTION: Delegate to the official SDK
-    // The SDK handles the entire tool use loop internally:
-    // - AI thinks and decides to use tools
-    // - Tools execute
-    // - Results are fed back to AI
-    // - Process repeats until AI responds with text
-    const result = await agent.run(userInstruction);
+    // Collect the result
+    let response = '';
 
-    // EXTRACTION: Get the full conversation history to save to disk
-    // This includes the user instruction, tool calls, tool results, and AI responses
+    for await (const message of queryResult) {
+      if (message.type === 'result') {
+        const resultMessage = message as SDKResultMessage;
+        // Access result from the success subtype
+        if ('result' in resultMessage) {
+          response = resultMessage.result || '';
+        }
+      }
+    }
+
+    // Combine existing history with new messages
+    const existingHistory = state.conversationHistory || [];
+    const updatedHistory: Array<Message | StoredMessage> = [
+      ...existingHistory,
+      // Add user message
+      {
+        type: 'user' as const,
+        content: userInstruction,
+        timestamp: new Date().toISOString(),
+      },
+      // Add assistant response as simplified stored message
+      {
+        type: 'assistant' as const,
+        content: response,
+        timestamp: new Date().toISOString(),
+      },
+    ];
+
     return {
-      response: result.text,
-      updatedHistory: agent.messages,
+      response,
+      updatedHistory,
     };
+  }
+
+  /**
+   * Builds context string from conversation history.
+   */
+  private buildContextFromHistory(history: Array<Message | StoredMessage>): string {
+    if (history.length === 0) {
+      return '';
+    }
+
+    const contextParts: string[] = [];
+    for (const msg of history) {
+      if ('content' in msg && typeof msg.content === 'string') {
+        const role = 'type' in msg ? msg.type : 'unknown';
+        contextParts.push(`[${role}]: ${msg.content}`);
+      }
+    }
+
+    if (contextParts.length === 0) {
+      return '';
+    }
+
+    return `Previous conversation:\n${contextParts.join('\n')}\n\nContinue from here:`;
   }
 }

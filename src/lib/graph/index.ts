@@ -68,6 +68,7 @@ export type {
   NodeDefinition,
   AgentNodeDefinition,
   CommandNodeDefinition,
+  ClaudeCodeNodeDefinition,
   BaseNodeDefinition,
   Transition,
   StaticTransition,
@@ -75,6 +76,9 @@ export type {
   ToolReference,
   InlineToolDefinition,
   LoadedConfig,
+  // Message types
+  Message,
+  StoredMessage,
 } from './types';
 
 // Config validation error
@@ -116,9 +120,41 @@ export {
   nodes,
   AgentNode,
   CommandNode,
+  ClaudeCodeNode,
   createInitialState,
 } from './define-workflow';
 export type {
   ExtractContext,
   WorkflowStateOf,
 } from './define-workflow';
+
+// Standard library node implementations
+export {
+  // Base
+  BaseNode,
+  NodeExecutionError,
+  isInlineToolDefinition,
+  // Runtime classes
+  AgentNodeRuntime,
+  CommandNodeRuntime,
+  ClaudeCodeNodeRuntime,
+  // Factory functions
+  createAgentNode,
+  createCommandNode,
+  createClaudeCodeNode,
+} from './nodes';
+export type {
+  // Base types
+  BaseNodeConfig,
+  NodeExecutionResult,
+  // AgentNode types
+  AgentNodeConfig,
+  StoredMessage as AgentStoredMessage,
+  // CommandNode types
+  CommandNodeConfig,
+  CommandResult,
+  // ClaudeCodeNode types
+  ClaudeCodeNodeConfig,
+  ClaudeCodeCommand,
+  ClaudeCodeResult,
+} from './nodes';

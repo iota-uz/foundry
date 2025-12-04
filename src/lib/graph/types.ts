@@ -5,7 +5,24 @@
  * built-in resumability and context management.
  */
 
-import type { Message } from '@anthropic-ai/claude-agent-sdk';
+import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
+
+/**
+ * Alias for SDK message type for conversation history.
+ * The SDK uses SDKMessage as the unified message type.
+ */
+export type Message = SDKMessage;
+
+/**
+ * Simplified stored message for serialization.
+ * Used when persisting conversation history to disk.
+ */
+export interface StoredMessage {
+  type: 'user' | 'assistant' | 'result' | 'system';
+  content: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
+}
 
 /**
  * The minimal requirement for any state object managed by this library.
@@ -22,8 +39,9 @@ export interface BaseState {
   /**
    * Persistence of the AI's short-term memory.
    * This allows the SDK to "wake up" remembering the previous conversation.
+   * Can be SDK messages or simplified stored messages for serialization.
    */
-  conversationHistory: Message[];
+  conversationHistory: Array<Message | StoredMessage>;
 }
 
 /**
@@ -85,7 +103,7 @@ export interface IAgentWrapper {
     tools: unknown[]
   ): Promise<{
     response: string;
-    updatedHistory: Message[];
+    updatedHistory: Array<Message | StoredMessage>;
   }>;
 }
 
@@ -196,7 +214,7 @@ export interface AgentNodeDefinition<TContext extends Record<string, unknown> = 
   system: string;
 
   /** Tools available to the agent */
-  tools?: ToolReference[];
+  tools?: ToolReference[] | undefined;
 }
 
 /**
@@ -211,11 +229,26 @@ export interface CommandNodeDefinition<TContext extends Record<string, unknown> 
 }
 
 /**
+ * ClaudeCodeNode definition - a node that runs Claude Code slash commands.
+ */
+export interface ClaudeCodeNodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>>
+  extends BaseNodeDefinition<TContext> {
+  type: 'claude-code';
+
+  /** The slash command to run (without the leading /) */
+  command: string;
+
+  /** Arguments/instructions for the command */
+  args: string;
+}
+
+/**
  * Union type of all supported node definitions.
  */
 export type NodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>> =
   | AgentNodeDefinition<TContext>
-  | CommandNodeDefinition<TContext>;
+  | CommandNodeDefinition<TContext>
+  | ClaudeCodeNodeDefinition<TContext>;
 
 /**
  * The main workflow configuration schema.

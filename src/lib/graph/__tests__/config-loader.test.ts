@@ -173,8 +173,17 @@ describe('config-loader', () => {
   describe('resolveTransition', () => {
     const validNodes = new Set(['PLAN', 'IMPLEMENT', 'END']);
 
+    // Create a minimal valid WorkflowState
+    const createState = <T extends Record<string, unknown>>(context: T) => ({
+      currentNode: 'PLAN',
+      status: 'running' as const,
+      updatedAt: new Date().toISOString(),
+      conversationHistory: [],
+      context,
+    });
+
     it('should resolve static transitions', () => {
-      const result = resolveTransition('IMPLEMENT', { context: {} }, validNodes, 'PLAN');
+      const result = resolveTransition('IMPLEMENT', createState({}), validNodes, 'PLAN');
       expect(result).toBe('IMPLEMENT');
     });
 
@@ -182,17 +191,17 @@ describe('config-loader', () => {
       const transition = (state: { context: { done?: boolean } }) =>
         state.context.done ? 'END' : 'IMPLEMENT';
 
-      const result1 = resolveTransition(transition, { context: { done: false } }, validNodes, 'PLAN');
+      const result1 = resolveTransition(transition, createState({ done: false }), validNodes, 'PLAN');
       expect(result1).toBe('IMPLEMENT');
 
-      const result2 = resolveTransition(transition, { context: { done: true } }, validNodes, 'PLAN');
+      const result2 = resolveTransition(transition, createState({ done: true }), validNodes, 'PLAN');
       expect(result2).toBe('END');
     });
 
     it('should throw for invalid dynamic transition result', () => {
       const transition = () => 'NONEXISTENT';
       expect(() => {
-        resolveTransition(transition, { context: {} }, validNodes, 'PLAN');
+        resolveTransition(transition, createState({}), validNodes, 'PLAN');
       }).toThrow(/NONEXISTENT/);
     });
   });
