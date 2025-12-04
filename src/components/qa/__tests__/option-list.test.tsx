@@ -3,7 +3,7 @@
  */
 
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, mock } from 'bun:test';
 import { OptionList } from '../option-list';
 import type { QuestionOption } from '@/types/ai';
 
@@ -26,7 +26,7 @@ describe('OptionList', () => {
   ];
 
   it('renders all options', () => {
-    const onSelect = vi.fn();
+    const onSelect = mock(() => {});
 
     render(
       <OptionList
@@ -36,13 +36,13 @@ describe('OptionList', () => {
       />
     );
 
-    expect(screen.getByText('Option 1')).toBeInTheDocument();
-    expect(screen.getByText('Option 2')).toBeInTheDocument();
-    expect(screen.getByText('Option 3')).toBeInTheDocument();
+    expect(screen.getByText('Option 1')).toBeDefined();
+    expect(screen.getByText('Option 2')).toBeDefined();
+    expect(screen.getByText('Option 3')).toBeDefined();
   });
 
   it('displays option descriptions', () => {
-    const onSelect = vi.fn();
+    const onSelect = mock(() => {});
 
     render(
       <OptionList
@@ -52,12 +52,12 @@ describe('OptionList', () => {
       />
     );
 
-    expect(screen.getByText('First option')).toBeInTheDocument();
-    expect(screen.getByText('Second option')).toBeInTheDocument();
+    expect(screen.getByText('First option')).toBeDefined();
+    expect(screen.getByText('Second option')).toBeDefined();
   });
 
   it('calls onSelect with single option when mode is single', () => {
-    const onSelect = vi.fn();
+    const onSelect = mock(() => {});
 
     render(
       <OptionList
@@ -76,7 +76,7 @@ describe('OptionList', () => {
   });
 
   it('handles multiple selection mode', () => {
-    const onSelect = vi.fn();
+    const onSelect = mock(() => {});
 
     render(
       <OptionList
@@ -98,7 +98,7 @@ describe('OptionList', () => {
   });
 
   it('shows keyboard numbers when showNumbers is true', () => {
-    const onSelect = vi.fn();
+    const onSelect = mock(() => {});
 
     const { container } = render(
       <OptionList
@@ -115,7 +115,7 @@ describe('OptionList', () => {
   });
 
   it('handles disabled state', () => {
-    const onSelect = vi.fn();
+    const onSelect = mock(() => {});
 
     render(
       <OptionList
@@ -135,8 +135,8 @@ describe('OptionList', () => {
   });
 
   it('calls onHoverOption when mouse enters', () => {
-    const onSelect = vi.fn();
-    const onHover = vi.fn();
+    const onSelect = mock(() => {});
+    const onHover = mock(() => {});
 
     render(
       <OptionList
@@ -156,8 +156,8 @@ describe('OptionList', () => {
   });
 
   it('calls onHoverOption with null when mouse leaves', () => {
-    const onSelect = vi.fn();
-    const onHover = vi.fn();
+    const onSelect = mock(() => {});
+    const onHover = mock(() => {});
 
     render(
       <OptionList
@@ -177,7 +177,7 @@ describe('OptionList', () => {
   });
 
   it('marks selected option as selected', () => {
-    const onSelect = vi.fn();
+    const onSelect = mock(() => {});
 
     const { container } = render(
       <OptionList

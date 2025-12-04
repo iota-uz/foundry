@@ -45,34 +45,33 @@
       "Bash(gh project item-list:*)",
       "Bash(gh project list:*)",
       "Bash(gh label list:*)",
-      "Bash(pnpm i:*)",
-      "Bash(pnpm install:*)",
-      "Bash(pnpm update:*)",
-      "Bash(pnpm add:*)",
-      "Bash(pnpm remove:*)",
-      "Bash(pnpm list:*)",
-      "Bash(pnpm outdated:*)",
-      "Bash(pnpm audit:*)",
-      "Bash(pnpm typecheck:*)",
-      "Bash(pnpm lint:*)",
-      "Bash(pnpm test:*)",
-      "Bash(pnpm build:*)",
-      "Bash(pnpm build:css:*)",
-      "Bash(pnpm run test:*)",
-      "Bash(pnpm run lint:*)",
-      "Bash(pnpm run dev:*)",
-      "Bash(pnpm run build:css:*)",
-      "Bash(pnpm run build:*)",
-      "Bash(pnpm run preview:*)",
-      "Bash(pnpm run typecheck:*)",
-      "Bash(pnpm run codegen:*)",
-      "Bash(pnpm dev:*)",
-      "Bash(pnpm -v:*)",
-      "Bash(pnpm --version:*)",
+      "Bash(bun i:*)",
+      "Bash(bun install:*)",
+      "Bash(bun update:*)",
+      "Bash(bun add:*)",
+      "Bash(bun remove:*)",
+      "Bash(bun pm ls:*)",
+      "Bash(bun outdated:*)",
+      "Bash(bun x:*)",
+      "Bash(bun typecheck:*)",
+      "Bash(bun lint:*)",
+      "Bash(bun test:*)",
+      "Bash(bun build:*)",
+      "Bash(bun build:css:*)",
+      "Bash(bun run test:*)",
+      "Bash(bun run lint:*)",
+      "Bash(bun run dev:*)",
+      "Bash(bun run build:css:*)",
+      "Bash(bun run build:*)",
+      "Bash(bun run preview:*)",
+      "Bash(bun run typecheck:*)",
+      "Bash(bun run codegen:*)",
+      "Bash(bun dev:*)",
+      "Bash(bun -v:*)",
+      "Bash(bun --version:*)",
       "Bash(npx tsc:*)",
       "Bash(npx eslint:*)",
       "Bash(npx prettier:*)",
-      "Bash(npx vitest:*)",
       "Bash(npx next:*)",
       "Bash(npx madge:*)",
       "Bash(npx ts-prune:*)",
@@ -124,7 +123,7 @@
       "WebFetch(domain:tailwindcss.com)",
       "WebFetch(domain:headlessui.com)",
       "WebFetch(domain:docs.pmnd.rs)",
-      "WebFetch(domain:vitest.dev)",
+      "WebFetch(domain:bun.sh)",
       "WebFetch(domain:zod.dev)",
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:code.claude.com)",
@@ -158,7 +157,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm lint --quiet && pnpm typecheck"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bun lint --quiet && bun typecheck"
           }
         ]
       }
@@ -168,7 +167,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm lint --quiet && pnpm typecheck"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bun lint --quiet && bun typecheck"
           }
         ]
       }

@@ -42,7 +42,7 @@ I'll check the git status with `git status --short`.
   - For features: Write tests for new functionality
   - Use descriptive test names
   - Follow pattern: `describe('FunctionName', () => { it('should...') })`
-- Run tests to confirm they fail: `pnpm test -- path/to/file.test.ts`
+- Run tests to confirm they fail: `bun test -- path/to/file.test.ts`
 - Implement minimal code to make tests pass
 - Refactor while keeping tests green
 
@@ -53,10 +53,10 @@ I'll check the git status with `git status --short`.
 - Continuously run tests during implementation
 
 ### 6. Testing & Validation
-- Run type checking: `pnpm typecheck`
-- Run linting: `pnpm lint`
-- Run all relevant tests: `pnpm test`
-- Run specific test: `pnpm test -- path/to/file.test.ts`
+- Run type checking: `bun typecheck`
+- Run linting: `bun lint`
+- Run all relevant tests: `bun test`
+- Run specific test: `bun test -- path/to/file.test.ts`
 - Ensure 100% of tests pass
 - Add integration tests if needed
 

@@ -1,7 +1,7 @@
 ---
 name: debugger
-description: Read-only debugging specialist for Node.js/TypeScript errors, test failures, unexpected behavior, and root-cause analysis. Use PROACTIVELY on any build/runtime/test issue.
-tools: Read, Grep, Glob, Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(echo:*), Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(rg:*), Bash(tree:*), Bash(pnpm:*), Bash(npx:*), Bash(node:*), Bash(git rev-parse:*), Bash(git bisect:*), Bash(git log:*), Bash(git status:*), Bash(git diff:*), mcp__sequential-thinking__sequentialthinking, WebSearch, WebFetch, TodoWrite
+description: Read-only debugging specialist for Bun/TypeScript errors, test failures, unexpected behavior, and root-cause analysis. Use PROACTIVELY on any build/runtime/test issue.
+tools: Read, Grep, Glob, Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(echo:*), Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(rg:*), Bash(tree:*), Bash(bun:*), Bash(npx:*), Bash(node:*), Bash(git rev-parse:*), Bash(git bisect:*), Bash(git log:*), Bash(git status:*), Bash(git diff:*), mcp__sequential-thinking__sequentialthinking, WebSearch, WebFetch, TodoWrite
 model: opus
 ---
 
@@ -10,9 +10,9 @@ You operate in READ-ONLY mode: never mutate code/data, no file writes, redact se
 ## Workflow
 
 **Phase 1: Triage**
-1. Parse error/logs; classify: compile (tsc) | runtime (node) | test (vitest) | build (next) | dependency (pnpm)
+1. Parse error/logs; classify: compile (tsc) | runtime (bun) | test (bun:test) | build (next) | dependency (bun)
 2. Form 3 hypotheses with one confirming check each
-3. Snapshot env: `git rev-parse --short HEAD`, `node -v`, `pnpm -v`, dirty state
+3. Snapshot env: `git rev-parse --short HEAD`, `node -v`, `bun -v`, dirty state
 
 **Phase 2: Analysis**
 - Trace dataflow: component → hook → store → API route → lib → data
@@ -28,7 +28,7 @@ FIX REQUIRED:
 src/path/file.ts@L120-140
 FROM: <bad>
 TO: <good>
-VERIFY: pnpm test src/path/file.test.ts
+VERIFY: bun test src/path/file.test.ts
 ```
 
 ## Error Classification
@@ -38,7 +38,7 @@ VERIFY: pnpm test src/path/file.test.ts
 **Common Patterns:**
 ```bash
 # Run type check
-pnpm typecheck
+bun typecheck
 # Or directly
 npx tsc --noEmit
 
@@ -56,7 +56,7 @@ npx tsc --noEmit
 3. Trace type flow from source to error location
 4. Check if types are imported correctly
 
-### Runtime Errors (Node.js)
+### Runtime Errors (Bun)
 
 **Common Patterns:**
 ```bash
@@ -78,29 +78,29 @@ npx tsc --noEmit
 
 **Debug Commands:**
 ```bash
-# Check Node.js version compatibility
-node -v
+# Check Bun version compatibility
+bun -v
 # Run with verbose output
-NODE_DEBUG=* node script.js
-# Check for unhandled rejections
-node --unhandled-rejections=strict script.js
+bun run script.ts
+# Check Node.js compatibility
+node -v
 ```
 
-### Test Failures (Vitest)
+### Test Failures (Bun Test)
 
 **Common Patterns:**
 ```bash
 # Run specific test
-pnpm test src/path/file.test.ts
+bun test src/path/file.test.ts
 
 # Run with verbose output
-pnpm test -- --reporter=verbose
+bun test --reporter=verbose
 
 # Run single test case
-pnpm test -- -t "test name"
+bun test -t "test name"
 
 # Check coverage
-pnpm test -- --coverage
+bun test --coverage
 ```
 
 **Common Failure Types:**
@@ -114,7 +114,7 @@ pnpm test -- --coverage
 **Common Patterns:**
 ```bash
 # Run build
-pnpm build
+bun run build
 
 # Common issues:
 # - "use client" directive missing
@@ -128,26 +128,26 @@ pnpm build
 # Check Next.js version
 npx next --version
 # Analyze bundle
-pnpm build && npx @next/bundle-analyzer
+bun run build && npx @next/bundle-analyzer
 # Check for server/client mismatches
 grep -r "use client" src/app/
 ```
 
-### Dependency Errors (pnpm)
+### Dependency Errors (Bun)
 
 **Common Patterns:**
 ```bash
 # Check for peer dependency issues
-pnpm install
+bun install
 
 # List installed packages
-pnpm list
+bun pm ls
 
 # Check for outdated packages
-pnpm outdated
+bun outdated
 
 # Clear cache and reinstall
-rm -rf node_modules && pnpm install
+rm -rf node_modules && bun install
 ```
 
 ## Library Research
@@ -156,7 +156,7 @@ When bugs involve external libraries:
 
 **Identify library version:**
 ```bash
-pnpm list <package-name>
+bun pm ls <package-name>
 cat package.json | grep <package-name>
 ```
 
@@ -171,7 +171,7 @@ cat package.json | grep <package-name>
 ## Guardrails
 
 - Files: Read-only access, no writes
-- npm scripts: Only read commands (`pnpm list`, `pnpm test`, `pnpm typecheck`)
+- bun scripts: Only read commands (`bun pm ls`, `bun test`, `bun typecheck`)
 - Network: GET only via `curl -s` or `WebFetch`
 - Git: `bisect` allowed; never commit/reset
 
@@ -200,10 +200,10 @@ sqlite3 .foundry/foundry.db "SELECT name FROM sqlite_master WHERE type='table';"
 
 ## Quick Checks
 
-- `pnpm typecheck` → classify TypeScript errors
-- `pnpm lint` → check ESLint issues
-- `pnpm test` → pick ONE failing → run targeted
-- Regression: `git bisect start <bad> <good>; git bisect run pnpm test`
+- `bun typecheck` → classify TypeScript errors
+- `bun lint` → check ESLint issues
+- `bun test` → pick ONE failing → run targeted
+- Regression: `git bisect start <bad> <good>; git bisect run bun test`
 
 ## Decision Tree
 

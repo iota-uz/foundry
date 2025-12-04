@@ -1,7 +1,7 @@
 ---
 name: refactoring-expert
 description: Production-grade code refactoring expert for TypeScript/React projects. Use PROACTIVELY after code changes, MUST BE USED before deployments. Eliminates dead code, removes unnecessary abstractions, simplifies complex code, reduces visual complexity, and increases readability.
-tools: Read, Edit, Grep, Glob, Bash(pnpm:*), Bash(npx:*), WebFetch, WebSearch, mcp__sequential-thinking__sequentialthinking
+tools: Read, Edit, Grep, Glob, Bash(bun:*), Bash(npx:*), WebFetch, WebSearch, mcp__sequential-thinking__sequentialthinking
 model: opus
 ---
 
@@ -57,7 +57,7 @@ Follow a simple, repeatable loop: survey, analyze, plan, execute, and report.
 - Read the files to identify purpose, responsibilities, and dependencies
 - Classify code: component, hook, store, API route, lib, or type
 - Read relevant specs to align with project patterns
-- Establish a baseline by running: `pnpm typecheck`, `pnpm lint`, `pnpm test`
+- Establish a baseline by running: `bun typecheck`, `bun lint`, `bun test`
 
 ## 2. Analyze and identify
 
@@ -135,15 +135,15 @@ rg 'fetch\(.*api/' --type ts --type tsx src/ | sed 's/.*api/api/' | sort -u
 Make small, verified steps and keep the build green.
 
 - Change one thing at a time
-- After each change run `pnpm typecheck` and `pnpm lint`
-- Run tests for the affected module: `pnpm test src/path/`
+- After each change run `bun typecheck` and `bun lint`
+- Run tests for the affected module: `bun test src/path/`
 - If a change breaks validation or tests, revert it
 - Never delete code without verifying zero usages with search and grep
 - Prefer many small validated changes over one large risky change
 
 Validation by file type:
 
-- TypeScript (`*.ts`, `*.tsx`): `pnpm typecheck`, `pnpm lint`, `pnpm test`
+- TypeScript (`*.ts`, `*.tsx`): `bun typecheck`, `bun lint`, `bun test`
 - Components (`*.tsx`): Verify in browser if UI changes
 - API routes: Test with curl or API client
 - Stores: Verify state management still works

@@ -3,27 +3,27 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { ProgressIndicator } from '../progress-indicator';
 
 describe('ProgressIndicator', () => {
   it('renders with current and total', () => {
     render(<ProgressIndicator current={5} total={10} />);
 
-    expect(screen.getByText('5 of 10')).toBeInTheDocument();
-    expect(screen.getByText('50%')).toBeInTheDocument();
+    expect(screen.getByText('5 of 10')).toBeDefined();
+    expect(screen.getByText('50%')).toBeDefined();
   });
 
   it('calculates percentage correctly', () => {
     render(<ProgressIndicator current={7} total={10} />);
 
-    expect(screen.getByText('70%')).toBeInTheDocument();
+    expect(screen.getByText('70%')).toBeDefined();
   });
 
   it('displays label when provided', () => {
     render(<ProgressIndicator current={3} total={6} label="Questions answered" />);
 
-    expect(screen.getByText('Questions answered')).toBeInTheDocument();
+    expect(screen.getByText('Questions answered')).toBeDefined();
   });
 
   it('hides percentage when showPercentage is false', () => {
@@ -40,7 +40,7 @@ describe('ProgressIndicator', () => {
     );
 
     const progressBar = container.querySelector('[role="progressbar"]');
-    expect(progressBar).toHaveClass('h-3');
+    expect(progressBar?.classList.contains('h-3')).toBe(true);
   });
 
   it('applies success variant when complete', () => {
@@ -49,12 +49,12 @@ describe('ProgressIndicator', () => {
     );
 
     const progressBar = container.querySelector('[role="progressbar"]');
-    expect(progressBar).toHaveClass('bg-green-600');
+    expect(progressBar?.classList.contains('bg-green-600')).toBe(true);
   });
 
   it('handles zero total gracefully', () => {
     render(<ProgressIndicator current={0} total={0} />);
 
-    expect(screen.getByText('0%')).toBeInTheDocument();
+    expect(screen.getByText('0%')).toBeDefined();
   });
 });

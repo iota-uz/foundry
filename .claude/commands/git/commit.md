@@ -54,8 +54,8 @@ AskUserQuestion:
 
 Run verification commands:
 
-1. Run type checking: `pnpm typecheck` (stop if fails)
-2. Run linting: `pnpm lint` (stop if fails)
+1. Run type checking: `bun typecheck` (stop if fails)
+2. Run linting: `bun lint` (stop if fails)
 3. Check for temporary files: Remove `*.temp`, `*.backup` files (ask user if unsure)
 4. If secrets detected (.env files with values): STOP and warn user immediately
 
