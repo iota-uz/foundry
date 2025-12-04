@@ -361,7 +361,7 @@ export function resolveTransition<TContext extends Record<string, unknown>>(
   if (typeof transition === 'function') {
     // Dynamic transition - call the function with the state
     try {
-      nextNode = transition(state as Parameters<typeof transition>[0]);
+      nextNode = transition(state);
     } catch (error) {
       const err = error as Error;
       throw new Error(

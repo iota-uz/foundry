@@ -157,25 +157,30 @@ export interface BaseNodeDefinition<TContext extends Record<string, unknown> = R
 /**
  * Tool definition that can be used within agent nodes.
  * Supports both string references to stdlib tools and custom inline tools.
+ *
+ * @template TInput - The type of the input arguments (inferred from schema)
  */
-export interface InlineToolDefinition {
+export interface InlineToolDefinition<TInput = unknown> {
   /** Unique tool name (used by the AI to invoke it) */
   name: string;
 
   /** Human-readable description for the AI model */
   description?: string;
 
-  /** Zod schema for input validation */
-  schema: unknown;
+  /**
+   * Zod schema for input validation.
+   * The execute function's args type should match this schema's output type.
+   */
+  schema: import('zod').ZodType<TInput>;
 
-  /** Tool execution function */
-  execute: (args: unknown) => Promise<unknown>;
+  /** Tool execution function - receives validated args matching the schema */
+  execute: (args: TInput) => Promise<unknown>;
 }
 
 /**
  * Tool can be a string reference (stdlib) or an inline definition.
  */
-export type ToolReference = string | InlineToolDefinition;
+export type ToolReference = string | InlineToolDefinition<unknown>;
 
 /**
  * AgentNode definition - a node that runs an AI agent.
