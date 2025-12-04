@@ -62,7 +62,23 @@ export type {
   GraphContext,
   IAgentWrapper,
   GraphEngineConfig,
+  // Workflow config types
+  WorkflowState,
+  WorkflowConfig,
+  NodeDefinition,
+  AgentNodeDefinition,
+  CommandNodeDefinition,
+  BaseNodeDefinition,
+  Transition,
+  StaticTransition,
+  DynamicTransition,
+  ToolReference,
+  InlineToolDefinition,
+  LoadedConfig,
 } from './types';
+
+// Config validation error
+export { ConfigValidationError } from './types';
 
 // Main engine
 export { GraphEngine } from './engine';
@@ -83,3 +99,26 @@ export type { GraphTool, SdkToolDefinition } from './agent/tools';
 // Utilities
 export { createLogger } from './utils/logger';
 export type { LogContext } from './utils/logger';
+
+// Config loader
+export {
+  loadConfig,
+  validateTransitions,
+  validateConfigSchema,
+  validateRuntimeTransition,
+  resolveTransition,
+} from './config-loader';
+export type { LoadConfigOptions } from './config-loader';
+
+// Workflow definition API
+export {
+  defineWorkflow,
+  nodes,
+  AgentNode,
+  CommandNode,
+  createInitialState,
+} from './define-workflow';
+export type {
+  ExtractContext,
+  WorkflowStateOf,
+} from './define-workflow';
