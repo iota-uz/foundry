@@ -16,7 +16,8 @@ jobs:
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      (github.event_name == 'issues' && github.event.action == 'opened' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude'))) ||
+      (github.event_name == 'issues' && github.event.action == 'assigned' && github.event.assignee.login == 'claude')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -27,6 +28,14 @@ jobs:
       actions: read
 
     steps:
+      - name: Check user permissions
+        if: github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'pull_request_review'
+        run: |
+          # Only allow org members or collaborators to trigger the workflow
+          gh api repos/${{ github.repository }}/collaborators/${{ github.event.sender.login }} --silent || { echo "User ${{ github.event.sender.login }} is not a collaborator"; exit 1; }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Extract model from trigger
         id: extract_model
         env:
@@ -45,14 +54,14 @@ jobs:
             BODY="$ISSUE_BODY $ISSUE_TITLE"
           fi
 
-          # Extract model from @claude:model pattern (default: sonnet)
+          # Extract model from @claude:model pattern (default: opus)
           # Only match valid model names to prevent injection
           MODEL=$(echo "$BODY" | grep -oE '@claude:(opus|sonnet|haiku)' | head -1 | cut -d: -f2 || true)
 
-          # Validate and default to sonnet
+          # Validate and default to opus
           case "$MODEL" in
             opus|sonnet|haiku) ;;
-            *) MODEL="sonnet" ;;
+            *) MODEL="opus" ;;
           esac
 
           echo "model=$MODEL" >> $GITHUB_OUTPUT
@@ -66,7 +75,7 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: '1.1.0'
 
       - name: Install dependencies
         run: bun install
