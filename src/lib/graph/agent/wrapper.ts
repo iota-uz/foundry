@@ -6,7 +6,7 @@
  */
 
 import { Agent, type AgentOptions, type Message } from '@anthropic-ai/claude-agent-sdk';
-import type { BaseState, AgentWrapper as IAgentWrapper } from '../types';
+import type { BaseState, IAgentWrapper } from '../types';
 
 /**
  * Configuration for the AgentWrapper.
@@ -16,10 +16,10 @@ export interface AgentWrapperConfig {
   apiKey: string;
 
   /** Claude model to use (default: claude-3-5-sonnet-20241022) */
-  model?: string;
+  model?: string | undefined;
 
   /** Additional SDK options */
-  sdkOptions?: Partial<AgentOptions>;
+  sdkOptions?: Partial<AgentOptions> | undefined;
 }
 
 /**
@@ -45,6 +45,12 @@ export class AgentWrapper implements IAgentWrapper {
    * 3. Executes the tool loop via SDK
    * 4. Returns the new history for persistence
    *
+   * PERFORMANCE NOTE: A fresh Agent instance is created on each runStep call
+   * to ensure clean state and proper hydration from persisted conversation
+   * history. While this has some overhead, it ensures predictable behavior
+   * and correct resumability semantics. For high-frequency workflows,
+   * consider batching operations within a single step.
+   *
    * @param state - Current workflow state containing conversation history
    * @param userInstruction - The instruction/prompt for this turn
    * @param tools - SDK-compatible tool definitions
@@ -53,7 +59,7 @@ export class AgentWrapper implements IAgentWrapper {
   async runStep<T extends BaseState>(
     state: T,
     userInstruction: string,
-    tools: any[]
+    tools: unknown[]
   ): Promise<{
     response: string;
     updatedHistory: Message[];

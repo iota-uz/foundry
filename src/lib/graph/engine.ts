@@ -132,7 +132,7 @@ export class GraphEngine<TState extends BaseState> {
         nodeLogger.error(`Error in node ${state.currentNode}:`, error);
 
         // Check if we should retry
-        if (retryCount < this.config.maxRetries) {
+        if (this.config.maxRetries !== undefined && retryCount < this.config.maxRetries) {
           retryCount++;
           nodeLogger.warn(`Retrying node (attempt ${retryCount}/${this.config.maxRetries})`);
           continue;
@@ -184,19 +184,29 @@ export class GraphEngine<TState extends BaseState> {
   }
 
   /**
-   * Validates that all nodes in the graph are properly connected.
-   * Throws an error if any node references a non-existent next node.
+   * Validates that all nodes in the graph are properly defined.
    *
-   * This should be called during engine initialization to catch
-   * configuration errors early.
+   * This performs static validation to ensure each node has the required
+   * execute and next functions. It should be called during engine
+   * initialization to catch configuration errors early.
+   *
+   * LIMITATIONS:
+   * - Cannot validate actual routing logic without running the workflow
+   * - Cannot verify that node.next() returns valid node names since this
+   *   depends on runtime state
+   * - For runtime validation of node transitions, errors will be thrown
+   *   during workflow execution if a node's next() returns an undefined node
+   *
+   * To validate routing logic, consider:
+   * - Writing unit tests for your next() functions
+   * - Using TypeScript string literal types to constrain node names
+   * - Manually reviewing the state machine transitions
    */
   validateGraph(): void {
     const nodeNames = new Set(Object.keys(this.nodes));
     nodeNames.add('END'); // END is a special terminal node
 
     for (const [nodeName, node] of Object.entries(this.nodes)) {
-      // We can't fully validate without state, but we can check if
-      // the node implementation exists
       if (typeof node.execute !== 'function') {
         throw new Error(`Node '${nodeName}' does not have an execute function`);
       }

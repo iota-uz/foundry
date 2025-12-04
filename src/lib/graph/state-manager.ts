@@ -36,7 +36,7 @@ export class StateManager<TState extends BaseState> {
    * @returns The persisted state, or null if it doesn't exist
    */
   async load(id: string): Promise<TState | null> {
-    const filePath = this.getStatePath(id);
+    const filePath = this.getSanitizedStatePath(id);
 
     try {
       const file = Bun.file(filePath);
@@ -68,7 +68,7 @@ export class StateManager<TState extends BaseState> {
    * @param state - State to persist
    */
   async save(id: string, state: TState): Promise<void> {
-    const filePath = this.getStatePath(id);
+    const filePath = this.getSanitizedStatePath(id);
     const tempPath = `${filePath}.tmp`;
 
     try {
@@ -85,11 +85,12 @@ export class StateManager<TState extends BaseState> {
       try {
         const fs = await import('fs/promises');
         await fs.unlink(tempPath);
-      } catch {
-        // Ignore cleanup errors
+      } catch (cleanupError) {
+        // Log cleanup errors at debug level for troubleshooting
+        console.debug(`Failed to clean up temp state file "${tempPath}":`, cleanupError);
       }
 
-      throw new Error(`Failed to save state for workflow ${id}: ${error}`);
+      throw new Error(`Failed to save state for workflow ${id}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -99,15 +100,15 @@ export class StateManager<TState extends BaseState> {
    * @param id - Unique workflow identifier
    */
   async delete(id: string): Promise<void> {
-    const filePath = this.getStatePath(id);
+    const filePath = this.getSanitizedStatePath(id);
 
     try {
       const fs = await import('fs/promises');
       await fs.unlink(filePath);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Ignore if file doesn't exist
-      if (error.code !== 'ENOENT') {
-        throw new Error(`Failed to delete state for workflow ${id}: ${error}`);
+      if (error && typeof error === 'object' && 'code' in error && error.code !== 'ENOENT') {
+        throw new Error(`Failed to delete state for workflow ${id}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   }
@@ -147,15 +148,22 @@ export class StateManager<TState extends BaseState> {
       const fs = await import('fs/promises');
       await fs.mkdir(this.stateDir, { recursive: true });
     } catch (error) {
-      throw new Error(`Failed to create state directory: ${error}`);
+      throw new Error(`Failed to create state directory: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   /**
    * Gets the full file path for a workflow's state file.
+   *
+   * SECURITY: This method sanitizes the ID to prevent path traversal attacks
+   * by replacing non-alphanumeric characters with underscores.
+   *
+   * NOTE: This sanitization could lead to ID collisions. For example, both
+   * "workflow@1" and "workflow#1" would become "workflow_1". If unique IDs
+   * are required, callers should ensure IDs only contain alphanumeric
+   * characters, underscores, and hyphens before passing them to the engine.
    */
-  private getStatePath(id: string): string {
-    // Sanitize the ID to prevent path traversal
+  private getSanitizedStatePath(id: string): string {
     const sanitizedId = id.replace(/[^a-zA-Z0-9_-]/g, '_');
     return `${this.stateDir}/${sanitizedId}.json`;
   }
