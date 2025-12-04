@@ -79,3 +79,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           model: ${{ steps.extract_model.outputs.model }}
           assignee_trigger: "claude"
+          allowed_tools: "Bash,Read,Write,Edit,WebSearch"
+          claude_env: |
+            CLAUDE_CODE_MAX_OUTPUT_TOKENS=50000
+            BASH_DEFAULT_TIMEOUT_MS=120000
+            CI=true
