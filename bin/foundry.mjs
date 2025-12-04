@@ -36,7 +36,7 @@ EXAMPLES
 
 async function runDispatch(dispatchArgs) {
   // Use bun or tsx to run TypeScript directly
-  const cliPath = path.join(__dirname, '..', 'src', 'lib', 'dispatch', 'cli.ts');
+  const cliPath = path.join(__dirname, '..', 'src', 'lib', 'dispatch', 'cli-entry.ts');
   
   // Try to use bun first, fall back to tsx
   const runners = ['bun', 'npx tsx'];

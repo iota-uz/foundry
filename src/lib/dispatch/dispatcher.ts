@@ -193,7 +193,4 @@ export async function setGitHubActionsOutput(matrix: MatrixOutput): Promise<void
     const fs = await import('fs/promises');
     await fs.appendFile(outputFile, `matrix=${matrixJson}\n`);
   }
-
-  // Also output to stdout for debugging
-  console.log(`::set-output name=matrix::${matrixJson}`);
 }

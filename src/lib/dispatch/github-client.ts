@@ -78,13 +78,16 @@ export class GitHubClient {
         );
       }
 
-      if (response.status === 403 && response.headers.get('X-RateLimit-Remaining') === '0') {
-        const resetTime = response.headers.get('X-RateLimit-Reset');
-        throw new DispatchError(
-          `GitHub rate limit exceeded. Resets at ${resetTime ? new Date(Number(resetTime) * 1000).toISOString() : 'unknown'}`,
-          'GITHUB_RATE_LIMIT',
-          { resetTime }
-        );
+      if (response.status === 403) {
+        const rateLimitRemaining = parseInt(response.headers.get('X-RateLimit-Remaining') ?? '1', 10);
+        if (rateLimitRemaining === 0) {
+          const resetTime = response.headers.get('X-RateLimit-Reset');
+          throw new DispatchError(
+            `GitHub rate limit exceeded. Resets at ${resetTime ? new Date(Number(resetTime) * 1000).toISOString() : 'unknown'}`,
+            'GITHUB_RATE_LIMIT',
+            { resetTime }
+          );
+        }
       }
 
       if (response.status === 404) {

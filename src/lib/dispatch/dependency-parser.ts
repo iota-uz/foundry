@@ -21,14 +21,14 @@ import type { DependencyRef } from './types';
  * - "Requires #123"
  */
 const DEPENDENCY_PATTERNS = [
-  // "Depends on" followed by one or more references
-  /depends?\s+on\s+([^.\n]+)/gi,
-  // "Blocked by" followed by one or more references
-  /blocked?\s+by\s+([^.\n]+)/gi,
-  // "Requires" followed by one or more references
-  /requires?\s+([^.\n]+)/gi,
-  // "After" followed by one or more references
-  /after\s+([^.\n]+)/gi,
+  // "Depends on" followed by one or more references (with word boundary)
+  /\bdepends?\s+on\s+([^.\n]+)/gi,
+  // "Blocked by" followed by one or more references (with word boundary)
+  /\bblocked?\s+by\s+([^.\n]+)/gi,
+  // "Requires" followed by one or more references (with word boundary)
+  /\brequires?\s+([^.\n]+)/gi,
+  // "After" followed by one or more references (with word boundary)
+  /\bafter\s+([^.\n]+)/gi,
 ];
 
 /**

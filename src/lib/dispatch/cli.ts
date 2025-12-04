@@ -49,32 +49,70 @@ export function parseArgs(args: string[]): CliArgs {
     help: false,
   };
 
+  const getNextArg = (index: number, _flag: string): string | undefined => {
+    const next = args[index + 1];
+    if (next === undefined || next.startsWith('-')) {
+      return undefined;
+    }
+    return next;
+  };
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
 
     switch (arg) {
-      case '--owner':
-        result.owner = args[++i];
-        break;
-      case '--repo':
-        result.repo = args[++i];
-        break;
-      case '--token':
-        result.token = args[++i];
-        break;
-      case '--label':
-        result.label = args[++i];
-        break;
-      case '--max-concurrent':
-        const maxConcurrent = parseInt(args[++i] ?? '', 10);
-        if (!isNaN(maxConcurrent) && maxConcurrent > 0) {
-          result.maxConcurrent = maxConcurrent;
+      case '--owner': {
+        const value = getNextArg(i, '--owner');
+        if (value) {
+          result.owner = value;
+          i++;
         }
         break;
-      case '--output':
-      case '-o':
-        result.output = args[++i];
+      }
+      case '--repo': {
+        const value = getNextArg(i, '--repo');
+        if (value) {
+          result.repo = value;
+          i++;
+        }
         break;
+      }
+      case '--token': {
+        const value = getNextArg(i, '--token');
+        if (value) {
+          result.token = value;
+          i++;
+        }
+        break;
+      }
+      case '--label': {
+        const value = getNextArg(i, '--label');
+        if (value) {
+          result.label = value;
+          i++;
+        }
+        break;
+      }
+      case '--max-concurrent': {
+        const value = getNextArg(i, '--max-concurrent');
+        if (value) {
+          const maxConcurrent = parseInt(value, 10);
+          if (!isNaN(maxConcurrent) && maxConcurrent > 0) {
+            result.maxConcurrent = maxConcurrent;
+          }
+          i++;
+        }
+        break;
+      }
+      case '--output':
+      case '-o': {
+        const value = getNextArg(i, '--output');
+        if (value) {
+          result.output = value;
+          i++;
+        }
+        break;
+      }
       case '--dry-run':
         result.dryRun = true;
         break;
