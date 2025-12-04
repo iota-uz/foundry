@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { toast } from 'react-hot-toast';
 import type {
   Project,
   Module,
@@ -116,36 +117,36 @@ export const useProjectStore = create<ProjectStore>()(
       // Module actions
       createModule: async (name: string, description: string) => {
         const { project } = get();
-        if (!project) throw new Error('No project loaded');
+        if (!project?.path) throw new Error('No project loaded');
 
         set({ loading: true, error: null });
         try {
-          const response = await fetch('/api/modules', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              projectId: project.id,
-              name,
-              description,
-            }),
-          });
+          const response = await fetch(
+            `/api/modules?projectPath=${encodeURIComponent(project.path)}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, description }),
+            }
+          );
 
           if (!response.ok) {
-            throw new Error('Failed to create module');
+            const error = await response.json();
+            throw new Error(error.error?.message || 'Failed to create module');
           }
 
-          const newModule = await response.json();
+          const { module } = await response.json();
           set((state) => ({
-            modules: [...state.modules, newModule],
+            modules: [...state.modules, module],
             loading: false,
           }));
 
-          return newModule;
+          toast.success(`Module "${name}" created`);
+          return module;
         } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Unknown error',
-            loading: false,
-          });
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          set({ error: message, loading: false });
+          toast.error(message);
           throw error;
         }
       },
@@ -205,35 +206,42 @@ export const useProjectStore = create<ProjectStore>()(
       },
 
       // Feature actions
-      createFeature: async (moduleId: string, name: string, description: string) => {
+      createFeature: async (moduleSlug: string, name: string, description: string) => {
+        const { project } = get();
+        if (!project?.path) throw new Error('No project loaded');
+
         set({ loading: true, error: null });
         try {
-          const response = await fetch('/api/features', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              moduleId,
-              name,
-              description,
-            }),
-          });
+          const response = await fetch(
+            `/api/features?projectPath=${encodeURIComponent(project.path)}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                moduleId: moduleSlug, // API expects 'moduleId' but treats as slug
+                name,
+                description,
+              }),
+            }
+          );
 
           if (!response.ok) {
-            throw new Error('Failed to create feature');
+            const error = await response.json();
+            throw new Error(error.error?.message || 'Failed to create feature');
           }
 
-          const newFeature = await response.json();
+          const feature = await response.json();
           set((state) => ({
-            features: [...state.features, newFeature],
+            features: [...state.features, feature],
             loading: false,
           }));
 
-          return newFeature;
+          toast.success(`Feature "${name}" created`);
+          return feature;
         } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Unknown error',
-            loading: false,
-          });
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          set({ error: message, loading: false });
+          toast.error(message);
           throw error;
         }
       },

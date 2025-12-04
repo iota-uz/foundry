@@ -114,7 +114,7 @@ export default function QAPage() {
     };
   }, [sessionId, router]);
 
-  const handleAnswer = useCallback(async (questionId: string, answer: any) => {
+  const handleAnswer = useCallback(async (questionId: string, answer: unknown) => {
     if (!sessionId) return;
 
     try {

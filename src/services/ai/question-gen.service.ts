@@ -182,7 +182,7 @@ export class QuestionGenService {
       question: questionData.question,
       questionType: questionData.questionType,
       description: questionData.description,
-      options: questionData.options?.map((opt: any) => ({
+      options: questionData.options?.map((opt: unknown) => ({
         ...opt,
         id: opt.id || nanoid(),
       })),
@@ -247,12 +247,12 @@ export class QuestionGenService {
 
     // Build batch object
     const batchData = response.structured;
-    const questions: AIQuestion[] = batchData.questions.map((q: any) => ({
+    const questions: AIQuestion[] = batchData.questions.map((q: unknown) => ({
       id: nanoid(),
       question: q.question,
       questionType: q.questionType,
       description: q.description,
-      options: q.options?.map((opt: any) => ({
+      options: q.options?.map((opt: unknown) => ({
         ...opt,
         id: opt.id || nanoid(),
       })),
@@ -285,7 +285,7 @@ export class QuestionGenService {
     question: AIQuestion,
     context: {
       previousAnswers: Answer[];
-      constitution?: any;
+      constitution?: unknown;
       workflow: 'cpo' | 'cto';
     }
   ): Promise<AIRecommendation | null> {
@@ -422,8 +422,8 @@ export class QuestionGenService {
   /**
    * Format answers for LLM context
    */
-  private formatAnswersForContext(answers: Answer[]): Record<string, any> {
-    const formatted: Record<string, any> = {};
+  private formatAnswersForContext(answers: Answer[]): Record<string, unknown> {
+    const formatted: Record<string, unknown> = {};
     answers.forEach((answer) => {
       if (!answer.skipped) {
         formatted[answer.questionId] = answer.value;
@@ -463,7 +463,7 @@ export class QuestionGenService {
     context: {
       workflow: 'cpo' | 'cto';
       topic: string;
-      constitution?: any;
+      constitution?: unknown;
     }
   ): Promise<AIQuestion | null> {
     const promptContext = {
@@ -531,7 +531,7 @@ export class QuestionGenService {
       question: questionData.question,
       questionType: questionData.questionType,
       description: questionData.description,
-      options: questionData.options?.map((opt: any) => ({
+      options: questionData.options?.map((opt: unknown) => ({
         ...opt,
         id: opt.id || nanoid(),
       })),

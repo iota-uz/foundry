@@ -9,7 +9,7 @@ export interface ErrorResponse {
   error: {
     code: ErrorCode;
     message: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
   };
 }
 
@@ -55,7 +55,7 @@ export type ErrorCode =
 export interface ValidationErrorDetails {
   field: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 /**
@@ -64,7 +64,7 @@ export interface ValidationErrorDetails {
 export function createErrorResponse(
   code: ErrorCode,
   message: string,
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 ): ErrorResponse {
   const error: ErrorResponse['error'] = {
     code,

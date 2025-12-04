@@ -27,7 +27,7 @@ interface QAPanelProps {
   batch?: QuestionBatch | null;
   specUpdates?: SpecUpdate[];
   decisionEntries?: DecisionEntry[];
-  onAnswer: (questionId: string, answer: any) => void;
+  onAnswer: (questionId: string, answer: unknown) => void;
   onSkip?: (questionId: string) => void;
   onCompleteBatch?: () => void;
   onDecisionUndo?: (decisionId: string) => void;
@@ -133,7 +133,7 @@ export function QAPanel({
   }, [decisionEntries]);
 
   const handleAnswer = useCallback(
-    (questionId: string, answer: any) => {
+    (questionId: string, answer: unknown) => {
       onAnswer(questionId, answer);
     },
     [onAnswer]

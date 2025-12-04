@@ -160,7 +160,7 @@ export const actualizeWorkflow: WorkflowDefinition = {
                 description: 'No changes, just show diff report',
               },
             ],
-          } as any,
+          } as string,
         },
 
         // Handle user choice
@@ -215,7 +215,7 @@ export const actualizeWorkflow: WorkflowDefinition = {
                             label: 'Custom action',
                           },
                         ],
-                      } as any,
+                      } as string,
                     },
                     {
                       id: 'handle_drift_action',

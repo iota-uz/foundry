@@ -68,7 +68,7 @@ export function FeatureList({
         {['all', 'draft', 'in_progress', 'completed'].map((filter) => (
           <button
             key={filter}
-            onClick={() => setStatusFilter(filter as any)}
+            onClick={() => setStatusFilter(filter as string)}
             className={`
               px-3 py-1 rounded-md text-sm font-medium transition-colors
               ${statusFilter === filter

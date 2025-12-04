@@ -230,7 +230,7 @@ export const QuestionStepSchema = BaseStepDefinitionSchema.extend({
 });
 
 // Forward declare for recursive types
-export const StepDefinitionSchema: z.ZodType<any> = z.lazy(() =>
+export const StepDefinitionSchema: z.ZodType<StepDefinition> = z.lazy(() =>
   z.union([
     CodeStepSchema,
     LLMStepSchema,

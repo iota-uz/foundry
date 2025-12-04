@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const sessionId = nanoid();
 
     // Prepare workflow data
-    const workflowData: any = {
+    const workflowData: Record<string, unknown> = {
       projectId,
       projectPath,
       scope: parsed.scope,

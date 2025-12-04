@@ -130,7 +130,7 @@ export function ApiKeyPrompt({ onComplete, onSkip }: ApiKeyPromptProps) {
 
         {/* Help */}
         <div className="mt-6 p-4 rounded-lg bg-gray-800/40 border border-gray-700">
-          <h3 className="text-sm font-semibold text-white mb-2">Don't have an API key?</h3>
+          <h3 className="text-sm font-semibold text-white mb-2">{"Don't have an API key?"}</h3>
           <ol className="space-y-1 text-xs text-gray-400 list-decimal list-inside">
             <li>
               Visit{' '}

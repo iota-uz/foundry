@@ -7,6 +7,7 @@
  */
 export interface Module {
   id: string;
+  slug: string; // Human-readable slug (e.g., "auth", "payments")
   projectId: string;
   name: string;
   description: string;

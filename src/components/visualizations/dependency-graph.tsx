@@ -47,8 +47,8 @@ export function DependencyGraph({
   loading,
   error,
 }: DependencyGraphProps) {
-  const [nodes, setNodes] = useState<any[]>([]);
-  const [edges, setEdges] = useState<any[]>([]);
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Node[]>([]);
   const [layoutDirection, setLayoutDirection] = useState<'TB' | 'LR'>('TB');
   const [circularDeps, setCircularDeps] = useState<string[][]>([]);
 
@@ -56,97 +56,101 @@ export function DependencyGraph({
   useEffect(() => {
     if (!features || loading) return;
 
-    try {
-      // Create feature nodes
-      const featureNodes: CustomNode[] = features.map((feature) => ({
-        id: generateNodeId('feature', feature.id),
-        type: 'feature' as const,
-        position: { x: 0, y: 0 },
-        data: {
-          featureName: feature.name,
-          featureId: feature.id,
-          module: feature.module,
-          status: feature.status,
-          description: feature.description,
-        },
-        width: 200,
-        height: 100,
-      })) as CustomNode[];
+    async function calculateLayout() {
+      try {
+        // Create feature nodes
+        const featureNodes: CustomNode[] = features.map((feature) => ({
+          id: generateNodeId('feature', feature.id),
+          type: 'feature' as const,
+          position: { x: 0, y: 0 },
+          data: {
+            featureName: feature.name,
+            featureId: feature.id,
+            module: feature.module,
+            status: feature.status,
+            description: feature.description,
+          },
+          width: 200,
+          height: 100,
+        })) as CustomNode[];
 
-      // Create dependency edges
-      const depEdges: CustomEdge[] = [];
-      const edgeSet = new Set<string>();
+        // Create dependency edges
+        const depEdges: CustomEdge[] = [];
+        const edgeSet = new Set<string>();
 
-      features.forEach((feature) => {
-        if (feature.dependencies && feature.dependencies.length > 0) {
-          feature.dependencies.forEach((depId) => {
-            const depFeature = features.find((f) => f.id === depId);
-            if (depFeature) {
-              const edgeId = generateEdgeId(
-                generateNodeId('feature', feature.id),
-                generateNodeId('feature', depId)
-              );
-              if (!edgeSet.has(edgeId)) {
-                depEdges.push({
-                  id: edgeId,
-                  source: generateNodeId('feature', feature.id),
-                  target: generateNodeId('feature', depId),
-                  type: 'relationship',
-                  data: {
-                    cardinality: '1:1',
-                    relationshipType: 'REFERENCE',
-                  },
-                });
-                edgeSet.add(edgeId);
+        features.forEach((feature) => {
+          if (feature.dependencies && feature.dependencies.length > 0) {
+            feature.dependencies.forEach((depId) => {
+              const depFeature = features.find((f) => f.id === depId);
+              if (depFeature) {
+                const edgeId = generateEdgeId(
+                  generateNodeId('feature', feature.id),
+                  generateNodeId('feature', depId)
+                );
+                if (!edgeSet.has(edgeId)) {
+                  depEdges.push({
+                    id: edgeId,
+                    source: generateNodeId('feature', feature.id),
+                    target: generateNodeId('feature', depId),
+                    type: 'relationship',
+                    data: {
+                      cardinality: '1:1',
+                      relationshipType: 'REFERENCE',
+                    },
+                  });
+                  edgeSet.add(edgeId);
+                }
               }
-            }
-          });
-        }
-      });
-
-      // Detect circular dependencies
-      const circular = detectCircularDependencies(
-        depEdges.map((e) => ({
-          source: e.source as string,
-          target: e.target as string,
-        }))
-      );
-      setCircularDeps(circular);
-
-      // Highlight circular dependency edges in red
-      const circularEdgeIds = new Set<string>();
-      circular.forEach((cycle) => {
-        for (let i = 0; i < cycle.length - 1; i++) {
-          const current = cycle[i];
-          const next = cycle[i + 1];
-          if (current && next) {
-            circularEdgeIds.add(generateEdgeId(current, next));
+            });
           }
-        }
-      });
+        });
 
-      const highlightedEdges: CustomEdge[] = depEdges.map((edge) => ({
-        ...edge,
-        style: circularEdgeIds.has(edge.id)
-          ? {
-              stroke: '#ef4444',
-              strokeWidth: 2.5,
+        // Detect circular dependencies
+        const circular = detectCircularDependencies(
+          depEdges.map((e) => ({
+            source: e.source as string,
+            target: e.target as string,
+          }))
+        );
+        setCircularDeps(circular);
+
+        // Highlight circular dependency edges in red
+        const circularEdgeIds = new Set<string>();
+        circular.forEach((cycle) => {
+          for (let i = 0; i < cycle.length - 1; i++) {
+            const current = cycle[i];
+            const next = cycle[i + 1];
+            if (current && next) {
+              circularEdgeIds.add(generateEdgeId(current, next));
             }
-          : undefined,
-      } as CustomEdge));
+          }
+        });
 
-      // Calculate layout
-      const layouted = getLayoutedElements(
-        featureNodes,
-        highlightedEdges,
-        layoutDirection
-      );
+        const highlightedEdges: CustomEdge[] = depEdges.map((edge) => ({
+          ...edge,
+          style: circularEdgeIds.has(edge.id)
+            ? {
+                stroke: '#ef4444',
+                strokeWidth: 2.5,
+              }
+            : undefined,
+        } as CustomEdge));
 
-      setNodes(layouted.nodes);
-      setEdges(layouted.edges);
-    } catch (err) {
-      console.error('Failed to create dependency graph:', err);
+        // Calculate layout
+        const layouted = await getLayoutedElements(
+          featureNodes,
+          highlightedEdges,
+          layoutDirection
+        );
+
+        setNodes(layouted.nodes);
+        setEdges(layouted.edges);
+      } catch (err) {
+        console.error('Failed to create dependency graph:', err);
+      }
     }
+
+    calculateLayout();
   }, [features, loading, layoutDirection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
@@ -246,7 +250,7 @@ export function DependencyGraph({
 
           <MiniMap
             nodeColor={(node) => {
-              const status = (node.data as any).status;
+              const status = (node.data as string).status;
               if (status === 'completed') return '#10b981';
               if (status === 'in_progress') return '#f59e0b';
               return '#6b7280';

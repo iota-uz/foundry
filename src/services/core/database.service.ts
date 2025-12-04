@@ -218,7 +218,7 @@ export class DatabaseService implements IDatabaseService {
       ORDER BY started_at ASC
     `);
 
-    const rows = stmt.all(checkpointId) as any[];
+    const rows = stmt.all(checkpointId) as string[];
 
     return rows.map((row) => ({
       id: row.id,

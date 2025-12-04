@@ -12,7 +12,7 @@ import { EventEmitter } from 'events';
  */
 export interface QuestionResponse {
   questionId: string;
-  answer: any;
+  answer: unknown;
   skipped: boolean;
   answeredAt: string;
 }
@@ -71,7 +71,7 @@ export async function executeQuestionStep(
       output,
       duration,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
     return {
       stepId: step.id,
@@ -157,7 +157,7 @@ async function waitForResponse(
 export function submitAnswer(
   sessionId: string,
   questionId: string,
-  answer: any
+  answer: string | string[] | number | boolean
 ): void {
   const response: QuestionResponse = {
     questionId,
@@ -187,8 +187,8 @@ export function skipQuestion(sessionId: string, questionId: string): void {
  * Validate answer against validation rules
  */
 function validateAnswer(
-  answer: any,
-  validation: any
+  answer: unknown,
+  validation: unknown
 ): { valid: boolean; errors?: string[] } {
   const errors: string[] = [];
 

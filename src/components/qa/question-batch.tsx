@@ -14,7 +14,7 @@ import { ProgressIndicator } from './progress-indicator';
 
 interface QuestionBatchProps {
   batch: QuestionBatch;
-  onAnswer: (questionId: string, answer: any) => void;
+  onAnswer: (questionId: string, answer: unknown) => void;
   onSkip?: (questionId: string) => void;
   onSkipBatch?: () => void;
   onCompleteBatch?: () => void;
@@ -50,7 +50,7 @@ export function QuestionBatch({
   const isComplete = answeredCount === totalQuestions;
 
   const handleAnswer = useCallback(
-    (answer: any) => {
+    (answer: unknown) => {
       if (!currentQuestion) return;
       onAnswer(currentQuestion.id, answer);
       setAnsweredQuestions((prev) => new Set([...prev, currentQuestion.id]));
@@ -69,7 +69,7 @@ export function QuestionBatch({
         setCurrentQuestionIndex(nextIndex);
       }
     },
-    [currentQuestion?.id, onAnswer, currentQuestionIndex, batch.questions, answeredQuestions]
+    [currentQuestion, onAnswer, currentQuestionIndex, batch.questions, answeredQuestions]
   );
 
   const handleSkip = useCallback(() => {
@@ -91,7 +91,7 @@ export function QuestionBatch({
     if (nextIndex < batch.questions.length) {
       setCurrentQuestionIndex(nextIndex);
     }
-  }, [currentQuestion?.id, onSkip, currentQuestionIndex, batch.questions, answeredQuestions]);
+  }, [currentQuestion, onSkip, currentQuestionIndex, batch.questions, answeredQuestions]);
 
   const handlePrevious = useCallback(() => {
     if (currentQuestionIndex > 0) {

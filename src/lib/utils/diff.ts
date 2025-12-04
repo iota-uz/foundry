@@ -32,12 +32,12 @@ function deepClone<T>(obj: T): T {
  * Compare two objects and return differences
  */
 export interface DiffResult {
-  added: Record<string, any>;
-  removed: Record<string, any>;
-  modified: Record<string, { before: any; after: any }>;
+  added: Record<string, unknown>;
+  removed: Record<string, unknown>;
+  modified: Record<string, { before: unknown; after: unknown }>;
 }
 
-export function diff(before: any, after: any): DiffResult {
+export function diff(before: unknown, after: unknown): DiffResult {
   const result: DiffResult = {
     added: {},
     removed: {},
@@ -108,7 +108,7 @@ export function diff(before: any, after: any): DiffResult {
 /**
  * Apply a diff to restore previous state
  */
-export function applyReverseDiff(current: any, diffResult: DiffResult): any {
+export function applyReverseDiff(current: unknown, diffResult: DiffResult): unknown {
   const restored = deepClone(current);
 
   // Remove added keys
@@ -152,6 +152,6 @@ export function restore<T>(snapshotStr: string): T {
 /**
  * Check if two objects are equal
  */
-export function isEqual(a: any, b: any): boolean {
+export function isEqual(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }

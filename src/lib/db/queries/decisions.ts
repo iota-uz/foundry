@@ -16,18 +16,18 @@ export interface Decision {
   sessionId: string;
   questionId: string;
   questionText: string;
-  answerGiven: any;
-  alternatives: any[] | null;
+  answerGiven: unknown;
+  alternatives: unknown[] | null;
   category: string;
   phase: 'cpo' | 'clarify' | 'cto';
   batchId: string | null;
-  artifactsAffected: any[] | null;
-  specChanges: any[] | null;
+  artifactsAffected: unknown[] | null;
+  specChanges: unknown[] | null;
   cascadeGroup: string | null;
   canUndo: boolean;
   undoneAt: string | null;
   undoneBy: string | null;
-  aiRecommendation: any | null;
+  aiRecommendation: unknown | null;
   recommendationFollowed: boolean | null;
   rationaleExplicit: string | null;
   rationaleInferred: string | null;
@@ -132,7 +132,7 @@ export function getDecisions(
   const database = db || getDatabase();
 
   let sql = `SELECT * FROM decisions WHERE project_id = ?`;
-  const params: any[] = [projectId];
+  const params: (string | number | boolean)[] = [projectId];
 
   if (filters?.featureId) {
     sql += ` AND feature_id = ?`;
@@ -170,7 +170,7 @@ export function getDecisions(
   sql += ` ORDER BY created_at DESC`;
 
   const stmt = database.prepare(sql);
-  const rows = stmt.all(...params) as any[];
+  const rows = stmt.all(...params) as unknown[];
 
   return rows.map(rowToDecision);
 }
@@ -188,7 +188,7 @@ export function getDecision(
     SELECT * FROM decisions WHERE id = ?
   `);
 
-  const row = stmt.get(decisionId) as any;
+  const row = stmt.get(...params) as unknown;
 
   if (!row) {
     return null;
@@ -236,7 +236,7 @@ export function getDecisionsByCascadeGroup(
     ORDER BY created_at ASC
   `);
 
-  const rows = stmt.all(cascadeGroup) as any[];
+  const rows = stmt.all(...params) as unknown[];
 
   return rows.map(rowToDecision);
 }
@@ -244,7 +244,7 @@ export function getDecisionsByCascadeGroup(
 /**
  * Convert database row to Decision
  */
-function rowToDecision(row: any): Decision {
+function rowToDecision(row: unknown): Decision {
   return {
     id: row.id,
     projectId: row.project_id,

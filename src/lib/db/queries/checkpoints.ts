@@ -82,7 +82,7 @@ export function getCheckpoint(
     WHERE session_id = ?
   `);
 
-  const row = stmt.get(sessionId) as any;
+  const row = stmt.get(...params) as unknown;
 
   if (!row) {
     return null;
@@ -106,7 +106,7 @@ export function listCheckpoints(
     ORDER BY last_activity_at DESC
   `);
 
-  const rows = stmt.all(projectId) as any[];
+  const rows = stmt.all(...params) as unknown[];
 
   return rows.map(rowToWorkflowState);
 }
@@ -142,7 +142,7 @@ export function getActiveCheckpoint(
     LIMIT 1
   `);
 
-  const row = stmt.get(projectId) as any;
+  const row = stmt.get(...params) as unknown;
 
   if (!row) {
     return null;
@@ -198,7 +198,7 @@ export function updateCheckpointStatus(
 /**
  * Convert database row to WorkflowState
  */
-function rowToWorkflowState(row: any): WorkflowState {
+function rowToWorkflowState(row: unknown): WorkflowState {
   return {
     sessionId: row.session_id,
     projectId: row.project_id,

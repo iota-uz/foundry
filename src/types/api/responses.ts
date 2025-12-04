@@ -205,8 +205,8 @@ export interface ActualizeResponse {
 export interface DriftItem {
   type: 'feature' | 'schema' | 'api';
   id: string;
-  specState: any;
-  codeState: any;
+  specState: unknown;
+  codeState: unknown;
   diff: string;
 }
 
@@ -250,8 +250,8 @@ export interface HistoryEntry {
 
 export interface FieldChange {
   field: string;
-  from: any;
-  to: any;
+  from: unknown;
+  to: unknown;
 }
 
 // ============================================================================

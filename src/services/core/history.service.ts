@@ -18,7 +18,7 @@ export interface ChangeEntry {
   artifactId: string;
   action: 'created' | 'updated' | 'deleted';
   actor: string; // 'user' | 'ai:cpo-agent' | 'ai:cto-agent' | 'ai:clarify-agent'
-  changes: Record<string, any>;
+  changes: Record<string, unknown>;
   reason?: string;
   projectId?: string;
   sessionId?: string;
@@ -57,7 +57,7 @@ export interface IHistoryService {
     format: ExportFormat,
     limit?: number
   ): Promise<string>;
-  computeDiff(before: any, after: any): DiffResult;
+  computeDiff(before: unknown, after: unknown): DiffResult;
 }
 
 /**
@@ -204,7 +204,7 @@ export class HistoryService implements IHistoryService {
   /**
    * Compute diff between two object states
    */
-  computeDiff(before: any, after: any): DiffResult {
+  computeDiff(before: unknown, after: unknown): DiffResult {
     return diff(before, after);
   }
 
@@ -317,7 +317,7 @@ export class HistoryService implements IHistoryService {
   /**
    * Format changes for markdown display
    */
-  private formatChanges(changes: any): string[] {
+  private formatChanges(changes: unknown): string[] {
     const lines: string[] = [];
 
     if (changes?.added && Object.keys(changes.added).length > 0) {
@@ -337,7 +337,7 @@ export class HistoryService implements IHistoryService {
     if (changes?.modified && Object.keys(changes.modified).length > 0) {
       lines.push('- **Modified:**');
       for (const [key, change] of Object.entries(changes.modified)) {
-        const mod = change as { before: any; after: any };
+        const mod = change as { before: unknown; after: unknown };
         lines.push(`  - **${key}**`);
         lines.push(`    - From: ${JSON.stringify(mod.before)}`);
         lines.push(`    - To: ${JSON.stringify(mod.after)}`);

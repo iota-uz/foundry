@@ -10,6 +10,8 @@ import {
   RecentActivity,
   QuickActions,
 } from '@/components/dashboard';
+import { NewModuleDialog } from '@/components/dialogs/new-module-dialog';
+import { NewFeatureDialog } from '@/components/dialogs/new-feature-dialog';
 import type { ActivityItem } from '@/components/dashboard/recent-activity';
 import { FolderIcon } from '@heroicons/react/24/outline';
 
@@ -19,6 +21,8 @@ export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
   const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
   const [startingWorkflow, setStartingWorkflow] = useState(false);
+  const [showNewModule, setShowNewModule] = useState(false);
+  const [showNewFeature, setShowNewFeature] = useState(false);
 
   // Avoid hydration mismatch by only rendering after mount
   useEffect(() => {
@@ -117,17 +121,22 @@ export default function DashboardPage() {
 
         <QuickActions
           projectPhase={project.phase}
-          onNewFeature={() => {
-            // TODO: Handle new feature
-          }}
-          onNewModule={() => {
-            // TODO: Handle new module
-          }}
+          onNewFeature={() => setShowNewFeature(true)}
+          onNewModule={() => setShowNewModule(true)}
           onStartCPO={() => handleStartWorkflow('cpo-phase')}
           onStartCTO={() => handleStartWorkflow('cto-phase')}
           disabled={startingWorkflow}
         />
       </div>
+
+      <NewModuleDialog
+        isOpen={showNewModule}
+        onClose={() => setShowNewModule(false)}
+      />
+      <NewFeatureDialog
+        isOpen={showNewFeature}
+        onClose={() => setShowNewFeature(false)}
+      />
     </div>
   );
 }

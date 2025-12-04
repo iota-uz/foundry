@@ -43,7 +43,7 @@ export async function GET(
       },
       summary: {
         totalDriftItems: (state.data.drift || []).length,
-        requiresAction: (state.data.drift || []).filter((d: any) => !d.autoFixable).length,
+        requiresAction: (state.data.drift || []).filter((d: unknown) => !d.autoFixable).length,
       },
     };
 

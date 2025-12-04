@@ -13,7 +13,7 @@ export interface AIQuestion {
   options?: QuestionOption[];
   validation?: ValidationRule;
   required: boolean;
-  defaultValue?: any;
+  defaultValue?: unknown;
   context?: string; // Why AI is asking (DEPRECATED: use explainer)
   explainer?: QuestionExplainer;
   recommendation?: AIRecommendation;
@@ -143,7 +143,7 @@ export interface QuestionBatch {
  */
 export interface Answer {
   questionId: string;
-  value: any; // Can be string, string[], number, etc.
+  value: string | string[] | number | boolean; // Can be string, string[], number, or boolean
   answeredAt: string;
   skipped: boolean;
 }
@@ -156,7 +156,7 @@ export interface QuestionGenParams {
   topic: string;
   topicDescription?: string;
   previousAnswers: Answer[];
-  constitution?: any;
+  constitution?: Record<string, unknown>;
   questionCount?: number; // How many questions already asked in this topic
 }
 

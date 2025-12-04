@@ -10,6 +10,7 @@ const nextConfig = {
     // Ignore type errors during build
     ignoreBuildErrors: false,
   },
+  transpilePackages: ['@dagrejs/dagre', '@dagrejs/graphlib'],
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals.push('better-sqlite3', 'chokidar');
@@ -23,6 +24,16 @@ const nextConfig = {
         fs: false,
       };
     }
+
+    // Ignore dynamic require warnings from dagre - we're importing graphlib separately
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      {
+        module: /@dagrejs\/dagre/,
+        message: /Critical dependency/,
+      },
+    ];
+
     return config;
   },
 };

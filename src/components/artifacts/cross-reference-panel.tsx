@@ -35,26 +35,25 @@ export function CrossReferencePanel({
   const [selectedTab, setSelectedTab] = useState<'incoming' | 'outgoing' | 'all'>('all');
 
   useEffect(() => {
+    const loadReferences = async () => {
+      setLoading(true);
+      try {
+        // TODO: Implement API call to fetch cross-references
+        const response = await fetch(
+          `/api/artifacts/${artifactType}/${artifactId}/references`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setReferences(data.references || []);
+        }
+      } catch (error) {
+        console.error('Failed to load references:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     loadReferences();
   }, [artifactType, artifactId]);
-
-  const loadReferences = async () => {
-    setLoading(true);
-    try {
-      // TODO: Implement API call to fetch cross-references
-      const response = await fetch(
-        `/api/artifacts/${artifactType}/${artifactId}/references`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setReferences(data.references || []);
-      }
-    } catch (error) {
-      console.error('Failed to load references:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredReferences = references.filter((ref) => {
     if (selectedTab === 'incoming') return ref.relationshipType === 'used_by';

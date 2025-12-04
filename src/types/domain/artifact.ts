@@ -70,7 +70,7 @@ export interface Endpoint {
  * OpenAPI specification artifact
  */
 export interface OpenAPIArtifact {
-  spec: Record<string, any>; // Full OpenAPI 3.0 spec
+  spec: Record<string, unknown>; // Full OpenAPI 3.0 spec
   endpoints: Endpoint[];
   lastUpdated: string;
 }
@@ -102,7 +102,7 @@ export interface GraphQLArgument {
   name: string;
   type: string;
   required: boolean;
-  defaultValue?: any;
+  defaultValue?: string | number | boolean;
 }
 
 /**

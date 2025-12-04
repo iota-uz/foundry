@@ -60,7 +60,7 @@ export async function GET(
     const response: HistoryResponse = {
       artifactType: params.type as 'feature' | 'entity' | 'endpoint' | 'component',
       artifactId: params.id,
-      entries: entries as any, // Type assertion since mapping is correct
+      entries: entries as string, // Type assertion since mapping is correct
     };
 
     return NextResponse.json(response);

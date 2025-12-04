@@ -284,7 +284,7 @@ function AmbiguityCard({
         <div className="flex items-start gap-3">
           <span className="text-lg flex-shrink-0">{severityIcons[ambiguity.severity]}</span>
           <div className="flex-1">
-            <p className="font-semibold text-white mb-1">"{ambiguity.text}"</p>
+            <p className="font-semibold text-white mb-1">{`"${ambiguity.text}"`}</p>
             <p className="text-xs text-gray-400">
               Context: {ambiguity.context}
             </p>

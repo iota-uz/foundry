@@ -129,7 +129,7 @@ export const clarifyPhaseWorkflow: WorkflowDefinition = {
                 options: 'currentAmbiguity.options',
                 context: 'currentAmbiguity.context',
                 allowSkip: true,
-              } as any,
+              } as string,
             },
 
             // Handle resolution

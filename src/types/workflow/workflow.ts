@@ -66,7 +66,7 @@ export interface WorkflowResult {
   sessionId: string;
   workflowId: WorkflowId;
   status: 'completed' | 'failed' | 'cancelled';
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   error?: string;
   duration: number;
   startedAt: string;

@@ -96,7 +96,7 @@ export async function PUT(request: NextRequest) {
     if (exists) {
       const existing = await fileService.readYaml<Constitution>(constitutionPath);
       // Merge updates carefully - use type assertion since it's validated by Zod
-      const merged: Record<string, any> = {
+      const merged: Record<string, unknown> = {
         ...existing,
         ...(parsed.principles && { principles: parsed.principles }),
         ...(parsed.coding && { coding: { ...existing.coding, ...parsed.coding } }),
@@ -109,7 +109,7 @@ export async function PUT(request: NextRequest) {
       constitution = merged as Constitution;
     } else {
       // Create new constitution - provide defaults for all required fields
-      const defaultConstitution: Record<string, any> = {
+      const defaultConstitution: Record<string, unknown> = {
         version: '1.0',
         principles: parsed.principles ?? [],
         coding: parsed.coding ?? {

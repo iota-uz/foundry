@@ -19,7 +19,7 @@ import { Explainer } from './explainer';
 
 interface QuestionCardProps {
   question: AIQuestion;
-  onAnswer: (answer: any) => void;
+  onAnswer: (answer: unknown) => void;
   onSkip?: (() => void) | undefined;
   disabled?: boolean | undefined;
   showRecommendation?: boolean | undefined;
@@ -38,7 +38,7 @@ export function QuestionCard({
   showKeyboardHints = true,
   onImpactPreview,
 }: QuestionCardProps) {
-  const [answer, setAnswer] = useState<any>(null);
+  const [answer, setAnswer] = useState<string | string[] | number | boolean | null>(null);
   const [expandedExplainer, setExpandedExplainer] = useState(
     question.explainer && (question.questionType === 'text' || question.questionType === 'code')
   );

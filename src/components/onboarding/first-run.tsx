@@ -195,14 +195,13 @@ export function FirstRun({ onComplete }: FirstRunProps) {
     {
       id: 'ready',
       title: 'Ready to Start',
-      description: 'Let\'s build your specification',
+      description: "Let's build your specification",
       content: (
         <div className="text-center max-w-md mx-auto space-y-4">
           <CheckCircleIcon className="h-16 w-16 text-green-400 mx-auto" />
-          <h2 className="text-2xl font-bold text-white">You\'re All Set!</h2>
+          <h2 className="text-2xl font-bold text-white">{"You're All Set!"}</h2>
           <p className="text-gray-400 leading-relaxed">
-            You\'re ready to start building your first specification. Click "Get Started"
-            to create a new project or open an existing one.
+            {`You're ready to start building your first specification. Click "Get Started" to create a new project or open an existing one.`}
           </p>
           <div className="pt-4">
             <button

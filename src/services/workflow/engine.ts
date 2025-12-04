@@ -121,7 +121,7 @@ export class WorkflowEngine {
       });
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = error.message || 'Workflow execution failed';
 
       // Emit error event
@@ -184,7 +184,7 @@ export class WorkflowEngine {
   /**
    * Submit answer to current question
    */
-  submitAnswer(sessionId: string, questionId: string, answer: any): void {
+  submitAnswer(sessionId: string, questionId: string, answer: unknown): void {
     submitAnswer(sessionId, questionId, answer);
   }
 
@@ -292,7 +292,7 @@ export class WorkflowEngine {
   /**
    * Load project constitution
    */
-  private async loadConstitution(projectId: string): Promise<any | null> {
+  private async loadConstitution(projectId: string): Promise<Record<string, unknown> | null> {
     try {
       return await this.constitutionService.getConstitution(projectId);
     } catch {
@@ -377,7 +377,7 @@ export class WorkflowEngine {
         startedAt: context.state.startedAt,
         completedAt: context.state.completedAt!,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const duration = Date.now() - startTime;
 
       return {
@@ -448,7 +448,7 @@ export class WorkflowEngine {
           break;
 
         default:
-          throw new Error(`Unknown step type: ${(step as any).type}`);
+          throw new Error(`Unknown step type: ${(step as string).type}`);
       }
 
       // Emit step complete event
@@ -459,7 +459,7 @@ export class WorkflowEngine {
       });
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Emit step error event
       this.events.emit('step:error', {
         sessionId: context.sessionId,

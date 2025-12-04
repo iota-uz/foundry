@@ -51,50 +51,50 @@ export async function GET(request: NextRequest) {
       }, 15000);
 
       // WorkflowEngine event handlers
-      const onStepStart = (data: any) => {
+      const onStepStart = (data: unknown) => {
         if (data.sessionId === sessionId) {
           sendEvent({ type: 'step_start', data });
         }
       };
 
-      const onStepComplete = (data: any) => {
+      const onStepComplete = (data: unknown) => {
         if (data.sessionId === sessionId) {
           sendEvent({ type: 'step_complete', data });
         }
       };
 
-      const onStepError = (data: any) => {
+      const onStepError = (data: unknown) => {
         if (data.sessionId === sessionId) {
           sendEvent({ type: 'step_error', data });
         }
       };
 
-      const onWorkflowPause = (data: any) => {
+      const onWorkflowPause = (data: unknown) => {
         if (data.sessionId === sessionId) {
           sendEvent({ type: 'workflow_pause', data });
         }
       };
 
-      const onWorkflowResume = (data: any) => {
+      const onWorkflowResume = (data: unknown) => {
         if (data.sessionId === sessionId) {
           sendEvent({ type: 'workflow_resume', data });
         }
       };
 
-      const onWorkflowComplete = (data: any) => {
+      const onWorkflowComplete = (data: unknown) => {
         if (data.sessionId === sessionId) {
           sendEvent({ type: 'complete', data });
         }
       };
 
-      const onWorkflowError = (data: any) => {
+      const onWorkflowError = (data: unknown) => {
         if (data.sessionId === sessionId) {
           sendEvent({ type: 'error', data });
         }
       };
 
       // Question handler event
-      const onQuestion = (data: any) => {
+      const onQuestion = (data: unknown) => {
         if (data.sessionId === sessionId) {
           sendEvent({ type: 'question', data });
         }

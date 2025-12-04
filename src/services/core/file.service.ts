@@ -158,6 +158,7 @@ export class FileService implements IFileService {
     // Dynamically import watcher to avoid bundling in client builds
     if (typeof window === 'undefined') {
       // Server-side only
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { watch } = require('@/lib/fs/watcher');
       return watch(targetPath, callback);
     }

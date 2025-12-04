@@ -18,7 +18,7 @@ export interface HistoryEntry {
   author: string;
   action: 'created' | 'updated' | 'deleted';
   changes: string[];
-  snapshot?: any; // Full artifact state at this point
+  snapshot?: unknown; // Full artifact state at this point
   commitHash?: string;
 }
 
@@ -45,28 +45,28 @@ export function HistoryViewer({
   const [reverting, setReverting] = useState(false);
 
   useEffect(() => {
+    const loadHistory = async () => {
+      setLoading(true);
+      try {
+        // TODO: Implement API call to fetch history
+        const response = await fetch(
+          `/api/projects/${encodeURIComponent(projectPath)}/history/${artifactType}/${artifactId}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setHistory(data.history || []);
+        }
+      } catch (error) {
+        console.error('Failed to load history:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (isOpen) {
       loadHistory();
     }
   }, [isOpen, artifactType, artifactId, projectPath]);
-
-  const loadHistory = async () => {
-    setLoading(true);
-    try {
-      // TODO: Implement API call to fetch history
-      const response = await fetch(
-        `/api/projects/${encodeURIComponent(projectPath)}/history/${artifactType}/${artifactId}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setHistory(data.history || []);
-      }
-    } catch (error) {
-      console.error('Failed to load history:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleRevert = async (historyId: string) => {
     if (!onRevert) return;
@@ -74,7 +74,23 @@ export function HistoryViewer({
     setReverting(true);
     try {
       await onRevert(historyId);
-      await loadHistory(); // Refresh history after revert
+
+      // Refresh history after revert
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `/api/projects/${encodeURIComponent(projectPath)}/history/${artifactType}/${artifactId}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setHistory(data.history || []);
+        }
+      } catch (error) {
+        console.error('Failed to reload history:', error);
+      } finally {
+        setLoading(false);
+      }
+
       setSelectedEntry(null);
     } catch (error) {
       console.error('Failed to revert:', error);

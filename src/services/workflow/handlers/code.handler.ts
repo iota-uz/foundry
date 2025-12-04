@@ -47,7 +47,7 @@ export async function executeCodeStep(
       output,
       duration,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
     return {
       stepId: step.id,
@@ -156,18 +156,18 @@ export function registerHandler(name: string, handler: CodeStepHandler): void {
  * Code step handler function type
  */
 export type CodeStepHandler = (
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-) => Promise<Record<string, any>>;
+) => Promise<Record<string, unknown>>;
 
 // ============================================================================
 // WORKFLOW INITIALIZATION HANDLERS
 // ============================================================================
 
 async function initCPOWorkflow(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   // Initialize CPO phase state
   context.state.data.cpoState = {
     phase: 'cpo',
@@ -185,9 +185,9 @@ async function initCPOWorkflow(
 }
 
 async function initCTOWorkflow(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   // Initialize CTO phase state
   context.state.data.ctoState = {
     phase: 'cto',
@@ -205,9 +205,9 @@ async function initCTOWorkflow(
 }
 
 async function initClarifyWorkflow(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   // Initialize Clarify phase state
   const clarifyState = {
     ambiguities: [],
@@ -227,9 +227,9 @@ async function initClarifyWorkflow(
 }
 
 async function initREWorkflow(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   // Initialize reverse engineering workflow state
   context.state.data.reState = {
     phase: 're',
@@ -252,9 +252,9 @@ async function initREWorkflow(
 // ============================================================================
 
 async function loadProjectState(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -277,9 +277,9 @@ async function loadProjectState(
 }
 
 async function initTopicContext(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const currentTopic = input.currentTopic;
   return {
     currentTopic,
@@ -297,9 +297,9 @@ async function initTopicContext(
 // ============================================================================
 
 async function saveAnswerToSpec(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -359,13 +359,13 @@ async function saveAnswerToSpec(
 }
 
 async function formatAnswerForStorage(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const answer = input.answer;
   const questionType = input.questionType;
 
-  let formatted: any = answer;
+  let formatted: unknown = answer;
 
   // Format based on question type
   switch (questionType) {
@@ -393,9 +393,9 @@ async function formatAnswerForStorage(
 }
 
 async function validateAnswerCompleteness(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const answer = input.answer;
   const required = input.required !== false;
 
@@ -429,9 +429,9 @@ async function validateAnswerCompleteness(
 // ============================================================================
 
 async function generateCPOSummary(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -457,9 +457,9 @@ async function generateCPOSummary(
 }
 
 async function generateCTOSummary(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -485,9 +485,9 @@ async function generateCTOSummary(
 // ============================================================================
 
 async function detectAmbiguities(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -571,9 +571,9 @@ async function detectAmbiguities(
 }
 
 async function categorizeAmbiguity(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const ambiguity = input.ambiguity as Ambiguity;
 
   // Determine severity based on type and context
@@ -595,9 +595,9 @@ async function categorizeAmbiguity(
 }
 
 async function resolveAmbiguity(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const ambiguityId = input.ambiguityId;
   const resolution = input.resolution;
 
@@ -623,9 +623,9 @@ async function resolveAmbiguity(
 }
 
 async function showClarifyUI(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   // This is a UI-side operation, no-op in handler
   return {
     ambiguitiesShown: true,
@@ -634,9 +634,9 @@ async function showClarifyUI(
 }
 
 async function applyResolutionToSpec(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -683,9 +683,9 @@ async function applyResolutionToSpec(
 }
 
 async function markAsTBD(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const ambiguityId = input.ambiguityId;
 
   if (!context.state.clarifyState) {
@@ -708,9 +708,9 @@ async function markAsTBD(
 }
 
 async function deferToCTO(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const ambiguity = input.ambiguity as Ambiguity;
 
   // Store deferred ambiguity for CTO phase
@@ -728,9 +728,9 @@ async function deferToCTO(
 }
 
 async function presentAmbiguitySummary(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   if (!context.state.clarifyState) {
     throw new Error('Clarify state not initialized');
   }
@@ -754,9 +754,9 @@ async function presentAmbiguitySummary(
 }
 
 async function deferAmbiguity(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const ambiguityId = input.currentAmbiguity?.id;
 
   if (!context.state.clarifyState || !ambiguityId) {
@@ -785,9 +785,9 @@ async function deferAmbiguity(
 }
 
 async function applyResolution(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -850,9 +850,9 @@ async function applyResolution(
 }
 
 async function generateClarifySummary(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   if (!context.state.clarifyState) {
     throw new Error('Clarify state not initialized');
   }
@@ -872,9 +872,9 @@ async function generateClarifySummary(
 }
 
 async function markClarifyComplete(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   if (context.state.clarifyState) {
     context.state.clarifyState.status = 'complete';
   }
@@ -886,9 +886,9 @@ async function markClarifyComplete(
 }
 
 async function updateProjectPhase(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const projectFile = path.join(context.projectId, 'project.yaml');
 
@@ -924,9 +924,9 @@ async function updateProjectPhase(
 // ============================================================================
 
 async function scanDirectoryStructure(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const targetPath = input.targetPath;
 
@@ -963,9 +963,9 @@ async function scanDirectoryStructure(
 }
 
 async function loadModuleFiles(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const modulePath = input.modulePath;
 
@@ -997,9 +997,9 @@ async function loadModuleFiles(
 }
 
 async function findSchemaFiles(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const targetPath = input.targetPath;
 
@@ -1015,9 +1015,9 @@ async function findSchemaFiles(
 }
 
 async function findAPIFiles(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const targetPath = input.targetPath;
 
@@ -1033,9 +1033,9 @@ async function findAPIFiles(
 }
 
 async function compileREResults(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const report = {
     projectType: input.projectType || 'unknown',
     modulesFound: input.discoveredModules || [],
@@ -1053,9 +1053,9 @@ async function compileREResults(
 // ============================================================================
 
 async function loadCurrentSpec(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -1071,17 +1071,17 @@ async function loadCurrentSpec(
 }
 
 async function computeDiffs(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const currentSpec = input.specFeatures || [];
   const implementedFeatures = input.implementedFeatures || [];
 
-  const diffs: any[] = [];
+  const diffs: unknown[] = [];
 
   // Simple diff: compare feature counts and names
   for (const implFeature of implementedFeatures) {
-    const specMatch = currentSpec.find((f: any) => f.name === implFeature.name);
+    const specMatch = currentSpec.find((f: unknown) => f.name === implFeature.name);
     if (!specMatch) {
       diffs.push({
         type: 'added_in_code',
@@ -1092,7 +1092,7 @@ async function computeDiffs(
   }
 
   for (const specFeature of currentSpec) {
-    const implMatch = implementedFeatures.find((f: any) => f.name === specFeature.name);
+    const implMatch = implementedFeatures.find((f: unknown) => f.name === specFeature.name);
     if (!implMatch && specFeature.implemented) {
       diffs.push({
         type: 'removed_from_code',
@@ -1108,16 +1108,16 @@ async function computeDiffs(
 }
 
 async function compileDriftReport(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const diffs = input.structuralDiffs || [];
 
   const report = {
     totalDrifts: diffs.length,
-    addedInCode: diffs.filter((d: any) => d.type === 'added_in_code').length,
-    removedFromCode: diffs.filter((d: any) => d.type === 'removed_from_code').length,
-    modified: diffs.filter((d: any) => d.type === 'modified').length,
+    addedInCode: diffs.filter((d: unknown) => d.type === 'added_in_code').length,
+    removedFromCode: diffs.filter((d: unknown) => d.type === 'removed_from_code').length,
+    modified: diffs.filter((d: unknown) => d.type === 'modified').length,
     diffs,
     generatedAt: new Date().toISOString(),
   };
@@ -1126,13 +1126,13 @@ async function compileDriftReport(
 }
 
 async function applyNonConflictingChanges(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const diffs = input.structuralDiffs || [];
 
   // Filter for safe changes (additions only)
-  const safeChanges = diffs.filter((d: any) => d.type === 'added_in_code');
+  const safeChanges = diffs.filter((d: unknown) => d.type === 'added_in_code');
 
   // TODO: Actually apply these changes to specs
 
@@ -1143,9 +1143,9 @@ async function applyNonConflictingChanges(
 }
 
 async function applySingleDrift(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const drift = input.drift;
 
   // TODO: Apply specific drift change to spec
@@ -1161,9 +1161,9 @@ async function applySingleDrift(
 // ============================================================================
 
 async function loadAllSpecs(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -1186,9 +1186,9 @@ async function loadAllSpecs(
 }
 
 async function validateSchemaReferences(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
   const validationService = getValidationService(specService);
@@ -1204,9 +1204,9 @@ async function validateSchemaReferences(
 }
 
 async function validateAPIReferences(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
   const validationService = getValidationService(specService);
@@ -1222,9 +1222,9 @@ async function validateAPIReferences(
 }
 
 async function validateComponentReferences(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
   const validationService = getValidationService(specService);
@@ -1240,11 +1240,11 @@ async function validateComponentReferences(
 }
 
 async function validateNamingConventions(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const features = input.features || [];
-  const namingIssues: any[] = [];
+  const namingIssues: unknown[] = [];
 
   // Check feature naming conventions
   for (const feature of features) {
@@ -1275,9 +1275,9 @@ async function validateNamingConventions(
 }
 
 async function detectCircularDependencies(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
   const validationService = getValidationService(specService);
@@ -1291,9 +1291,9 @@ async function detectCircularDependencies(
 }
 
 async function findOrphanArtifacts(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
   const validationService = getValidationService(specService);
@@ -1307,9 +1307,9 @@ async function findOrphanArtifacts(
 }
 
 async function compileValidationReport(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const schemaRefIssues = input.schemaRefIssues || [];
   const apiRefIssues = input.apiRefIssues || [];
   const componentRefIssues = input.componentRefIssues || [];
@@ -1345,9 +1345,9 @@ async function compileValidationReport(
 // ============================================================================
 
 async function loadSchemaContext(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -1355,8 +1355,8 @@ async function loadSchemaContext(
   const features = await specService.listFeatures(context.projectId);
 
   // Extract entities from feature business/technical requirements
-  const entities: any[] = [];
-  const relationships: any[] = [];
+  const entities: unknown[] = [];
+  const relationships: unknown[] = [];
 
   for (const feature of features) {
     if (feature.technical?.schemaRefs) {
@@ -1382,9 +1382,9 @@ async function loadSchemaContext(
 }
 
 async function generateDBML(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const llmService = getLLMService();
   const promptService = getPromptService(context.projectId);
 
@@ -1423,9 +1423,9 @@ async function generateDBML(
 }
 
 async function validateDBML(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   _context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
   const validationService = getValidationService(specService);
@@ -1442,9 +1442,9 @@ async function validateDBML(
 }
 
 async function writeSchemaFile(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -1465,9 +1465,9 @@ async function writeSchemaFile(
 }
 
 async function loadAPIContext(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -1479,7 +1479,7 @@ async function loadAPIContext(
   const apiStyle = context.constitution?.api?.style || 'rest';
 
   // Extract endpoints from feature requirements
-  const endpoints: any[] = [];
+  const endpoints: unknown[] = [];
   for (const feature of features) {
     if (feature.technical?.apiRefs) {
       endpoints.push(...feature.technical.apiRefs);
@@ -1495,9 +1495,9 @@ async function loadAPIContext(
 }
 
 async function generateOpenAPI(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const llmService = getLLMService();
   const promptService = getPromptService(context.projectId);
 
@@ -1535,9 +1535,9 @@ async function generateOpenAPI(
 }
 
 async function writeOpenAPIFile(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
   const yaml = await import('js-yaml');
@@ -1562,9 +1562,9 @@ async function writeOpenAPIFile(
 }
 
 async function generateGraphQL(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const llmService = getLLMService();
   const promptService = getPromptService(context.projectId);
 
@@ -1602,9 +1602,9 @@ async function generateGraphQL(
 }
 
 async function writeGraphQLFile(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -1625,9 +1625,9 @@ async function writeGraphQLFile(
 }
 
 async function loadComponentContext(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -1635,7 +1635,7 @@ async function loadComponentContext(
   const existingComponents = await specService.listComponents(context.projectId);
 
   // Extract screens from feature requirements
-  const screens: any[] = [];
+  const screens: unknown[] = [];
   for (const feature of features) {
     if (feature.technical?.componentRefs) {
       screens.push(...feature.technical.componentRefs);
@@ -1652,9 +1652,9 @@ async function loadComponentContext(
 }
 
 async function generateComponent(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const llmService = getLLMService();
   const promptService = getPromptService(context.projectId);
 
@@ -1692,9 +1692,9 @@ async function generateComponent(
 }
 
 async function writeComponentFile(
-  input: Record<string, any>,
+  input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
@@ -1733,9 +1733,9 @@ async function writeComponentFile(
 // ============================================================================
 
 async function finalizeProject(
-  _input: Record<string, any>,
+  _input: Record<string, unknown>,
   context: WorkflowContext
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 

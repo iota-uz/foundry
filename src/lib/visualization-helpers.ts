@@ -2,12 +2,24 @@
  * Utility functions for visualization components
  */
 
-// @ts-ignore - dagre doesn't have complete TypeScript definitions
-import dagre from '@dagrejs/dagre';
-// @ts-ignore - graphlib doesn't have complete TypeScript definitions
-import { graphlib } from '@dagrejs/graphlib';
 import { Position } from '@xyflow/react';
 import { CustomNode, CustomEdge } from '@/types/visualization';
+
+// Lazy load dagre and graphlib to avoid webpack bundling issues
+let dagre: any = null;
+let graphlib: any = null;
+
+async function loadLayoutLibraries() {
+  if (!dagre || !graphlib) {
+    const [dagreModule, graphlibModule] = await Promise.all([
+      import('@dagrejs/dagre'),
+      import('@dagrejs/graphlib'),
+    ]);
+    dagre = dagreModule.default || dagreModule;
+    graphlib = graphlibModule.graphlib || graphlibModule;
+  }
+  return { dagre, graphlib };
+}
 
 /**
  * Get layout parameters for specified direction
@@ -24,56 +36,58 @@ export function getLayoutConfig(direction: 'TB' | 'LR' = 'TB') {
 /**
  * Calculate layout positions using dagre for React Flow nodes
  */
-export function getLayoutedElements(
+export async function getLayoutedElements(
   nodes: CustomNode[],
   edges: CustomEdge[],
   direction: 'TB' | 'LR' = 'TB'
-): { nodes: CustomNode[]; edges: CustomEdge[] } {
-  const dagreGraph = new graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-  // Configure layout
-  const config = getLayoutConfig(direction);
-  dagreGraph.setGraph(config);
-
-  // Add nodes with dimensions
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, {
-      width: node.width || 200,
-      height: node.height || 100,
-    });
-  });
-
-  // Add edges
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  // Calculate layout
+): Promise<{ nodes: CustomNode[]; edges: CustomEdge[] }> {
   try {
+    const { dagre, graphlib } = await loadLayoutLibraries();
+
+    const dagreGraph = new graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+    // Configure layout
+    const config = getLayoutConfig(direction);
+    dagreGraph.setGraph(config);
+
+    // Add nodes with dimensions
+    nodes.forEach((node) => {
+      dagreGraph.setNode(node.id, {
+        width: node.width || 200,
+        height: node.height || 100,
+      });
+    });
+
+    // Add edges
+    edges.forEach((edge) => {
+      dagreGraph.setEdge(edge.source, edge.target);
+    });
+
+    // Calculate layout
     dagre.layout(dagreGraph);
+
+    // Map positions back to React Flow nodes
+    const layoutedNodes = nodes.map((node) => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+
+      return {
+        ...node,
+        targetPosition: direction === 'TB' ? Position.Top : Position.Left,
+        sourcePosition: direction === 'TB' ? Position.Bottom : Position.Right,
+        position: {
+          x: nodeWithPosition.x - (node.width || 200) / 2,
+          y: nodeWithPosition.y - (node.height || 100) / 2,
+        },
+      } as CustomNode;
+    });
+
+    return { nodes: layoutedNodes, edges };
   } catch (error) {
     console.error('Layout error:', error);
     // Return nodes without layout if dagre fails
     return { nodes, edges };
   }
-
-  // Map positions back to React Flow nodes
-  const layoutedNodes = nodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-
-    return {
-      ...node,
-      targetPosition: direction === 'TB' ? Position.Top : Position.Left,
-      sourcePosition: direction === 'TB' ? Position.Bottom : Position.Right,
-      position: {
-        x: nodeWithPosition.x - (node.width || 200) / 2,
-        y: nodeWithPosition.y - (node.height || 100) / 2,
-      },
-    } as CustomNode;
-  });
-
-  return { nodes: layoutedNodes, edges };
 }
 
 /**

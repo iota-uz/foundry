@@ -15,8 +15,8 @@ import type { UndoAction } from '@/lib/db/queries/undo';
 export interface RecordableAction {
   type: string; // 'feature.create', 'feature.update', 'schema.modify', etc.
   description: string;
-  before: any; // State before action
-  after: any; // State after action
+  before: unknown; // State before action
+  after: unknown; // State after action
   affectedIds: string[]; // IDs of affected artifacts
   targetType: string; // 'feature', 'schema', 'api', 'component'
   targetId: string; // ID of primary target
@@ -30,7 +30,7 @@ export interface RecordableAction {
 export interface UndoResult {
   success: boolean;
   error?: string;
-  restoredState?: any;
+  restoredState?: unknown;
   affectedIds: string[];
   conflicts?: UndoConflict[];
 }
@@ -41,8 +41,8 @@ export interface UndoResult {
 export interface UndoConflict {
   artifactId: string;
   reason: string;
-  currentState: any;
-  attemptedState: any;
+  currentState: unknown;
+  attemptedState: unknown;
   resolution?: 'skip' | 'force' | 'merge';
 }
 
@@ -408,8 +408,8 @@ export class UndoService implements IUndoService {
         // Check if action has cascade group metadata
         // For now, we'll assume cascadeGroup is stored in beforeState or afterState
         return (
-          (action.beforeState as any)?.cascadeGroup === cascadeGroup ||
-          (action.afterState as any)?.cascadeGroup === cascadeGroup
+          (action.beforeState as string)?.cascadeGroup === cascadeGroup ||
+          (action.afterState as string)?.cascadeGroup === cascadeGroup
         );
       });
 

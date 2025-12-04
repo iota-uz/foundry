@@ -14,11 +14,24 @@ export interface UndoAction {
   actionType: 'create' | 'update' | 'delete';
   targetType: string;
   targetId: string;
-  beforeState: any | null;
-  afterState: any | null;
+  beforeState: Record<string, unknown> | null;
+  afterState: Record<string, unknown> | null;
   description: string;
   createdAt: string;
   undoneAt: string | null;
+}
+
+interface UndoActionRow {
+  id: string;
+  project_id: string;
+  action_type: string;
+  target_type: string;
+  target_id: string;
+  before_state: string | null;
+  after_state: string | null;
+  description: string;
+  created_at: string;
+  undone_at: string | null;
 }
 
 /**
@@ -68,7 +81,7 @@ export function getUndoStack(projectId: string, db?: Database): UndoAction[] {
     ORDER BY created_at DESC
   `);
 
-  const rows = stmt.all(projectId) as any[];
+  const rows = stmt.all(projectId) as UndoActionRow[];
 
   return rows.map(rowToUndoAction);
 }
@@ -85,7 +98,7 @@ export function getRedoStack(projectId: string, db?: Database): UndoAction[] {
     ORDER BY undone_at DESC
   `);
 
-  const rows = stmt.all(projectId) as any[];
+  const rows = stmt.all(projectId) as UndoActionRow[];
 
   return rows.map(rowToUndoAction);
 }
@@ -136,7 +149,7 @@ export function getActionsForTarget(
     ORDER BY created_at DESC
   `);
 
-  const rows = stmt.all(targetType, targetId) as any[];
+  const rows = stmt.all(targetType, targetId) as UndoActionRow[];
 
   return rows.map(rowToUndoAction);
 }
@@ -158,7 +171,7 @@ export function clearRedoStack(projectId: string, db?: Database): void {
 /**
  * Convert database row to UndoAction
  */
-function rowToUndoAction(row: any): UndoAction {
+function rowToUndoAction(row: UndoActionRow): UndoAction {
   return {
     id: row.id,
     projectId: row.project_id,

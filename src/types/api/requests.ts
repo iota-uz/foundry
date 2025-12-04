@@ -111,17 +111,17 @@ export interface UpdateConstitutionRequest {
   principles?: string[];
   coding?: {
     naming?: Record<string, string>;
-    style?: Record<string, any>;
+    style?: Record<string, string | number | boolean>;
   };
-  security?: Record<string, any>;
-  ux?: Record<string, any>;
+  security?: Record<string, string>;
+  ux?: Record<string, string>;
   constraints?: {
     allowed_libraries?: string[];
     forbidden_libraries?: string[];
     node_version?: string;
     typescript?: string;
   };
-  hooks?: Record<string, any[]>;
+  hooks?: Record<string, Array<{ action: string; options?: Record<string, unknown> }>>;
 }
 
 // ============================================================================

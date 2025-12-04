@@ -42,7 +42,7 @@ export interface StyleRules {
   max_function_length: number;
   require_docstrings: boolean;
   prefer_composition: boolean;
-  [key: string]: any; // Allow custom rules
+  [key: string]: string | number | boolean; // Allow custom rules
 }
 
 /**
@@ -54,7 +54,7 @@ export interface SecurityRequirements {
   input_validation: string;
   secrets: string;
   password_hashing?: string;
-  [key: string]: any; // Allow custom requirements
+  [key: string]: string | undefined; // Allow custom requirements
 }
 
 /**
@@ -65,7 +65,7 @@ export interface UXPatterns {
   loading_states: string;
   accessibility: string;
   responsive?: string;
-  [key: string]: any; // Allow custom patterns
+  [key: string]: string | undefined; // Allow custom patterns
 }
 
 /**
@@ -76,7 +76,7 @@ export interface TechConstraints {
   forbidden_libraries: string[];
   node_version: string;
   typescript?: string;
-  [key: string]: any; // Allow custom constraints
+  [key: string]: string | string[] | undefined; // Allow custom constraints
 }
 
 /**
@@ -94,7 +94,7 @@ export interface AgentHooks {
  */
 export interface HookAction {
   action: HookActionType;
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 /**

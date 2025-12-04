@@ -211,7 +211,7 @@ function estimateCompletionTime(questions: AIQuestion[]): number {
  */
 export function adaptiveClustering(
   remainingQuestions: AIQuestion[],
-  answeredQuestions: Array<{ question: AIQuestion; answer: any }>,
+  answeredQuestions: Array<{ question: AIQuestion; answer: string | string[] | number | boolean }>,
   options: ClusteringOptions = {},
   phase: 'cpo' | 'clarify' | 'cto' = 'cpo'
 ): QuestionBatch[] {

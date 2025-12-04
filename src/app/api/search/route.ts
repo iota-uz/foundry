@@ -241,16 +241,16 @@ function parseDBMLEntities(dbml: string): Array<{ name: string; fields: string[]
  * Parse OpenAPI spec to extract endpoints
  */
 function parseOpenAPIEndpoints(
-  spec: Record<string, any>
+  spec: Record<string, unknown>
 ): Array<{ path: string; method: string; description: string }> {
   const endpoints: Array<{ path: string; method: string; description: string }> = [];
 
   if (!spec.paths) return endpoints;
 
-  for (const [path, pathItem] of Object.entries(spec.paths as Record<string, any>)) {
+  for (const [path, pathItem] of Object.entries(spec.paths as Record<string, unknown>)) {
     for (const [method, operation] of Object.entries(pathItem)) {
       if (['get', 'post', 'put', 'patch', 'delete'].includes(method.toLowerCase())) {
-        const op = operation as any;
+        const op = operation as string;
         endpoints.push({
           path,
           method: method.toLowerCase(),

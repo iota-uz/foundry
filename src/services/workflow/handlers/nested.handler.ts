@@ -28,11 +28,11 @@ export async function executeNestedWorkflowStep(
     const childContext: WorkflowContext = {
       ...context,
       sessionId: childSessionId,
-      workflowId: step.workflowId as any, // Cast to WorkflowId
+      workflowId: step.workflowId as string, // Cast to WorkflowId
       state: {
         ...context.state,
         sessionId: childSessionId,
-        workflowId: step.workflowId as any,
+        workflowId: step.workflowId as string,
         data: {
           ...context.state.data,
           ...step.input,
@@ -70,7 +70,7 @@ export async function executeNestedWorkflowStep(
       },
       duration,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
     return {
       stepId: step.id,
@@ -85,10 +85,10 @@ export async function executeNestedWorkflowStep(
  * Map child workflow output to parent context
  */
 export function mapChildOutput(
-  parentData: Record<string, any>,
-  childData: Record<string, any>,
+  parentData: Record<string, unknown>,
+  childData: Record<string, unknown>,
   outputMapping?: Record<string, string>
-): Record<string, any> {
+): Record<string, unknown> {
   if (!outputMapping) {
     // No mapping, merge all child data
     return {

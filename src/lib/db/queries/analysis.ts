@@ -14,9 +14,29 @@ export interface AnalysisResults {
   projectId: string;
   scope: string;
   status: 'valid' | 'warnings' | 'errors';
-  results: any;
+  results: {
+    errors?: number;
+    warnings?: number;
+    info?: number;
+    issues?: Array<{
+      severity: string;
+      category: string;
+      message: string;
+      location?: { file: string; line?: number };
+    }>;
+  };
   createdAt: string;
   expiresAt: string | null;
+}
+
+interface AnalysisRow {
+  id: string;
+  project_id: string;
+  scope: string;
+  status: string;
+  results: string;
+  created_at: string;
+  expires_at: string | null;
 }
 
 /**
@@ -66,7 +86,7 @@ export function getAnalysisResults(
     WHERE project_id = ?
   `;
 
-  const params: any[] = [projectId];
+  const params: (string | number)[] = [projectId];
 
   if (scope) {
     sql += ` AND scope = ?`;
@@ -76,7 +96,7 @@ export function getAnalysisResults(
   sql += ` ORDER BY created_at DESC`;
 
   const stmt = database.prepare(sql);
-  const rows = stmt.all(...params) as any[];
+  const rows = stmt.all(...params) as AnalysisRow[];
 
   return rows
     .map(rowToAnalysisResults)
@@ -100,7 +120,7 @@ export function getLatestAnalysis(
     LIMIT 1
   `);
 
-  const row = stmt.get(projectId, scope) as any;
+  const row = stmt.get(projectId, scope) as AnalysisRow | undefined;
 
   if (!row) {
     return null;
@@ -148,7 +168,7 @@ export function deleteAnalysisResults(projectId: string, db?: Database): void {
 /**
  * Convert database row to AnalysisResults
  */
-function rowToAnalysisResults(row: any): AnalysisResults {
+function rowToAnalysisResults(row: AnalysisRow): AnalysisResults {
   return {
     id: row.id,
     projectId: row.project_id,

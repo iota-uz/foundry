@@ -14,6 +14,8 @@
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.0",
     "@anthropic-ai/sdk": "^0.27.0",
+    "@dagrejs/dagre": "^2.0.0",
+    "@dagrejs/graphlib": "^2.2.4",
     "@dbml/core": "^3.11.0",
     "@headlessui/react": "^1.7.0",
     "@heroicons/react": "^2.2.0",
@@ -32,6 +34,7 @@
     "postcss": "^8.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.6.0",
     "simple-git": "^3.30.0",
     "tailwindcss": "^4.0.0",
     "zod": "^3.22.0",
@@ -39,8 +42,6 @@
     "zustand": "^4.4.0"
   },
   "devDependencies": {
-    "@dagrejs/dagre": "^2.0.0",
-    "@dagrejs/graphlib": "^2.2.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^14.3.1",
     "@types/better-sqlite3": "^7.6.0",

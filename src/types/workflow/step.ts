@@ -32,7 +32,7 @@ export type StepType =
 export interface CodeStep extends BaseStepDefinition {
   type: 'code';
   handler: string; // Function name to execute
-  input?: Record<string, any>;
+  input?: Record<string, unknown>;
 }
 
 /**
@@ -89,7 +89,7 @@ export interface LoopStep extends BaseStepDefinition {
 export interface NestedWorkflowStep extends BaseStepDefinition {
   type: 'nested_workflow';
   workflowId: string;
-  input?: Record<string, any>;
+  input?: Record<string, unknown>;
 }
 
 /**
@@ -109,7 +109,7 @@ export type StepDefinition =
 export interface StepResult {
   stepId: string;
   status: 'completed' | 'failed' | 'skipped';
-  output?: Record<string, any>;
+  output?: Record<string, unknown>;
   error?: string;
   duration: number;
   tokensUsed?: number; // For LLM steps
@@ -126,8 +126,8 @@ export interface StepExecution {
   status: 'completed' | 'failed' | 'skipped';
   startedAt: string;
   completedAt?: string;
-  inputData?: Record<string, any>;
-  outputData?: Record<string, any>;
+  inputData?: Record<string, unknown>;
+  outputData?: Record<string, unknown>;
   error?: string;
   llmTokensUsed?: number;
   durationMs: number;

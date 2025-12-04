@@ -35,6 +35,7 @@ interface GitPanelProps {
 export function GitPanel({
   isOpen,
   onClose,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   projectPath = '.',
 }: GitPanelProps) {
   const [state, setState] = useState<GitPanelState>({
@@ -78,7 +79,7 @@ export function GitPanel({
         error: error instanceof Error ? error.message : 'Failed to fetch git status',
       }));
     }
-  }, [projectPath]);
+  }, []);
 
   // Fetch Git status on mount and when panel is opened
   useEffect(() => {

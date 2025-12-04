@@ -215,6 +215,7 @@ export class SpecService implements ISpecService {
 
     const newModule: Module = {
       id: this.generateId('mod'),
+      slug: data.slug,
       projectId: project.id,
       name: data.name,
       description: data.description,
@@ -317,7 +318,9 @@ export class SpecService implements ISpecService {
 
     const feature: Feature = {
       id: this.generateId('feat'),
+      slug: data.slug,
       moduleId: parentModule.id,
+      moduleSlug: moduleSlug,
       name: data.name,
       description: data.description,
       status: data.status ?? 'draft',

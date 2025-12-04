@@ -42,7 +42,7 @@ export class PromptService {
       const result = template(context);
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof PromptNotFoundError || error instanceof PromptCompilationError) {
         throw error;
       }
@@ -85,7 +85,7 @@ export class PromptService {
       });
 
       return compiled;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.code === 'ENOENT') {
         throw new PromptNotFoundError(templateName);
       }
@@ -138,7 +138,7 @@ export class PromptService {
       return files
         .filter((file) => file.endsWith('.hbs'))
         .map((file) => file.replace('.hbs', ''));
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.code === 'ENOENT') {
         return [];
       }
@@ -174,7 +174,7 @@ export class PromptService {
    */
   private registerHelpers(): void {
     // Conditional helper
-    Handlebars.registerHelper('if', function (this: any, conditional: any, options: any) {
+    Handlebars.registerHelper('if', function (this: unknown, conditional: unknown, options: unknown) {
       if (conditional) {
         return options.fn(this);
       } else {
@@ -225,12 +225,12 @@ export class PromptService {
     });
 
     // Join array helper
-    Handlebars.registerHelper('join', function (array: any[], separator: string) {
+    Handlebars.registerHelper('join', function (array: unknown[], separator: string) {
       return Array.isArray(array) ? array.join(separator) : '';
     });
 
     // Length helper
-    Handlebars.registerHelper('length', function (array: any[]) {
+    Handlebars.registerHelper('length', function (array: unknown[]) {
       return Array.isArray(array) ? array.length : 0;
     });
 
@@ -341,7 +341,7 @@ export class PromptService {
       // Try to compile template
       try {
         Handlebars.compile(templateContent);
-      } catch (error: any) {
+      } catch (error: unknown) {
         errors.push(`Template compilation failed: ${error.message}`);
         return { valid: false, errors, warnings };
       }
@@ -393,7 +393,7 @@ export class PromptService {
         errors,
         warnings,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.code === 'ENOENT') {
         errors.push(`Template not found: ${templateName}`);
       } else {

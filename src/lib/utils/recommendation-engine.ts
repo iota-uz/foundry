@@ -8,8 +8,8 @@
 import type { AIRecommendation } from '@/types/ai';
 
 export interface RecommendationContext {
-  constitution?: Record<string, any>;
-  previousAnswers?: Array<{ question: string; answer: any }>;
+  constitution?: Record<string, unknown>;
+  previousAnswers?: Array<{ question: string; answer: string | string[] | number | boolean }>;
   industryBestPractices?: string[];
   projectType?: string;
 }
@@ -127,7 +127,7 @@ function checkConstitution(
   question: string,
   recommendedOptionId: string,
   options: Array<{ id: string; label: string }>,
-  constitution: Record<string, any>
+  constitution: Record<string, unknown>
 ): { matches: boolean; rationale: string } {
   const questionLower = question.toLowerCase();
 
@@ -246,7 +246,7 @@ function inferFromContext(
   question: string,
   recommendedOptionId: string,
   options: Array<{ id: string; label: string }>,
-  previousAnswers: Array<{ question: string; answer: any }>
+  previousAnswers: Array<{ question: string; answer: string | string[] | number | boolean }>
 ): { matches: boolean; rationale: string } {
   const option = options.find(o => o.id === recommendedOptionId);
   if (!option) {

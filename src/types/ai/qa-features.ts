@@ -41,8 +41,8 @@ export interface SpecUpdate {
   type: 'add' | 'modify' | 'remove';
   section: string;
   path: string;
-  oldValue?: any;
-  newValue?: any;
+  oldValue?: unknown;
+  newValue?: unknown;
   timestamp: string;
   artifactType: 'schema' | 'api' | 'component' | 'feature';
 }
@@ -53,8 +53,8 @@ export interface SpecUpdate {
 export interface SpecChange {
   path: string;
   operation: 'add' | 'update' | 'delete';
-  before?: any;
-  after?: any;
+  before?: unknown;
+  after?: unknown;
 }
 
 /**
@@ -64,8 +64,8 @@ export interface DecisionEntry {
   id: string;
   questionId: string;
   questionText: string;
-  answerGiven: any;
-  alternatives: any[];
+  answerGiven: unknown;
+  alternatives: unknown[];
   category:
     | 'product_scope'
     | 'user_experience'

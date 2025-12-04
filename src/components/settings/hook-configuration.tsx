@@ -85,7 +85,7 @@ export function HookConfiguration({ hooks, onChange }: HookConfigurationProps) {
 
     newHooks[event] = [
       ...eventHooks,
-      { action: actionType, options: {} as Record<string, any> },
+      { action: actionType, options: {} as Record<string, unknown> },
     ];
 
     onChange(newHooks);
@@ -109,7 +109,7 @@ export function HookConfiguration({ hooks, onChange }: HookConfigurationProps) {
     event: string,
     index: number,
     key: string,
-    value: any
+    value: unknown
   ) => {
     const newHooks = { ...hooks };
     const eventHooks = [...(newHooks[event] || [])];

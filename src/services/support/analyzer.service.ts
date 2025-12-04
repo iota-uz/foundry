@@ -522,7 +522,7 @@ export class AnalyzerService implements IAnalyzerService {
    */
   private async checkDatabaseNaming(
     context: AnalysisContext,
-    naming: any,
+    naming: unknown,
     issues: AnalysisIssue[]
   ): Promise<void> {
     // Happy path: Load schemas and check table/column names
@@ -538,7 +538,7 @@ export class AnalyzerService implements IAnalyzerService {
 
       for (const schemaFile of schemaFiles) {
         try {
-          const schema = await this.fileService.readYaml<any>(schemaFile);
+          const schema = await this.fileService.readYaml<unknown>(schemaFile);
 
           // Check if schema has entities
           if (!schema.entities || !Array.isArray(schema.entities)) {
@@ -599,7 +599,7 @@ export class AnalyzerService implements IAnalyzerService {
    */
   private async checkFeatureNaming(
     context: AnalysisContext,
-    naming: any,
+    naming: unknown,
     issues: AnalysisIssue[]
   ): Promise<void> {
     // Happy path: Check feature names follow conventions

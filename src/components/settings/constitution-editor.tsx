@@ -46,7 +46,7 @@ const CONSTITUTION_TEMPLATES = {
       forbidden_libraries: [],
       node_version: '',
     },
-    hooks: {} as any,
+    hooks: {} as string,
   },
   basic: {
     version: '1.0',
@@ -86,8 +86,8 @@ const CONSTITUTION_TEMPLATES = {
     },
     hooks: {
       onFeatureSave: [
-        { action: 'validateSchema' as any },
-        { action: 'updateChecklist' as any },
+        { action: 'validateSchema' as string },
+        { action: 'updateChecklist' as string },
       ],
     },
   },

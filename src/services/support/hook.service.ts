@@ -22,8 +22,8 @@ export interface HookContext {
   projectPath: string;
   artifactId?: string;
   artifactType?: string;
-  changes?: Record<string, any>;
-  [key: string]: any;
+  changes?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 /**
@@ -34,7 +34,7 @@ export interface HookResult {
   success: boolean;
   message?: string;
   error?: string;
-  data?: any;
+  data?: unknown;
 }
 
 /**
@@ -43,7 +43,7 @@ export interface HookResult {
 export interface HookConfig {
   event: HookEvent;
   action: HookActionType;
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
 }
 
 /**
@@ -51,7 +51,7 @@ export interface HookConfig {
  */
 export type HookActionHandler = (
   context: HookContext,
-  options?: Record<string, any>
+  options?: Record<string, unknown>
 ) => Promise<HookResult>;
 
 /**
@@ -319,7 +319,7 @@ export class HookService implements IHookService {
         }
 
         // Extract endpoints from features
-        const endpoints: any[] = [];
+        const endpoints: unknown[] = [];
         for (const feature of features) {
           if (feature.technical?.apiRefs) {
             endpoints.push(...feature.technical.apiRefs);

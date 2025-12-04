@@ -36,7 +36,7 @@ export default function VisualizationsPage() {
   const [dbmlError, setDBMLError] = useState<string>();
 
   // OpenAPI state
-  const [openApiSpec, setOpenApiSpec] = useState<Record<string, any>>({});
+  const [openApiSpec, setOpenApiSpec] = useState<Record<string, unknown>>({});
   const [openApiError, setOpenApiError] = useState<string>();
 
   // GraphQL state

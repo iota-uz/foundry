@@ -7,12 +7,13 @@ import { devtools } from 'zustand/middleware';
 import type {
   WorkflowState,
   WorkflowId,
+  AIQuestion,
 } from '@/types';
 
 interface WorkflowStore {
   // State
   workflowState: WorkflowState | null;
-  currentQuestion: any | null; // AIQuestion type
+  currentQuestion: AIQuestion | null;
   loading: boolean;
   error: string | null;
   sseConnected: boolean;
@@ -21,7 +22,7 @@ interface WorkflowStore {
   startWorkflow: (workflowId: WorkflowId) => Promise<void>;
   pauseWorkflow: () => Promise<void>;
   resumeWorkflow: () => Promise<void>;
-  answerQuestion: (questionId: string, answer: any) => Promise<void>;
+  answerQuestion: (questionId: string, answer: string | string[] | number | boolean) => Promise<void>;
   skipQuestion: () => Promise<void>;
   retryStep: (stepId: string) => Promise<void>;
 
@@ -35,7 +36,7 @@ interface WorkflowStore {
 
   // Internal updates (called by SSE handlers)
   updateWorkflowState: (state: WorkflowState) => void;
-  setCurrentQuestion: (question: any | null) => void;
+  setCurrentQuestion: (question: AIQuestion | null) => void;
 }
 
 let eventSource: EventSource | null = null;
@@ -144,7 +145,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
         }
       },
 
-      answerQuestion: async (questionId: string, answer: any) => {
+      answerQuestion: async (questionId: string, answer: string | string[] | number | boolean) => {
         const { workflowState } = get();
         if (!workflowState) return;
 
@@ -346,7 +347,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
         set({ workflowState: state });
       },
 
-      setCurrentQuestion: (question: any | null) => {
+      setCurrentQuestion: (question: AIQuestion | null) => {
         set({ currentQuestion: question });
       },
     }),

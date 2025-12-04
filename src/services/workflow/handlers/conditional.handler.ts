@@ -23,7 +23,7 @@ export async function executeConditionalStep(
     const branch = conditionResult ? step.thenSteps : step.elseSteps || [];
 
     // Execute branch steps
-    const results: any[] = [];
+    const results: unknown[] = [];
     for (const branchStep of branch) {
       const result = await executeStep(branchStep, context);
       results.push(result);
@@ -46,7 +46,7 @@ export async function executeConditionalStep(
       },
       duration,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
     return {
       stepId: step.id,
@@ -92,7 +92,7 @@ export function validateCondition(condition: string): { valid: boolean; error?: 
     // Basic syntax check
     new Function('context', `with(context) { return Boolean(${condition}); }`);
     return { valid: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       valid: false,
       error: `Invalid condition syntax: ${error.message}`,

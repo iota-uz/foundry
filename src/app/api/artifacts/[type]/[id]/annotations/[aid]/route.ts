@@ -25,7 +25,7 @@ export async function GET(
   try {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM annotations WHERE id = ?');
-    const row = stmt.get(params.aid) as any;
+    const row = stmt.get(params.aid) as string;
 
     if (!row) {
       return NextResponse.json(
@@ -70,7 +70,7 @@ export async function PATCH(
     // Check if annotation exists
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM annotations WHERE id = ?');
-    const row = stmt.get(params.aid) as any;
+    const row = stmt.get(params.aid) as string;
 
     if (!row) {
       return NextResponse.json(
@@ -96,7 +96,7 @@ export async function PATCH(
     updateAnnotation(params.aid, updates);
 
     // Get updated annotation
-    const updatedRow = stmt.get(params.aid) as any;
+    const updatedRow = stmt.get(params.aid) as string;
     const annotation = rowToAnnotation(updatedRow);
 
     return NextResponse.json({ annotation: toApiAnnotation(annotation) });
@@ -138,7 +138,7 @@ export async function DELETE(
     // Check if annotation exists
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM annotations WHERE id = ?');
-    const row = stmt.get(params.aid) as any;
+    const row = stmt.get(params.aid) as string;
 
     if (!row) {
       return NextResponse.json(
@@ -172,7 +172,7 @@ export async function DELETE(
 /**
  * Convert database row to Annotation
  */
-function rowToAnnotation(row: any): Annotation {
+function rowToAnnotation(row: unknown): Annotation {
   return {
     id: row.id,
     projectId: row.project_id,
@@ -192,7 +192,7 @@ function rowToAnnotation(row: any): Annotation {
 /**
  * Convert DB annotation to API annotation
  */
-function toApiAnnotation(annotation: Annotation): any {
+function toApiAnnotation(annotation: Annotation): unknown {
   return {
     id: annotation.id,
     artifactType: mapDbToApiArtifactType(annotation.artifactType),

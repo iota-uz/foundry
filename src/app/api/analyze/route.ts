@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       issues: results.issues.map((issue) => ({
         id: issue.id,
         severity: issue.severity,
-        category: issue.ruleId as any,
+        category: issue.ruleId as string,
         message: issue.message,
         location: {
           file: issue.location.file,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       issues: results.issues.map((issue) => ({
         id: issue.id,
         severity: issue.severity,
-        category: issue.ruleId as any,
+        category: issue.ruleId as string,
         message: issue.message,
         location: {
           file: issue.location.file,

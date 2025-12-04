@@ -42,8 +42,8 @@ export async function POST(
     // Get drift items to apply
     const drift = state.data.drift || [];
     const itemsToApply = parsed.applyAll
-      ? drift.filter((d: any) => d.autoFixable)
-      : drift.filter((d: any) => parsed.changes.includes(d.id));
+      ? drift.filter((d: unknown) => d.autoFixable)
+      : drift.filter((d: unknown) => parsed.changes.includes(d.id));
 
     if (itemsToApply.length === 0) {
       return NextResponse.json(

@@ -7,7 +7,9 @@
  */
 export interface Feature {
   id: string;
+  slug: string; // Feature slug (e.g., "login", "checkout")
   moduleId: string;
+  moduleSlug: string; // Parent module slug for clarity
   name: string;
   description: string;
   status: FeatureStatus;

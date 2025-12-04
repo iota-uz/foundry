@@ -19,14 +19,14 @@ export class RecommendationService {
   /**
    * Set constitution for recommendation context
    */
-  setConstitution(constitution: Record<string, any>): void {
+  setConstitution(constitution: Record<string, unknown>): void {
     this.context.constitution = constitution;
   }
 
   /**
    * Set previous answers for context inference
    */
-  setPreviousAnswers(answers: Array<{ question: string; answer: any }>): void {
+  setPreviousAnswers(answers: Array<{ question: string; answer: string | string[] | number | boolean }>): void {
     this.context.previousAnswers = answers;
   }
 
@@ -135,7 +135,7 @@ export class RecommendationService {
   /**
    * Update context with new answer
    */
-  updateContextWithAnswer(question: string, answer: any): void {
+  updateContextWithAnswer(question: string, answer: unknown): void {
     if (!this.context.previousAnswers) {
       this.context.previousAnswers = [];
     }

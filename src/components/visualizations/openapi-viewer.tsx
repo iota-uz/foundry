@@ -10,7 +10,7 @@ import React, { useRef } from 'react';
 import { ApiReference } from '@scalar/api-reference'; // TODO: F4 - Add tabbed view with embedded Scalar docs
 
 interface OpenAPIViewerProps {
-  spec: Record<string, any>;
+  spec: Record<string, unknown>;
   loading?: boolean;
   error?: string | undefined;
 }

@@ -28,7 +28,7 @@ export async function executeLoopStep(
     const itemCount = Math.min(collection.length, maxIterations);
 
     // Execute steps for each item
-    const results: any[] = [];
+    const results: unknown[] = [];
     let completedIterations = 0;
 
     for (let i = 0; i < itemCount; i++) {
@@ -94,7 +94,7 @@ export async function executeLoopStep(
       },
       duration,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
     return {
       stepId: step.id,
@@ -108,9 +108,9 @@ export async function executeLoopStep(
 /**
  * Get collection from dot notation path
  */
-function getCollectionFromPath(path: string, context: WorkflowContext): any {
+function getCollectionFromPath(path: string, context: WorkflowContext): unknown {
   const parts = path.split('.');
-  let current: any = context.state.data;
+  let current: unknown = context.state.data;
 
   for (const part of parts) {
     if (current === null || current === undefined) {

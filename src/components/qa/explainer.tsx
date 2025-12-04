@@ -107,7 +107,7 @@ export function Explainer({
               <div className="space-y-2 rounded bg-gray-900/40 p-2">
                 <div>
                   <p className="text-xs text-gray-500">If you choose</p>
-                  <p className="text-gray-300">"{explainer.example.ifYouChoose}"</p>
+                  <p className="text-gray-300">{`"${explainer.example.ifYouChoose}"`}</p>
                 </div>
                 <div className="border-t border-gray-700 pt-2">
                   <p className="text-xs text-gray-500">Then spec will have</p>

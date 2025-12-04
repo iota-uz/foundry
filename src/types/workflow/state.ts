@@ -22,11 +22,11 @@ export interface WorkflowState {
   topicQuestionCounts: Record<string, number>;
 
   // Answer tracking
-  answers: Record<string, any>; // questionId -> answer
+  answers: Record<string, string | string[] | number | boolean>; // questionId -> answer
   skippedQuestions: string[];
 
   // Accumulated data from all steps
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 
   // Clarify phase state (when active)
   clarifyState: ClarifyState | null;
@@ -117,8 +117,8 @@ export type AmbiguityStatus = 'pending' | 'resolved' | 'deferred';
  */
 export interface EditRecord {
   questionId: string;
-  previousAnswer: any;
-  newAnswer: any;
+  previousAnswer: string | string[] | number | boolean;
+  newAnswer: string | string[] | number | boolean;
   editedAt: string;
   affectedSteps: string[]; // Step IDs that need re-execution
 }
@@ -131,5 +131,5 @@ export interface WorkflowContext {
   projectId: string;
   workflowId: WorkflowId;
   state: WorkflowState;
-  constitution: any | null; // Constitution if available
+  constitution: Record<string, unknown> | null; // Constitution if available
 }

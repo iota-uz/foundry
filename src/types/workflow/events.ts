@@ -10,7 +10,7 @@ import type { Ambiguity } from './state';
  */
 export interface BaseSSEEvent {
   type: string;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 /**
@@ -32,7 +32,7 @@ export interface StepCompleteEvent extends BaseSSEEvent {
   type: 'step_complete';
   data: {
     stepId: string;
-    result?: any;
+    result?: Record<string, unknown>;
   };
 }
 

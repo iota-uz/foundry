@@ -15,7 +15,7 @@ export interface PromptContext {
   };
 
   // Previous answers
-  answers?: Record<string, any>;
+  answers?: Record<string, unknown>;
   answersSummary?: string;
 
   // Phase context
@@ -34,7 +34,7 @@ export interface PromptContext {
   moduleName?: string;
 
   // Any other workflow state
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -53,7 +53,7 @@ export interface PromptTemplate {
 /**
  * Handlebars template delegate type
  */
-export type HandlebarsTemplateDelegate = (context: any) => string;
+export type HandlebarsTemplateDelegate = (context: PromptContext) => string;
 
 /**
  * Prompt compilation error

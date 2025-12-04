@@ -173,7 +173,7 @@ export interface OpenAPISchema {
   servers?: Array<{
     url: string;
   }>;
-  paths?: Record<string, any>;
+  paths?: Record<string, unknown>;
 }
 
 /**

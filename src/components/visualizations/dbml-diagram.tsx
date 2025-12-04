@@ -29,51 +29,55 @@ interface DBMLDiagramProps {
 }
 
 export function DBMLDiagram({ dbml, loading, error }: DBMLDiagramProps) {
-  const [nodes, setNodes] = useState<any[]>([]);
-  const [edges, setEdges] = useState<any[]>([]);
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Node[]>([]);
   const [layoutDirection, setLayoutDirection] = useState<'TB' | 'LR'>('TB');
 
   // Parse DBML and create React Flow nodes/edges
   useEffect(() => {
     if (!dbml || loading) return;
 
-    try {
-      const parsed = parseDBML(dbml);
+    async function calculateLayout() {
+      try {
+        const parsed = parseDBML(dbml);
 
-      // Create table nodes
-      const tableNodes: CustomNode[] = parsed.tables.map((table) => ({
-        id: generateNodeId('table', table.name),
-        type: 'table' as const,
-        position: { x: 0, y: 0 },
-        data: {
-          tableName: table.name,
-          fields: table.fields || [],
-          expanded: false,
-        },
-        width: 220,
-        height: 100,
-      })) as CustomNode[];
+        // Create table nodes
+        const tableNodes: CustomNode[] = parsed.tables.map((table) => ({
+          id: generateNodeId('table', table.name),
+          type: 'table' as const,
+          position: { x: 0, y: 0 },
+          data: {
+            tableName: table.name,
+            fields: table.fields || [],
+            expanded: false,
+          },
+          width: 220,
+          height: 100,
+        })) as CustomNode[];
 
-      // Create relationship edges
-      const relationshipEdges: CustomEdge[] = parsed.relationships.map((rel) => ({
-        id: generateEdgeId(rel.source, rel.target),
-        source: generateNodeId('table', rel.source),
-        target: generateNodeId('table', rel.target),
-        type: 'relationship' as const,
-        data: {
-          cardinality: rel.cardinality,
-          relationshipType: 'FK',
-        },
-      })) as CustomEdge[];
+        // Create relationship edges
+        const relationshipEdges: CustomEdge[] = parsed.relationships.map((rel) => ({
+          id: generateEdgeId(rel.source, rel.target),
+          source: generateNodeId('table', rel.source),
+          target: generateNodeId('table', rel.target),
+          type: 'relationship' as const,
+          data: {
+            cardinality: rel.cardinality,
+            relationshipType: 'FK',
+          },
+        })) as CustomEdge[];
 
-      // Calculate layout
-      const layouted = getLayoutedElements(tableNodes, relationshipEdges, layoutDirection);
+        // Calculate layout
+        const layouted = await getLayoutedElements(tableNodes, relationshipEdges, layoutDirection);
 
-      setNodes(layouted.nodes);
-      setEdges(layouted.edges);
-    } catch (err) {
-      console.error('Failed to parse DBML:', err);
+        setNodes(layouted.nodes);
+        setEdges(layouted.edges);
+      } catch (err) {
+        console.error('Failed to parse DBML:', err);
+      }
     }
+
+    calculateLayout();
   }, [dbml, loading, layoutDirection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {

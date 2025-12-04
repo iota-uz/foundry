@@ -16,8 +16,8 @@ export interface SpecDiff {
 export interface FieldChange {
   field: string;
   operation: 'add' | 'modify' | 'remove';
-  oldValue?: any;
-  newValue?: any;
+  oldValue?: unknown;
+  newValue?: unknown;
   path?: string; // JSON path for nested fields
 }
 
@@ -36,8 +36,8 @@ export interface SpecPreview {
  * Compare two spec objects and generate diff
  */
 export function generateSpecDiff(
-  oldSpec: Record<string, any>,
-  newSpec: Record<string, any>,
+  oldSpec: Record<string, unknown>,
+  newSpec: Record<string, unknown>,
   type: SpecDiff['type'],
   id: string
 ): SpecDiff {
@@ -92,8 +92,8 @@ export function generateSpecDiff(
  * Compare nested objects recursively
  */
 function compareNestedObjects(
-  oldObj: any,
-  newObj: any,
+  oldObj: unknown,
+  newObj: unknown,
   parentPath: string
 ): FieldChange[] {
   const changes: FieldChange[] = [];
@@ -157,7 +157,7 @@ function compareNestedObjects(
 /**
  * Deep equality check
  */
-function deepEqual(a: any, b: any): boolean {
+function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
   if (typeof a !== typeof b) return false;
@@ -232,7 +232,7 @@ export function formatFieldChange(change: FieldChange): string {
 /**
  * Format a value for display
  */
-function formatValue(value: any): string {
+function formatValue(value: unknown): string {
   if (value == null) {
     return 'null';
   }

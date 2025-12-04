@@ -15,7 +15,7 @@ export interface HistoryEntry {
   artifactId: string;
   version: number;
   changeType: 'created' | 'updated' | 'deleted';
-  changes: any;
+  changes: unknown;
   changedBy: string;
   sessionId: string | null;
   createdAt: string;
@@ -72,7 +72,7 @@ export function getHistory(
     ORDER BY version DESC
   `);
 
-  const rows = stmt.all(artifactType, artifactId) as any[];
+  const rows = stmt.all(...params) as unknown[];
 
   return rows.map(rowToHistoryEntry);
 }
@@ -93,7 +93,7 @@ export function getLatestVersion(
     WHERE artifact_type = ? AND artifact_id = ?
   `);
 
-  const row = stmt.get(artifactType, artifactId) as any;
+  const row = stmt.get(...params) as unknown;
 
   return row?.max_version || 0;
 }
@@ -120,8 +120,8 @@ export function getProjectHistory(
 
   const stmt = database.prepare(sql);
   const rows = limit
-    ? (stmt.all(projectId, limit) as any[])
-    : (stmt.all(projectId) as any[]);
+    ? (stmt.all(...params) as unknown[])
+    : (stmt.all(...params) as unknown[]);
 
   return rows.map(rowToHistoryEntry);
 }
@@ -141,7 +141,7 @@ export function getHistoryBySession(
     ORDER BY created_at ASC
   `);
 
-  const rows = stmt.all(sessionId) as any[];
+  const rows = stmt.all(...params) as unknown[];
 
   return rows.map(rowToHistoryEntry);
 }
@@ -149,7 +149,7 @@ export function getHistoryBySession(
 /**
  * Convert database row to HistoryEntry
  */
-function rowToHistoryEntry(row: any): HistoryEntry {
+function rowToHistoryEntry(row: unknown): HistoryEntry {
   return {
     id: row.id,
     projectId: row.project_id,

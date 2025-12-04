@@ -40,19 +40,6 @@ export function TextInput({
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      onChange(newValue);
-
-      // Validate on change
-      if (touched) {
-        validateInput(newValue);
-      }
-    },
-    [onChange, touched]
-  );
-
   const validateInput = useCallback(
     (val: string) => {
       if (!validation) {
@@ -91,6 +78,19 @@ export function TextInput({
       return true;
     },
     [validation]
+  );
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const newValue = e.target.value;
+      onChange(newValue);
+
+      // Validate on change
+      if (touched) {
+        validateInput(newValue);
+      }
+    },
+    [onChange, touched, validateInput]
   );
 
   const handleBlur = useCallback(() => {

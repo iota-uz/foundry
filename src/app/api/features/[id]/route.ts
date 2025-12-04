@@ -104,7 +104,7 @@ export async function PUT(
     const specService = getSpecService(fileService);
 
     // Filter out undefined values
-    const updates: Record<string, any> = {};
+    const updates: Record<string, unknown> = {};
     if (parsed.name !== undefined) updates.name = parsed.name;
     if (parsed.description !== undefined) updates.description = parsed.description;
     if (parsed.status !== undefined) updates.status = parsed.status;
@@ -114,7 +114,7 @@ export async function PUT(
       projectPath,
       moduleSlug,
       params.id,
-      updates as any
+      updates as string
     );
 
     const response: FeatureResponse = { feature };

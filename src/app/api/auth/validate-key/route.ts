@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         valid: true,
         message: 'API key is valid',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Check error type
       if (error.status === 401 || error.status === 403) {
         return NextResponse.json(

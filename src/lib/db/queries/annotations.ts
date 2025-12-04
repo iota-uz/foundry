@@ -78,7 +78,7 @@ export function getAnnotations(
     ORDER BY created_at DESC
   `);
 
-  const rows = stmt.all(artifactType, artifactId) as any[];
+  const rows = stmt.all(...params) as unknown[];
 
   return rows.map(rowToAnnotation);
 }
@@ -99,7 +99,7 @@ export function getAnnotationsByStatus(
     ORDER BY created_at DESC
   `);
 
-  const rows = stmt.all(projectId, status) as any[];
+  const rows = stmt.all(...params) as unknown[];
 
   return rows.map(rowToAnnotation);
 }
@@ -115,7 +115,7 @@ export function updateAnnotation(
   const database = db || getDatabase();
 
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
 
   if (updates.content !== undefined) {
     fields.push('content = ?');
@@ -172,7 +172,7 @@ export function deleteAnnotation(id: string, db?: Database): void {
 /**
  * Convert database row to Annotation
  */
-function rowToAnnotation(row: any): Annotation {
+function rowToAnnotation(row: unknown): Annotation {
   return {
     id: row.id,
     projectId: row.project_id,

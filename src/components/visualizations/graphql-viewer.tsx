@@ -38,104 +38,108 @@ export function GraphQLViewer({
   loading,
   error,
 }: GraphQLViewerProps) {
-  const [nodes, setNodes] = useState<any[]>([]);
-  const [edges, setEdges] = useState<any[]>([]);
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Node[]>([]);
   const [layoutDirection, setLayoutDirection] = useState<'TB' | 'LR'>('TB');
 
   // Parse GraphQL schema and create React Flow nodes/edges
-  useMemo(() => {
+  useEffect(() => {
     if (!schema || loading) return;
 
-    try {
-      // Build GraphQL schema
-      const graphQLSchema = buildSchema(schema);
+    async function calculateLayout() {
+      try {
+        // Build GraphQL schema
+        const graphQLSchema = buildSchema(schema);
 
-      // Extract types
-      const typeMap = graphQLSchema.getTypeMap();
-      const types = Object.values(typeMap).filter(
-        (type) =>
-          !type.name.startsWith('__') &&
-          !['String', 'Int', 'Float', 'Boolean', 'ID'].includes(type.name)
-      );
+        // Extract types
+        const typeMap = graphQLSchema.getTypeMap();
+        const types = Object.values(typeMap).filter(
+          (type) =>
+            !type.name.startsWith('__') &&
+            !['String', 'Int', 'Float', 'Boolean', 'ID'].includes(type.name)
+        );
 
-      // Create type nodes
-      const typeNodes: CustomNode[] = types.map((type) => {
-        let fields: Array<{ name: string; type: string }> = [];
-        let kind = 'SCALAR' as 'SCALAR' | 'OBJECT' | 'ENUM' | 'INTERFACE' | 'UNION' | 'INPUT_OBJECT';
+        // Create type nodes
+        const typeNodes: CustomNode[] = types.map((type) => {
+          let fields: Array<{ name: string; type: string }> = [];
+          let kind = 'SCALAR' as 'SCALAR' | 'OBJECT' | 'ENUM' | 'INTERFACE' | 'UNION' | 'INPUT_OBJECT';
 
-        if ('getFields' in type) {
-          const typeObj = type as GraphQLObjectType | GraphQLInputObjectType;
-          fields = Object.entries(typeObj.getFields()).map(([name, field]) => ({
-            name,
-            type: field.type.toString(),
-          }));
-          kind = 'OBJECT';
-        } else if ('_values' in type) {
-          kind = 'ENUM';
-        } else if ('_typeConfig' in type) {
-          kind = 'INTERFACE';
-        }
+          if ('getFields' in type) {
+            const typeObj = type as GraphQLObjectType | GraphQLInputObjectType;
+            fields = Object.entries(typeObj.getFields()).map(([name, field]) => ({
+              name,
+              type: field.type.toString(),
+            }));
+            kind = 'OBJECT';
+          } else if ('_values' in type) {
+            kind = 'ENUM';
+          } else if ('_typeConfig' in type) {
+            kind = 'INTERFACE';
+          }
 
-        return {
-          id: generateNodeId('type', type.name),
-          type: 'graphqlType' as const,
-          position: { x: 0, y: 0 },
-          data: {
-            typeName: type.name,
-            kind,
-            fields,
-            description:
-              'description' in type ? type.description : undefined,
-          },
-          width: 200,
-          height: 100,
-        } as CustomNode;
-      });
+          return {
+            id: generateNodeId('type', type.name),
+            type: 'graphqlType' as const,
+            position: { x: 0, y: 0 },
+            data: {
+              typeName: type.name,
+              kind,
+              fields,
+              description:
+                'description' in type ? type.description : undefined,
+            },
+            width: 200,
+            height: 100,
+          } as CustomNode;
+        });
 
-      // Create edges based on field references
-      const edges: CustomEdge[] = [];
-      const edgeSet = new Set<string>();
+        // Create edges based on field references
+        const edges: CustomEdge[] = [];
+        const edgeSet = new Set<string>();
 
-      typeNodes.forEach((node) => {
-        const typeData = node.data as any;
-        if (typeData.fields) {
-          typeData.fields.forEach((field: { name: string; type: string }) => {
-            // Extract referenced type from field type string
-            const refType = field.type
-              .replace(/[\[\]!]/g, '')
-              .trim();
-            const refNode = typeNodes.find(
-              (n) => (n.data as any).typeName === refType
-            );
+        typeNodes.forEach((node) => {
+          const typeData = node.data as string;
+          if (typeData.fields) {
+            typeData.fields.forEach((field: { name: string; type: string }) => {
+              // Extract referenced type from field type string
+              const refType = field.type
+                .replace(/[\[\]!]/g, '')
+                .trim();
+              const refNode = typeNodes.find(
+                (n) => (n.data as string).typeName === refType
+              );
 
-            if (refNode && refNode.id !== node.id) {
-              const edgeId = generateEdgeId(node.id, refNode.id);
-              if (!edgeSet.has(edgeId)) {
-                edges.push({
-                  id: edgeId,
-                  source: node.id,
-                  target: refNode.id,
-                  type: 'relationship' as const,
-                  data: {
-                    cardinality: '1:1',
-                    label: field.name,
-                  },
-                } as CustomEdge);
-                edgeSet.add(edgeId);
+              if (refNode && refNode.id !== node.id) {
+                const edgeId = generateEdgeId(node.id, refNode.id);
+                if (!edgeSet.has(edgeId)) {
+                  edges.push({
+                    id: edgeId,
+                    source: node.id,
+                    target: refNode.id,
+                    type: 'relationship' as const,
+                    data: {
+                      cardinality: '1:1',
+                      label: field.name,
+                    },
+                  } as CustomEdge);
+                  edgeSet.add(edgeId);
+                }
               }
-            }
-          });
-        }
-      });
+            });
+          }
+        });
 
-      // Calculate layout
-      const layouted = getLayoutedElements(typeNodes, edges, layoutDirection);
+        // Calculate layout
+        const layouted = await getLayoutedElements(typeNodes, edges, layoutDirection);
 
-      setNodes(layouted.nodes);
-      setEdges(layouted.edges);
-    } catch (err) {
-      console.error('Failed to parse GraphQL schema:', err);
+        setNodes(layouted.nodes);
+        setEdges(layouted.edges);
+      } catch (err) {
+        console.error('Failed to parse GraphQL schema:', err);
+      }
     }
+
+    calculateLayout();
   }, [schema, loading, layoutDirection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {

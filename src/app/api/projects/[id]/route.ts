@@ -88,12 +88,12 @@ export async function PUT(request: NextRequest) {
     const specService = getSpecService(fileService);
 
     // Filter out undefined values to satisfy exactOptionalPropertyTypes
-    const updates: Record<string, any> = {};
+    const updates: Record<string, unknown> = {};
     if (parsed.name !== undefined) updates.name = parsed.name;
     if (parsed.description !== undefined) updates.description = parsed.description;
     if (parsed.settings !== undefined) updates.settings = parsed.settings;
 
-    const project = await specService.updateProject(projectPath, updates as any);
+    const project = await specService.updateProject(projectPath, updates as string);
 
     const response: ProjectResponse = { project };
     return NextResponse.json(response);
