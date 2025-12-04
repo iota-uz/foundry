@@ -114,7 +114,7 @@ bun test --coverage
 **Common Patterns:**
 ```bash
 # Run build
-bun run build
+bun build
 
 # Common issues:
 # - "use client" directive missing
@@ -128,7 +128,7 @@ bun run build
 # Check Next.js version
 npx next --version
 # Analyze bundle
-bun run build && npx @next/bundle-analyzer
+bun build && npx @next/bundle-analyzer
 # Check for server/client mismatches
 grep -r "use client" src/app/
 ```

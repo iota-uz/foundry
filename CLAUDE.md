@@ -134,7 +134,7 @@ Feature: `editor(haiku)` && `refactoring-expert(sonnet)`
 ```bash
 # Development
 bun dev                       # Start development server (hot reload)
-bun run build                 # Production build
+bun build                     # Production build
 bun start                     # Start production server
 
 # Code Quality & Testing

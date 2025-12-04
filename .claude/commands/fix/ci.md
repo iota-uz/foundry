@@ -34,7 +34,7 @@ Local testing (if applicable):
 bun typecheck
 bun lint
 bun test -- path/to/file.test.ts
-bun run build
+bun build
 ```
 
 Re-run workflow (ask user first):

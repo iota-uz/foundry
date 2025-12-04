@@ -54,7 +54,7 @@ Visit `http://localhost:3000` to see the application.
 
 ```bash
 # Build for production
-bun run build
+bun build
 
 # Start production server
 bun start
@@ -108,7 +108,7 @@ See `.env.example` for available configuration options.
 | Command | Description |
 |---------|-------------|
 | `bun dev` | Start development server with hot reload |
-| `bun run build` | Create production build |
+| `bun build` | Create production build |
 | `bun start` | Start production server |
 | `bun typecheck` | Check TypeScript types |
 | `bun lint` | Run ESLint |

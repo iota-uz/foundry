@@ -150,7 +150,7 @@ You should explicitly state when:
 cat package.json | grep "package-name"
 
 # Check latest version
-bun pm ls package-name
+bun x npm view package-name version
 
 # Check changelog
 WebFetch https://github.com/owner/repo/blob/main/CHANGELOG.md

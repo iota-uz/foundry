@@ -402,7 +402,7 @@ bun test src/components/FeatureCard.test.tsx
 **For Build Verification**:
 ```bash
 # Full build
-bun run build
+bun build
 
 # Dev server
 bun dev
@@ -415,7 +415,7 @@ bun dev
 bun typecheck
 bun lint
 bun test
-bun run build
+bun build
 ```
 
 # Critical validation checklist
@@ -457,7 +457,7 @@ Before completing work, verify:
 - `bun typecheck` passes
 - `bun lint` passes
 - `bun test` passes
-- `bun run build` passes
+- `bun build` passes
 
 ## Layer Boundaries
 - Server components don't use client hooks
