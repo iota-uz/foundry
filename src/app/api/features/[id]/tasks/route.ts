@@ -76,7 +76,8 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
  * POST /api/features/:id/tasks - Regenerate tasks
  * Expects action=regenerate in the body
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const moduleSlug = request.nextUrl.searchParams.get('moduleSlug');
@@ -108,17 +109,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Implement task regeneration from implementation plan
-    // This would involve AI service to generate tasks
-    return NextResponse.json(
-      {
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Task regeneration not yet implemented',
-        },
-      },
-      { status: 501 }
+    // Get the feature to ensure it exists and has implementation plan
+    const fileService = getFileService();
+    const specService = getSpecService(fileService);
+    const feature = await specService.getFeature(
+      projectPath,
+      moduleSlug,
+      params.id
     );
+
+    // Check if feature has an implementation plan
+    if (!feature.implementationPlan || feature.implementationPlan.length === 0) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Feature has no implementation plan to generate tasks from',
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Use TaskService to regenerate tasks
+    const { getTaskService } = await import('@/services/support/task.service');
+    const taskService = getTaskService(projectPath);
+    const tasks = await taskService.regenerateTasks(params.id);
+
+    // Recalculate progress
+    const progress = {
+      total: tasks.length,
+      completed: tasks.filter((t) => t.status === 'completed').length,
+      inProgress: tasks.filter((t) => t.status === 'in_progress').length,
+      pending: tasks.filter((t) => t.status === 'pending').length,
+      percentComplete: 0,
+    };
+    progress.percentComplete = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
+
+    const response: TasksResponse = {
+      tasks,
+      progress,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
