@@ -23,9 +23,9 @@ export default function NewSpecPage() {
     setIsSubmitting(true);
 
     try {
-      // Use current working directory as the default path
-      // In a real implementation, this might come from CLI context or a file picker
-      const projectPath = process.cwd?.() || '.';
+      // TODO: Implement proper path selection (file picker or config)
+      // For now, use a default placeholder path - the API will handle path resolution
+      const projectPath = './projects';
 
       const response = await fetch('/api/projects', {
         method: 'POST',
@@ -41,14 +41,46 @@ export default function NewSpecPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to create project');
+        let errorMessage = 'Failed to create project';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch {
+          // If parsing fails, use the default message
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
 
-      // Navigate to Q&A page to start the CPO workflow
-      router.push(`/qa?projectId=${data.project.id}`);
+      // Start CPO workflow for the created project
+      const workflowResponse = await fetch('/api/workflow/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId: data.project.id,
+          workflowId: 'cpo-phase',
+          mode: 'new',
+        }),
+      });
+
+      if (!workflowResponse.ok) {
+        let errorMessage = 'Failed to start workflow';
+        try {
+          const errorData = await workflowResponse.json();
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch {
+          // If parsing fails, use the default message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const workflowData = await workflowResponse.json();
+
+      // Navigate to Q&A page with the session ID
+      router.push(`/qa?sessionId=${workflowData.sessionId}`);
     } catch (err) {
       console.error('Error creating project:', err);
       setError(err instanceof Error ? err.message : 'Failed to create project');
@@ -86,9 +118,14 @@ export default function NewSpecPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="my-saas-app"
+                pattern="[a-zA-Z0-9-_]+"
+                maxLength={50}
                 required
                 className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Use letters, numbers, hyphens, and underscores only (max 50 characters)
+              </p>
             </div>
 
             {/* Project Description */}
@@ -102,8 +139,13 @@ export default function NewSpecPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="A brief description of your project..."
                 rows={4}
+                maxLength={500}
+                required
                 className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                {description.length}/500 characters
+              </p>
             </div>
 
             {/* Error Message */}
@@ -126,7 +168,7 @@ export default function NewSpecPage() {
               <Button
                 type="submit"
                 variant="primary"
-                disabled={isSubmitting || !name.trim()}
+                disabled={isSubmitting || !name.trim() || !description.trim()}
               >
                 {isSubmitting ? 'Creating...' : 'Start Building Spec'}
               </Button>
