@@ -60,6 +60,7 @@ For command-specific help:
 async function runTypescriptCli(scriptPath, scriptArgs) {
   // Try to use bun first, fall back to tsx
   const runners = ['bun', 'npx tsx'];
+  let lastError = null;
   
   for (const runner of runners) {
     try {
@@ -73,19 +74,25 @@ async function runTypescriptCli(scriptPath, scriptArgs) {
         process.exit(code || 0);
       });
       
-      child.on('error', () => {
-        // Try next runner
+      child.on('error', (err) => {
+        // Error spawning process - this runner is not available.
+        // Store error and try next runner in the loop.
+        lastError = err;
       });
       
       // If we get here without error, we're running
       return;
-    } catch {
+    } catch (err) {
+      lastError = err;
       continue;
     }
   }
   
   console.error('Error: Could not find bun or tsx to run TypeScript.');
   console.error('Please install bun (https://bun.sh) or tsx (npm install -g tsx)');
+  if (lastError) {
+    console.error('Last error:', lastError.message || lastError);
+  }
   process.exit(1);
 }
 

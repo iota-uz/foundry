@@ -10,7 +10,6 @@ import type {
   NodeDefinition,
   GraphNode,
   GraphContext,
-  BaseState,
 } from '../lib/graph';
 import { resolveTransition } from '../lib/graph';
 import {
@@ -97,12 +96,12 @@ export function createGraphNode<TContext extends Record<string, unknown>>(
  */
 export function createGraphNodes<TContext extends Record<string, unknown>>(
   config: WorkflowConfig<TContext>
-): Record<string, GraphNode<BaseState>> {
+): Record<string, GraphNode<WorkflowState<TContext>>> {
   const validNodeNames = new Set([...Object.keys(config.nodes), 'END']);
-  const nodes: Record<string, GraphNode<BaseState>> = {};
+  const nodes: Record<string, GraphNode<WorkflowState<TContext>>> = {};
 
   for (const [name, definition] of Object.entries(config.nodes)) {
-    nodes[name] = createGraphNode(name, definition, validNodeNames) as GraphNode<BaseState>;
+    nodes[name] = createGraphNode(name, definition, validNodeNames);
   }
 
   return nodes;

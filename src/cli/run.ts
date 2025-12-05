@@ -264,7 +264,7 @@ export async function executeWorkflow(config: RunConfig): Promise<WorkflowState<
 
   const engine = new GraphEngine<WorkflowState<Record<string, unknown>>>({
     stateDir: config.stateDir,
-    nodes: graphNodes as Record<string, import('../lib/graph').GraphNode<WorkflowState<Record<string, unknown>>>>,
+    nodes: graphNodes,
     apiKey: config.apiKey,
   });
 
