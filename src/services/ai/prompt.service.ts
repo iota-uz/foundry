@@ -46,10 +46,12 @@ export class PromptService {
       if (error instanceof PromptNotFoundError || error instanceof PromptCompilationError) {
         throw error;
       }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCause = error instanceof Error ? error : undefined;
       throw new PromptCompilationError(
         templateName,
-        `Failed to compile template: ${error.message}`,
-        error
+        `Failed to compile template: ${errorMessage}`,
+        errorCause
       );
     }
   }
@@ -86,13 +88,16 @@ export class PromptService {
 
       return compiled;
     } catch (error: unknown) {
-      if (error.code === 'ENOENT') {
+      const errorObj = error as Record<string, unknown> | null;
+      if (errorObj?.code === 'ENOENT') {
         throw new PromptNotFoundError(templateName);
       }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCause = error instanceof Error ? error : undefined;
       throw new PromptCompilationError(
         templateName,
-        `Failed to load template: ${error.message}`,
-        error
+        `Failed to load template: ${errorMessage}`,
+        errorCause
       );
     }
   }
@@ -139,7 +144,8 @@ export class PromptService {
         .filter((file) => file.endsWith('.hbs'))
         .map((file) => file.replace('.hbs', ''));
     } catch (error: unknown) {
-      if (error.code === 'ENOENT') {
+      const errorObj = error as Record<string, unknown> | null;
+      if (errorObj?.code === 'ENOENT') {
         return [];
       }
       throw error;
@@ -174,7 +180,7 @@ export class PromptService {
    */
   private registerHelpers(): void {
     // Conditional helper
-    Handlebars.registerHelper('if', function (this: unknown, conditional: unknown, options: unknown) {
+    Handlebars.registerHelper('if', function (this: unknown, conditional: unknown, options: Handlebars.HelperOptions) {
       if (conditional) {
         return options.fn(this);
       } else {
@@ -342,7 +348,8 @@ export class PromptService {
       try {
         Handlebars.compile(templateContent);
       } catch (error: unknown) {
-        errors.push(`Template compilation failed: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        errors.push(`Template compilation failed: ${errorMessage}`);
         return { valid: false, errors, warnings };
       }
 
@@ -394,10 +401,12 @@ export class PromptService {
         warnings,
       };
     } catch (error: unknown) {
-      if (error.code === 'ENOENT') {
+      const errorObj = error as Record<string, unknown> | null;
+      if (errorObj?.code === 'ENOENT') {
         errors.push(`Template not found: ${templateName}`);
       } else {
-        errors.push(`Validation error: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        errors.push(`Validation error: ${errorMessage}`);
       }
 
       return { valid: false, errors, warnings };

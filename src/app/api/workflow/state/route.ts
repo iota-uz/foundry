@@ -36,9 +36,9 @@ export async function GET(request: NextRequest) {
     const totalTopics = Object.keys(state.topicQuestionCounts).length;
     const response: WorkflowStateResponse = {
       sessionId,
-      workflowId: (state.workflowId as string) || 'unknown',
+      workflowId: state.workflowId || 'cpo-phase',
       currentStepId: state.currentStepId,
-      status: (state.status as string) || 'unknown',
+      status: state.status || 'pending',
       progress: {
         topicsCompleted: state.currentTopicIndex,
         totalTopics,

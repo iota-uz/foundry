@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     workflowEngine.submitAnswer(
       validatedData.sessionId,
       validatedData.ambiguityId,
-      { action: 'resolve', resolution: validatedData.resolution }
+      validatedData.resolution // Just pass the resolution string directly
     );
 
     // Return success response

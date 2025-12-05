@@ -25,8 +25,8 @@ export type IssueSeverity = 'error' | 'warning' | 'info';
  */
 export interface IssueLocation {
   file: string;
-  line?: number;
-  field?: string;
+  line?: number | undefined;
+  field?: string | undefined;
 }
 
 /**
@@ -35,11 +35,12 @@ export interface IssueLocation {
 export interface AnalysisIssue {
   id: string;
   ruleId: string;
+  category: string; // Category of the issue (e.g., 'consistency', 'naming', 'structure')
   severity: IssueSeverity;
   message: string;
   location: IssueLocation;
-  suggestion?: string;
-  constitutionRef?: string;
+  suggestion?: string | undefined;
+  constitutionRef?: string | undefined;
   autoFixable: boolean;
 }
 
@@ -265,6 +266,7 @@ export class AnalyzerService implements IAnalyzerService {
             issues.push({
               id: generateId('issue'),
               ruleId: 'orphaned-feature',
+              category: 'structure',
               severity: 'warning',
               message: `Feature "${feature.name}" has no schema, API, or component references`,
               location: {
@@ -350,6 +352,7 @@ export class AnalyzerService implements IAnalyzerService {
               issues.push({
                 id: generateId('issue'),
                 ruleId: 'circular-dependency',
+                category: 'structure',
                 severity: 'warning',
                 message: `Circular dependency detected: ${featureNames.join(' → ')}`,
                 location: {
@@ -411,6 +414,7 @@ export class AnalyzerService implements IAnalyzerService {
             issues.push({
               id: generateId('issue'),
               ruleId: 'missing-implementation-plan',
+              category: 'completeness',
               severity: 'info',
               message: `Feature "${feature.name}" has no implementation plan`,
               location: {
@@ -444,6 +448,7 @@ export class AnalyzerService implements IAnalyzerService {
             issues.push({
               id: generateId('issue'),
               ruleId: 'incomplete-acceptance-criteria',
+              category: 'completeness',
               severity: 'info',
               message: `Feature "${feature.name}" has no acceptance criteria`,
               location: {
@@ -536,28 +541,32 @@ export class AnalyzerService implements IAnalyzerService {
 
       const schemaFiles = await this.fileService.list(schemasDir, '**/*.yaml');
 
+      const namingObj = naming as Record<string, unknown> | null;
+
       for (const schemaFile of schemaFiles) {
         try {
           const schema = await this.fileService.readYaml<unknown>(schemaFile);
+          const schemaObj = schema as Record<string, unknown> | null;
 
           // Check if schema has entities
-          if (!schema.entities || !Array.isArray(schema.entities)) {
+          if (!schemaObj?.entities || !Array.isArray(schemaObj.entities)) {
             continue;
           }
 
           // Check table names
-          for (const entity of schema.entities) {
-            if (!this.matchesNamingConvention(entity.name, naming.database_tables)) {
+          for (const entity of schemaObj.entities as Array<Record<string, unknown>>) {
+            if (!this.matchesNamingConvention(entity.name as string, namingObj?.database_tables as string)) {
               issues.push({
                 id: generateId('issue'),
                 ruleId: 'naming-convention',
+                category: 'naming',
                 severity: 'warning',
-                message: `Table name "${entity.name}" doesn't follow convention: ${naming.database_tables}`,
+                message: `Table name "${entity.name}" doesn't follow convention: ${namingObj?.database_tables}`,
                 location: {
                   file: schemaFile,
                   field: `entities.${entity.name}`,
                 },
-                suggestion: `Use ${naming.database_tables} for table names`,
+                suggestion: `Use ${namingObj?.database_tables} for table names`,
                 constitutionRef: 'coding.naming.database_tables',
                 autoFixable: false,
               });
@@ -565,18 +574,19 @@ export class AnalyzerService implements IAnalyzerService {
 
             // Check column names
             if (entity.fields && Array.isArray(entity.fields)) {
-              for (const field of entity.fields) {
-                if (!this.matchesNamingConvention(field.name, naming.database_columns)) {
+              for (const field of entity.fields as Array<Record<string, unknown>>) {
+                if (!this.matchesNamingConvention(field.name as string, namingObj?.database_columns as string)) {
                   issues.push({
                     id: generateId('issue'),
                     ruleId: 'naming-convention',
+                    category: 'naming',
                     severity: 'warning',
-                    message: `Column name "${field.name}" doesn't follow convention: ${naming.database_columns}`,
+                    message: `Column name "${field.name}" doesn't follow convention: ${namingObj?.database_columns}`,
                     location: {
                       file: schemaFile,
                       field: `entities.${entity.name}.fields.${field.name}`,
                     },
-                    suggestion: `Use ${naming.database_columns} for column names`,
+                    suggestion: `Use ${namingObj?.database_columns} for column names`,
                     constitutionRef: 'coding.naming.database_columns',
                     autoFixable: false,
                   });
@@ -602,6 +612,8 @@ export class AnalyzerService implements IAnalyzerService {
     naming: unknown,
     issues: AnalysisIssue[]
   ): Promise<void> {
+    const namingObj = naming as Record<string, unknown> | null;
+
     // Happy path: Check feature names follow conventions
     // For now, we'll just check that feature IDs follow kebab-case
     for (const feature of context.features) {
@@ -609,19 +621,20 @@ export class AnalyzerService implements IAnalyzerService {
       // We could add checks for other naming patterns here
 
       // Check if feature name is in PascalCase (common for class names)
-      if (naming.classes && !this.matchesNamingConvention(feature.name, naming.classes)) {
+      if (namingObj?.classes && !this.matchesNamingConvention(feature.name, namingObj.classes as string)) {
         // Only warn if the feature represents a class/component
         if (feature.technical?.componentRefs && feature.technical.componentRefs.length > 0) {
           issues.push({
             id: generateId('issue'),
             ruleId: 'naming-convention',
+            category: 'naming',
             severity: 'info',
-            message: `Feature name "${feature.name}" might not follow class convention: ${naming.classes}`,
+            message: `Feature name "${feature.name}" might not follow class convention: ${namingObj.classes}`,
             location: {
               file: `features/${feature.id}.yaml`,
               field: 'name',
             },
-            suggestion: `Consider using ${naming.classes} for component-based features`,
+            suggestion: `Consider using ${namingObj.classes} for component-based features`,
             constitutionRef: 'coding.naming.classes',
             autoFixable: false,
           });

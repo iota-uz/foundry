@@ -76,7 +76,7 @@ export async function executeQuestionStep(
     return {
       stepId: step.id,
       status: 'failed',
-      error: error.message || 'Question step execution failed',
+      error: error instanceof Error ? error.message : 'Question step execution failed',
       duration,
     };
   }
@@ -184,42 +184,56 @@ export function skipQuestion(sessionId: string, questionId: string): void {
 }
 
 /**
+ * Validation rules type
+ */
+interface ValidationRules {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  message?: string;
+  min?: number;
+  max?: number;
+}
+
+/**
  * Validate answer against validation rules
  */
 function validateAnswer(
   answer: unknown,
   validation: unknown
-): { valid: boolean; errors?: string[] } {
+): { valid: boolean; errors?: string[] | undefined } {
   const errors: string[] = [];
+  const rules = validation as ValidationRules;
 
   // Required check
-  if (validation.required && (answer === null || answer === undefined || answer === '')) {
+  if (rules.required && (answer === null || answer === undefined || answer === '')) {
     errors.push('Answer is required');
   }
 
   // Text validation
   if (typeof answer === 'string') {
-    if (validation.minLength && answer.length < validation.minLength) {
-      errors.push(`Minimum length is ${validation.minLength}`);
+    if (rules.minLength && answer.length < rules.minLength) {
+      errors.push(`Minimum length is ${rules.minLength}`);
     }
-    if (validation.maxLength && answer.length > validation.maxLength) {
-      errors.push(`Maximum length is ${validation.maxLength}`);
+    if (rules.maxLength && answer.length > rules.maxLength) {
+      errors.push(`Maximum length is ${rules.maxLength}`);
     }
-    if (validation.pattern) {
-      const regex = new RegExp(validation.pattern);
+    if (rules.pattern) {
+      const regex = new RegExp(rules.pattern);
       if (!regex.test(answer)) {
-        errors.push(validation.message || 'Answer does not match required pattern');
+        errors.push(rules.message || 'Answer does not match required pattern');
       }
     }
   }
 
   // Number validation
   if (typeof answer === 'number') {
-    if (validation.min !== undefined && answer < validation.min) {
-      errors.push(`Minimum value is ${validation.min}`);
+    if (rules.min !== undefined && answer < rules.min) {
+      errors.push(`Minimum value is ${rules.min}`);
     }
-    if (validation.max !== undefined && answer > validation.max) {
-      errors.push(`Maximum value is ${validation.max}`);
+    if (rules.max !== undefined && answer > rules.max) {
+      errors.push(`Maximum value is ${rules.max}`);
     }
   }
 

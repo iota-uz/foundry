@@ -101,7 +101,7 @@ export function QuestionCard({
         {question.questionType === 'single_choice' && question.options && (
           <OptionList
             options={question.options}
-            selected={answer}
+            selected={typeof answer === 'string' || Array.isArray(answer) ? answer : undefined}
             mode="single"
             onSelect={handleOptionSelect}
             onHoverOption={onImpactPreview}
@@ -113,7 +113,7 @@ export function QuestionCard({
           <>
             <OptionList
               options={question.options}
-              selected={answer}
+              selected={typeof answer === 'string' || Array.isArray(answer) ? answer : undefined}
               mode="multiple"
               onSelect={(selected) => setAnswer(selected)}
               onHoverOption={onImpactPreview}
@@ -133,7 +133,7 @@ export function QuestionCard({
 
         {question.questionType === 'text' && (
           <TextInput
-            value={answer || ''}
+            value={typeof answer === 'string' ? answer : ''}
             onChange={setAnswer}
             onSubmit={handleAnswer}
             placeholder="Enter your answer..."
@@ -145,7 +145,7 @@ export function QuestionCard({
 
         {question.questionType === 'code' && (
           <CodeInput
-            value={answer || ''}
+            value={typeof answer === 'string' ? answer : ''}
             onChange={setAnswer}
             language="javascript"
             disabled={disabled}
@@ -154,7 +154,7 @@ export function QuestionCard({
 
         {question.questionType === 'color' && (
           <ColorPicker
-            value={answer || '#3b82f6'}
+            value={typeof answer === 'string' ? answer : '#3b82f6'}
             onChange={setAnswer}
             disabled={disabled}
           />
@@ -163,7 +163,7 @@ export function QuestionCard({
         {question.questionType === 'number' && (
           <input
             type="number"
-            value={answer ?? ''}
+            value={typeof answer === 'number' ? answer : ''}
             onChange={(e) => setAnswer(e.target.value ? parseInt(e.target.value) : null)}
             onKeyDown={(e) => e.key === 'Enter' && handleAnswer()}
             placeholder="Enter a number..."
@@ -175,7 +175,7 @@ export function QuestionCard({
         {question.questionType === 'date' && (
           <input
             type="date"
-            value={answer || ''}
+            value={typeof answer === 'string' ? answer : ''}
             onChange={(e) => setAnswer(e.target.value)}
             disabled={disabled}
             className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-blue-600 focus:outline-none"

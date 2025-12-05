@@ -51,7 +51,7 @@ export async function executeConditionalStep(
     return {
       stepId: step.id,
       status: 'failed',
-      error: error.message || 'Conditional step execution failed',
+      error: error instanceof Error ? error.message : 'Conditional step execution failed',
       duration,
     };
   }
@@ -87,7 +87,7 @@ function evaluateCondition(condition: string, context: WorkflowContext): boolean
 /**
  * Validate condition syntax
  */
-export function validateCondition(condition: string): { valid: boolean; error?: string } {
+export function validateCondition(condition: string): { valid: boolean; error?: string | undefined } {
   try {
     // Basic syntax check
     new Function('context', `with(context) { return Boolean(${condition}); }`);
@@ -95,7 +95,7 @@ export function validateCondition(condition: string): { valid: boolean; error?: 
   } catch (error: unknown) {
     return {
       valid: false,
-      error: `Invalid condition syntax: ${error.message}`,
+      error: `Invalid condition syntax: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 }

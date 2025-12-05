@@ -37,6 +37,9 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
     );
   }
 
+  const info = spec.info as Record<string, unknown> | undefined;
+  const paths = spec.paths as Record<string, unknown> | undefined;
+
   return (
     <div
       ref={containerRef}
@@ -50,15 +53,15 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
         <h2 className="text-2xl font-bold mb-4">API Reference</h2>
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-semibold mb-2">{spec.info?.title || 'API'}</h3>
-            <p className="text-text-secondary mb-4">{spec.info?.description}</p>
+            <h3 className="text-lg font-semibold mb-2">{(info?.title as string) || 'API'}</h3>
+            <p className="text-text-secondary mb-4">{info?.description as string}</p>
           </div>
 
-          {spec.paths && (
+          {paths && (
             <div>
               <h4 className="font-semibold mb-3">Endpoints</h4>
               <div className="space-y-2">
-                {Object.entries(spec.paths).map(([path, methods]) => (
+                {Object.entries(paths).map(([path, methods]) => (
                   <div key={path} className="pl-4 border-l border-border-default">
                     <p className="font-mono text-sm text-accent-primary">{path}</p>
                     {typeof methods === 'object' && methods !== null &&

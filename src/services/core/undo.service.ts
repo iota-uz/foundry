@@ -243,8 +243,8 @@ export class UndoService implements IUndoService {
       actionType: this.extractActionType(action.type),
       targetType: action.targetType,
       targetId: action.targetId,
-      beforeState: action.before,
-      afterState: action.after,
+      beforeState: action.before as Record<string, unknown> | null,
+      afterState: action.after as Record<string, unknown> | null,
       description: action.description,
       createdAt: new Date().toISOString(),
       undoneAt: null,
@@ -407,9 +407,11 @@ export class UndoService implements IUndoService {
       const groupActions = undoStack.filter((action) => {
         // Check if action has cascade group metadata
         // For now, we'll assume cascadeGroup is stored in beforeState or afterState
+        const beforeState = action.beforeState as Record<string, unknown> | null;
+        const afterState = action.afterState as Record<string, unknown> | null;
         return (
-          (action.beforeState as string)?.cascadeGroup === cascadeGroup ||
-          (action.afterState as string)?.cascadeGroup === cascadeGroup
+          beforeState?.cascadeGroup === cascadeGroup ||
+          afterState?.cascadeGroup === cascadeGroup
         );
       });
 

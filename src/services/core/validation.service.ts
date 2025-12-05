@@ -133,10 +133,10 @@ export class ValidationService implements IValidationService {
 
       // Check for tables without primary keys
       for (const table of allTables) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const hasPrimaryKey = table.fields.some((field: unknown) =>
-          field.pk || field.dbState?.pk
-        );
+        const hasPrimaryKey = table.fields.some((field: unknown) => {
+          const f = field as Record<string, unknown> | null;
+          return f?.pk || (f?.dbState as Record<string, unknown> | undefined)?.pk;
+        });
 
         if (!hasPrimaryKey) {
           warnings.push({
@@ -499,8 +499,12 @@ export class ValidationService implements IValidationService {
           const parser = new Parser();
           const database = parser.parse(dbmlSchema, 'dbml');
           const allTables = database.schemas.flatMap((schema) => schema.tables);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          allTables.forEach((table: unknown) => schemaEntities.add(table.name));
+          allTables.forEach((table: unknown) => {
+            const t = table as Record<string, unknown> | null;
+            if (t?.name && typeof t.name === 'string') {
+              schemaEntities.add(t.name);
+            }
+          });
         } catch {
           // Ignore parse errors - they'll be caught by validateDBML
         }

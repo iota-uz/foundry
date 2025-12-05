@@ -139,7 +139,7 @@ export default function QAPage() {
         ...prev,
         {
           questionId,
-          value: answer,
+          value: answer as string | string[] | number | boolean,
           skipped: false,
           answeredAt: new Date().toISOString(),
         },
@@ -177,7 +177,7 @@ export default function QAPage() {
         ...prev,
         {
           questionId,
-          value: null,
+          value: '', // Empty string for skipped questions
           skipped: true,
           answeredAt: new Date().toISOString(),
         },

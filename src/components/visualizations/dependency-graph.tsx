@@ -47,8 +47,8 @@ export function DependencyGraph({
   loading,
   error,
 }: DependencyGraphProps) {
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Node[]>([]);
+  const [nodes, setNodes] = useState<CustomNode[]>([]);
+  const [edges, setEdges] = useState<CustomEdge[]>([]);
   const [layoutDirection, setLayoutDirection] = useState<'TB' | 'LR'>('TB');
   const [circularDeps, setCircularDeps] = useState<string[][]>([]);
 
@@ -154,11 +154,11 @@ export function DependencyGraph({
   }, [features, loading, layoutDirection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setNodes((nds) => applyNodeChanges(changes, nds));
+    setNodes((nds) => applyNodeChanges(changes, nds) as CustomNode[]);
   }, []);
 
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    setEdges((eds) => applyEdgeChanges(changes, eds));
+    setEdges((eds) => applyEdgeChanges(changes, eds) as CustomEdge[]);
   }, []);
 
   const nodeTypes = useMemo(
@@ -250,7 +250,8 @@ export function DependencyGraph({
 
           <MiniMap
             nodeColor={(node) => {
-              const status = (node.data as string).status;
+              const data = node.data as Record<string, unknown>;
+              const status = data.status;
               if (status === 'completed') return '#10b981';
               if (status === 'in_progress') return '#f59e0b';
               return '#6b7280';

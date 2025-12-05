@@ -274,8 +274,8 @@ export class HookService implements IHookService {
         };
 
         // Update feature with new checklist
-        const moduleSlug = context.changes?.moduleSlug || 'core';
-        const featureSlug = context.changes?.featureSlug || 'default';
+        const moduleSlug = (context.changes?.moduleSlug as string | undefined) || 'core';
+        const featureSlug = (context.changes?.featureSlug as string | undefined) || 'default';
 
         await specService.updateFeature(projectPath, moduleSlug, featureSlug, {
           checklist,
@@ -327,7 +327,7 @@ export class HookService implements IHookService {
         }
 
         // Determine API style
-        const apiStyle = options?.apiStyle || 'rest';
+        const apiStyle = (options?.apiStyle as string | undefined) || 'rest';
 
         if (apiStyle === 'rest' || apiStyle === 'openapi') {
           // Generate OpenAPI spec
@@ -399,7 +399,7 @@ export class HookService implements IHookService {
         const validationService = getValidationService(specService);
         const dbService = getDatabaseService();
 
-        const scope = options?.scope || 'full';
+        const scope = (options?.scope as string | undefined) || 'full';
         const projectPath = context.projectPath;
 
         // Run reference validation
@@ -446,7 +446,7 @@ export class HookService implements IHookService {
           projectId: context.projectPath,
           scope,
           status,
-          results: results,
+          results: results as unknown as { errors?: number; warnings?: number; info?: number },
           createdAt: new Date().toISOString(),
           expiresAt: null,
         });
@@ -518,8 +518,8 @@ export class HookService implements IHookService {
         };
 
         // Update feature with new progress
-        const moduleSlug = context.changes?.moduleSlug || 'core';
-        const featureSlug = context.changes?.featureSlug || 'default';
+        const moduleSlug = (context.changes?.moduleSlug as string | undefined) || 'core';
+        const featureSlug = (context.changes?.featureSlug as string | undefined) || 'default';
 
         await specService.updateFeature(projectPath, moduleSlug, featureSlug, {
           taskProgress,
@@ -550,7 +550,7 @@ export class HookService implements IHookService {
       return {
         action: 'notifyUser',
         success: true,
-        message: options?.message || 'Notification sent',
+        message: (options?.message as string | undefined) || 'Notification sent',
       };
     });
   }

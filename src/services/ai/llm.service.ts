@@ -12,6 +12,13 @@ import type {
 import { MODEL_NAMES, LLMError as LLMErrorClass } from '@/types/ai';
 
 /**
+ * Interface for Zod-like schema objects that have a parse method
+ */
+interface ZodLikeSchema {
+  parse: (data: unknown) => unknown;
+}
+
+/**
  * LLMService handles all interactions with Claude API
  */
 export class LLMService {
@@ -82,8 +89,8 @@ export class LLMService {
 
       // Extract text content
       const textContent = response.content
-        .filter((block) => block.type === 'text')
-        .map((block: unknown) => block.text)
+        .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+        .map((block) => block.text)
         .join('\n');
 
       return {
@@ -104,7 +111,7 @@ export class LLMService {
     modelName: string,
     systemPrompt: string,
     userPrompt: string,
-    _outputSchema: unknown,
+    _outputSchema: ZodLikeSchema,
     maxTokens: number,
     temperature: number,
     topP?: number
@@ -135,8 +142,8 @@ ${JSON.stringify(jsonSchema, null, 2)}`;
 
       // Extract text content
       const textContent = response.content
-        .filter((block) => block.type === 'text')
-        .map((block: unknown) => block.text)
+        .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+        .map((block) => block.text)
         .join('\n');
 
       // Parse structured output
@@ -150,9 +157,10 @@ ${JSON.stringify(jsonSchema, null, 2)}`;
         // Validate with Zod schema
         structured = _outputSchema.parse(structured);
       } catch (parseError: unknown) {
+        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
         throw new LLMErrorClass(
           'structured_output_failed',
-          `Failed to parse structured output: ${parseError.message}`,
+          `Failed to parse structured output: ${errorMessage}`,
           false
         );
       }
@@ -230,9 +238,10 @@ ${JSON.stringify(jsonSchema, null, 2)}`;
                 data: structured,
               };
             } catch (parseError: unknown) {
+              const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
               yield {
                 type: 'error',
-                data: `Failed to parse structured output: ${parseError.message}`,
+                data: `Failed to parse structured output: ${errorMessage}`,
               };
             }
           }
@@ -271,59 +280,73 @@ You MUST follow all constitution rules.`;
   /**
    * Format constitution object as readable text
    */
-  private formatConstitution(constitution: unknown): string {
+  private formatConstitution(constitutionData: unknown): string {
     const parts: string[] = [];
 
-    if (constitution.principles?.length) {
+    // Type guard for constitution object
+    if (!constitutionData || typeof constitutionData !== 'object') {
+      return '';
+    }
+
+    const constitution = constitutionData as Record<string, unknown>;
+    const principles = constitution.principles as string[] | undefined;
+    const coding = constitution.coding as Record<string, Record<string, unknown>> | undefined;
+    const security = constitution.security as Record<string, unknown> | undefined;
+    const ux = constitution.ux as Record<string, unknown> | undefined;
+
+    if (principles?.length) {
       parts.push('### Principles');
-      constitution.principles.forEach((p: string) => parts.push(`- ${p}`));
+      principles.forEach((p: string) => parts.push(`- ${p}`));
       parts.push('');
     }
 
-    if (constitution.coding) {
+    if (coding) {
       parts.push('### Coding Standards');
-      if (constitution.coding.naming) {
+      if (coding.naming) {
         parts.push('**Naming:**');
-        Object.entries(constitution.coding.naming).forEach(([key, value]) => {
+        Object.entries(coding.naming).forEach(([key, value]) => {
           parts.push(`- ${key}: ${value}`);
         });
       }
-      if (constitution.coding.style) {
+      if (coding.style) {
         parts.push('**Style:**');
-        Object.entries(constitution.coding.style).forEach(([key, value]) => {
+        Object.entries(coding.style).forEach(([key, value]) => {
           parts.push(`- ${key}: ${value}`);
         });
       }
       parts.push('');
     }
 
-    if (constitution.security) {
+    if (security) {
       parts.push('### Security Requirements');
-      Object.entries(constitution.security).forEach(([key, value]) => {
+      Object.entries(security).forEach(([key, value]) => {
         parts.push(`- ${key}: ${value}`);
       });
       parts.push('');
     }
 
-    if (constitution.ux) {
+    if (ux) {
       parts.push('### UX Patterns');
-      Object.entries(constitution.ux).forEach(([key, value]) => {
+      Object.entries(ux).forEach(([key, value]) => {
         parts.push(`- ${key}: ${value}`);
       });
       parts.push('');
     }
 
-    if (constitution.constraints) {
+    const constraints = constitution.constraints as Record<string, unknown> | undefined;
+    if (constraints) {
       parts.push('### Constraints');
-      if (constitution.constraints.allowed_libraries?.length) {
-        parts.push(`**Allowed libraries:** ${constitution.constraints.allowed_libraries.join(', ')}`);
+      const allowedLibraries = constraints.allowed_libraries as string[] | undefined;
+      const forbiddenLibraries = constraints.forbidden_libraries as string[] | undefined;
+      if (allowedLibraries?.length) {
+        parts.push(`**Allowed libraries:** ${allowedLibraries.join(', ')}`);
       }
-      if (constitution.constraints.forbidden_libraries?.length) {
+      if (forbiddenLibraries?.length) {
         parts.push(
-          `**Forbidden libraries:** ${constitution.constraints.forbidden_libraries.join(', ')}`
+          `**Forbidden libraries:** ${forbiddenLibraries.join(', ')}`
         );
       }
-      Object.entries(constitution.constraints)
+      Object.entries(constraints)
         .filter(([key]) => !['allowed_libraries', 'forbidden_libraries'].includes(key))
         .forEach(([key, value]) => {
           parts.push(`- ${key}: ${value}`);
@@ -336,8 +359,9 @@ You MUST follow all constitution rules.`;
   /**
    * Convert Zod schema to JSON schema
    */
-  private zodToJsonSchema(schema: unknown): unknown {
-    return zodToJsonSchema(schema, {
+  private zodToJsonSchema(schema: ZodLikeSchema): unknown {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return zodToJsonSchema(schema as any, {
       name: 'StructuredOutput',
       $refStrategy: 'none', // Inline all definitions
     });
@@ -369,9 +393,13 @@ You MUST follow all constitution rules.`;
       return error;
     }
 
+    // Type guard for error-like objects
+    const errorObj = error as Record<string, unknown> | null;
+
     // Anthropic API errors
-    if (error.status) {
-      const statusCode = error.status;
+    if (errorObj && typeof errorObj.status === 'number') {
+      const statusCode = errorObj.status;
+      const errorMessage = typeof errorObj.message === 'string' ? errorObj.message : 'Unknown error';
       if (statusCode === 401 || statusCode === 403) {
         return new LLMErrorClass(
           'authentication',
@@ -386,16 +414,18 @@ You MUST follow all constitution rules.`;
       if (statusCode >= 500) {
         return new LLMErrorClass('api_error', 'API server error', true, statusCode);
       }
-      return new LLMErrorClass('invalid_request', error.message, false, statusCode);
+      return new LLMErrorClass('invalid_request', errorMessage, false, statusCode);
     }
 
     // Timeout errors
-    if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+    const errorCode = errorObj?.code as string | undefined;
+    const errorMessage = errorObj?.message as string | undefined;
+    if (errorCode === 'ETIMEDOUT' || errorMessage?.includes('timeout')) {
       return new LLMErrorClass('timeout', 'Request timed out', true);
     }
 
     // Generic error
-    return new LLMErrorClass('api_error', error.message || 'Unknown error', false);
+    return new LLMErrorClass('api_error', errorMessage || 'Unknown error', false);
   }
 
 }

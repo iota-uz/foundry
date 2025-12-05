@@ -320,23 +320,29 @@ export class HistoryService implements IHistoryService {
   private formatChanges(changes: unknown): string[] {
     const lines: string[] = [];
 
-    if (changes?.added && Object.keys(changes.added).length > 0) {
+    if (!changes || typeof changes !== 'object') {
+      return lines;
+    }
+
+    const changesObj = changes as Record<string, unknown>;
+
+    if (changesObj.added && typeof changesObj.added === 'object' && Object.keys(changesObj.added as object).length > 0) {
       lines.push('- **Added:**');
-      for (const [key, value] of Object.entries(changes.added)) {
+      for (const [key, value] of Object.entries(changesObj.added as object)) {
         lines.push(`  - ${key}: ${JSON.stringify(value)}`);
       }
     }
 
-    if (changes?.removed && Object.keys(changes.removed).length > 0) {
+    if (changesObj.removed && typeof changesObj.removed === 'object' && Object.keys(changesObj.removed as object).length > 0) {
       lines.push('- **Removed:**');
-      for (const [key, value] of Object.entries(changes.removed)) {
+      for (const [key, value] of Object.entries(changesObj.removed as object)) {
         lines.push(`  - ${key}: ${JSON.stringify(value)}`);
       }
     }
 
-    if (changes?.modified && Object.keys(changes.modified).length > 0) {
+    if (changesObj.modified && typeof changesObj.modified === 'object' && Object.keys(changesObj.modified as object).length > 0) {
       lines.push('- **Modified:**');
-      for (const [key, change] of Object.entries(changes.modified)) {
+      for (const [key, change] of Object.entries(changesObj.modified as object)) {
         const mod = change as { before: unknown; after: unknown };
         lines.push(`  - **${key}**`);
         lines.push(`    - From: ${JSON.stringify(mod.before)}`);

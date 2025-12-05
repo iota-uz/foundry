@@ -113,22 +113,24 @@ function compareNestedObjects(
   }
 
   // Handle objects
-  if (typeof oldObj === 'object' && typeof newObj === 'object') {
-    const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+  if (typeof oldObj === 'object' && oldObj !== null && typeof newObj === 'object' && newObj !== null) {
+    const oldRecord = oldObj as Record<string, unknown>;
+    const newRecord = newObj as Record<string, unknown>;
+    const allKeys = new Set([...Object.keys(oldRecord), ...Object.keys(newRecord)]);
 
     for (const key of allKeys) {
       const path = `${parentPath}.${key}`;
-      const oldValue = oldObj[key];
-      const newValue = newObj[key];
+      const oldValue = oldRecord[key];
+      const newValue = newRecord[key];
 
-      if (!(key in oldObj)) {
+      if (!(key in oldRecord)) {
         changes.push({
           field: key,
           operation: 'add',
           newValue,
           path,
         });
-      } else if (!(key in newObj)) {
+      } else if (!(key in newRecord)) {
         changes.push({
           field: key,
           operation: 'remove',
@@ -168,12 +170,14 @@ function deepEqual(a: unknown, b: unknown): boolean {
   }
 
   if (typeof a === 'object' && typeof b === 'object') {
-    const keysA = Object.keys(a);
-    const keysB = Object.keys(b);
+    const aObj = a as Record<string, unknown>;
+    const bObj = b as Record<string, unknown>;
+    const keysA = Object.keys(aObj);
+    const keysB = Object.keys(bObj);
 
     if (keysA.length !== keysB.length) return false;
 
-    return keysA.every(key => deepEqual(a[key], b[key]));
+    return keysA.every(key => deepEqual(aObj[key], bObj[key]));
   }
 
   return false;

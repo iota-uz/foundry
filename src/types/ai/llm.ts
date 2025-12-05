@@ -34,11 +34,11 @@ export interface LLMCallParams {
   model: ClaudeModel;
   systemPrompt: string;
   userPrompt: string;
-  outputSchema?: z.ZodSchema;
+  outputSchema?: z.ZodSchema | undefined;
   maxTokens: number;
-  temperature?: number;
-  topP?: number;
-  constitution?: Record<string, unknown>; // Constitution object if available
+  temperature?: number | undefined;
+  topP?: number | undefined;
+  constitution?: Record<string, unknown> | undefined; // Constitution object if available
 }
 
 /**

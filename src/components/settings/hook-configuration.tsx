@@ -245,7 +245,7 @@ export function HookConfiguration({ hooks, onChange }: HookConfigurationProps) {
                                             </label>
                                             <input
                                               type="text"
-                                              value={hookAction.options?.[option.key] || ''}
+                                              value={String(hookAction.options?.[option.key] ?? '')}
                                               onChange={(e) =>
                                                 handleUpdateActionOptions(
                                                   event.id,

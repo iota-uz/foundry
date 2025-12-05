@@ -29,8 +29,8 @@ interface DBMLDiagramProps {
 }
 
 export function DBMLDiagram({ dbml, loading, error }: DBMLDiagramProps) {
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Node[]>([]);
+  const [nodes, setNodes] = useState<CustomNode[]>([]);
+  const [edges, setEdges] = useState<CustomEdge[]>([]);
   const [layoutDirection, setLayoutDirection] = useState<'TB' | 'LR'>('TB');
 
   // Parse DBML and create React Flow nodes/edges
@@ -81,11 +81,11 @@ export function DBMLDiagram({ dbml, loading, error }: DBMLDiagramProps) {
   }, [dbml, loading, layoutDirection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setNodes((nds) => applyNodeChanges(changes, nds));
+    setNodes((nds) => applyNodeChanges(changes, nds) as CustomNode[]);
   }, []);
 
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    setEdges((eds) => applyEdgeChanges(changes, eds));
+    setEdges((eds) => applyEdgeChanges(changes, eds) as CustomEdge[]);
   }, []);
 
   const nodeTypes = useMemo(

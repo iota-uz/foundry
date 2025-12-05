@@ -31,7 +31,7 @@ export interface RecommendationScore {
  */
 export function calculateRecommendationConfidence(
   question: string,
-  options: Array<{ id: string; label: string; description?: string }>,
+  options: Array<{ id: string; label: string; description?: string | undefined }>,
   recommendedOptionId: string,
   context: RecommendationContext
 ): RecommendationScore {
@@ -132,24 +132,27 @@ function checkConstitution(
   const questionLower = question.toLowerCase();
 
   // Check naming conventions
-  if (constitution.naming) {
+  const naming = constitution.naming as Record<string, unknown> | undefined;
+  if (naming) {
     if (questionLower.includes('naming') || questionLower.includes('convention')) {
       const option = options.find(o => o.id === recommendedOptionId);
-      if (option && option.label.toLowerCase().includes(constitution.naming.style)) {
+      const namingStyle = naming.style as string | undefined;
+      if (option && namingStyle && option.label.toLowerCase().includes(namingStyle)) {
         return {
           matches: true,
-          rationale: `Matches project naming convention: ${constitution.naming.style}`,
+          rationale: `Matches project naming convention: ${namingStyle}`,
         };
       }
     }
   }
 
   // Check architecture preferences
-  if (constitution.architecture) {
+  const architecture = constitution.architecture as Record<string, unknown> | undefined;
+  if (architecture) {
     if (questionLower.includes('architecture') || questionLower.includes('pattern')) {
-      const preferredStyle = constitution.architecture.style;
+      const preferredStyle = architecture.style as string | undefined;
       const option = options.find(o => o.id === recommendedOptionId);
-      if (option && option.label.toLowerCase().includes(preferredStyle.toLowerCase())) {
+      if (option && preferredStyle && option.label.toLowerCase().includes(preferredStyle.toLowerCase())) {
         return {
           matches: true,
           rationale: `Aligns with project architecture: ${preferredStyle}`,
@@ -159,8 +162,9 @@ function checkConstitution(
   }
 
   // Check technology stack preferences
-  if (constitution.stack) {
-    const stackKeywords = Object.keys(constitution.stack).map(k => k.toLowerCase());
+  const stack = constitution.stack as Record<string, unknown> | undefined;
+  if (stack) {
+    const stackKeywords = Object.keys(stack).map(k => k.toLowerCase());
     const option = options.find(o => o.id === recommendedOptionId);
     if (option) {
       const optionText = option.label.toLowerCase();
@@ -365,7 +369,7 @@ export function generateRecommendation(
  * Should we recommend for this question?
  * Returns false for high-stakes business decisions
  */
-export function shouldRecommend(question: string, options: Array<{ id: string; label: string }>): boolean {
+export function shouldRecommend(question: string, options: Array<{ id: string; label: string; description?: string | undefined }>): boolean {
   const questionLower = question.toLowerCase();
 
   // Don't recommend for business-critical decisions

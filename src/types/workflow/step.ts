@@ -125,10 +125,10 @@ export interface StepExecution {
   stepType: StepType;
   status: 'completed' | 'failed' | 'skipped';
   startedAt: string;
-  completedAt?: string;
-  inputData?: Record<string, unknown>;
-  outputData?: Record<string, unknown>;
-  error?: string;
-  llmTokensUsed?: number;
+  completedAt?: string | undefined;
+  inputData?: Record<string, unknown> | undefined;
+  outputData?: Record<string, unknown> | undefined;
+  error?: string | undefined;
+  llmTokensUsed?: number | undefined;
   durationMs: number;
 }

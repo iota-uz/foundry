@@ -242,11 +242,11 @@ export class DatabaseService implements IDatabaseService {
       stepType: row.step_type as StepExecution['stepType'],
       status: row.status as StepExecution['status'],
       startedAt: row.started_at,
-      completedAt: row.completed_at,
+      completedAt: row.completed_at ?? undefined,
       inputData: row.input_data ? JSON.parse(row.input_data) : undefined,
       outputData: row.output_data ? JSON.parse(row.output_data) : undefined,
-      error: row.error,
-      llmTokensUsed: row.llm_tokens_used,
+      error: row.error ?? undefined,
+      llmTokensUsed: row.llm_tokens_used ?? undefined,
       durationMs: row.duration_ms,
     }));
   }

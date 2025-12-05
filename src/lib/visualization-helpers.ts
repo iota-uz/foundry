@@ -20,7 +20,7 @@ async function loadLayoutLibraries() {
       import('@dagrejs/graphlib'),
     ]);
     dagre = (dagreModule.default || dagreModule) as typeof DagreTypes;
-    graphlib = (graphlibModule.graphlib || graphlibModule) as typeof GraphlibTypes;
+    graphlib = (graphlibModule.default || graphlibModule) as typeof GraphlibTypes;
   }
   return { dagre, graphlib };
 }

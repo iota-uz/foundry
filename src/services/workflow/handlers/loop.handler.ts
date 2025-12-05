@@ -99,7 +99,7 @@ export async function executeLoopStep(
     return {
       stepId: step.id,
       status: 'failed',
-      error: error.message || 'Loop step execution failed',
+      error: error instanceof Error ? error.message : 'Loop step execution failed',
       duration,
     };
   }
@@ -116,7 +116,7 @@ function getCollectionFromPath(path: string, context: WorkflowContext): unknown 
     if (current === null || current === undefined) {
       return [];
     }
-    current = current[part];
+    current = (current as Record<string, unknown>)[part];
   }
 
   return current;

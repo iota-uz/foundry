@@ -3,9 +3,18 @@
  */
 
 import { NextRequest } from 'next/server';
-import type { SSEEvent } from '@/types/workflow/events';
+import type { SSEEvent, BaseSSEEvent } from '@/types/workflow/events';
 import { getWorkflowEngine } from '@/services/workflow/engine';
 import { questionEvents } from '@/services/workflow/handlers/question.handler';
+
+interface WorkflowEventData {
+  sessionId: string;
+  [key: string]: unknown;
+}
+
+function isWorkflowEventData(data: unknown): data is WorkflowEventData {
+  return typeof data === 'object' && data !== null && 'sessionId' in data;
+}
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,7 +36,7 @@ export async function GET(request: NextRequest) {
       const encoder = new TextEncoder();
 
       // Helper function to send SSE event
-      const sendEvent = (event: SSEEvent) => {
+      const sendEvent = (event: SSEEvent | BaseSSEEvent) => {
         try {
           const eventString = `event: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`;
           controller.enqueue(encoder.encode(eventString));
@@ -52,51 +61,51 @@ export async function GET(request: NextRequest) {
 
       // WorkflowEngine event handlers
       const onStepStart = (data: unknown) => {
-        if (data.sessionId === sessionId) {
-          sendEvent({ type: 'step_start', data });
+        if (isWorkflowEventData(data) && data.sessionId === sessionId) {
+          sendEvent({ type: 'step_start', data: data as Record<string, unknown> });
         }
       };
 
       const onStepComplete = (data: unknown) => {
-        if (data.sessionId === sessionId) {
-          sendEvent({ type: 'step_complete', data });
+        if (isWorkflowEventData(data) && data.sessionId === sessionId) {
+          sendEvent({ type: 'step_complete', data: data as Record<string, unknown> });
         }
       };
 
       const onStepError = (data: unknown) => {
-        if (data.sessionId === sessionId) {
-          sendEvent({ type: 'step_error', data });
+        if (isWorkflowEventData(data) && data.sessionId === sessionId) {
+          sendEvent({ type: 'step_error', data: data as Record<string, unknown> });
         }
       };
 
       const onWorkflowPause = (data: unknown) => {
-        if (data.sessionId === sessionId) {
-          sendEvent({ type: 'workflow_pause', data });
+        if (isWorkflowEventData(data) && data.sessionId === sessionId) {
+          sendEvent({ type: 'workflow_pause', data: data as Record<string, unknown> });
         }
       };
 
       const onWorkflowResume = (data: unknown) => {
-        if (data.sessionId === sessionId) {
-          sendEvent({ type: 'workflow_resume', data });
+        if (isWorkflowEventData(data) && data.sessionId === sessionId) {
+          sendEvent({ type: 'workflow_resume', data: data as Record<string, unknown> });
         }
       };
 
       const onWorkflowComplete = (data: unknown) => {
-        if (data.sessionId === sessionId) {
-          sendEvent({ type: 'complete', data });
+        if (isWorkflowEventData(data) && data.sessionId === sessionId) {
+          sendEvent({ type: 'complete', data: data as Record<string, unknown> });
         }
       };
 
       const onWorkflowError = (data: unknown) => {
-        if (data.sessionId === sessionId) {
-          sendEvent({ type: 'error', data });
+        if (isWorkflowEventData(data) && data.sessionId === sessionId) {
+          sendEvent({ type: 'error', data: data as Record<string, unknown> });
         }
       };
 
       // Question handler event
       const onQuestion = (data: unknown) => {
-        if (data.sessionId === sessionId) {
-          sendEvent({ type: 'question', data });
+        if (isWorkflowEventData(data) && data.sessionId === sessionId) {
+          sendEvent({ type: 'question', data: data as Record<string, unknown> });
         }
       };
 

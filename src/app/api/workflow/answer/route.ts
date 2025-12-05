@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     workflowEngine.submitAnswer(
       validatedData.sessionId,
       validatedData.questionId,
-      validatedData.answer
+      validatedData.answer as string | string[] | number | boolean
     );
 
     // Return success response

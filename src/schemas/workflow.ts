@@ -229,6 +229,42 @@ export const QuestionStepSchema = BaseStepDefinitionSchema.extend({
   topicId: z.string().optional(),
 });
 
+// Base step types (non-recursive)
+export type CodeStep = z.infer<typeof CodeStepSchema>;
+export type LLMStep = z.infer<typeof LLMStepSchema>;
+export type QuestionStep = z.infer<typeof QuestionStepSchema>;
+
+// Recursive step types - manually defined for circular reference
+// Note: Optional properties include `| undefined` for exactOptionalPropertyTypes compatibility
+export type ConditionalStep = z.infer<typeof BaseStepDefinitionSchema> & {
+  type: 'conditional';
+  condition: string;
+  thenSteps: StepDefinition[];
+  elseSteps?: StepDefinition[] | undefined;
+};
+
+export type LoopStep = z.infer<typeof BaseStepDefinitionSchema> & {
+  type: 'loop';
+  collection: string;
+  itemVariable: string;
+  steps: StepDefinition[];
+  maxIterations?: number | undefined;
+};
+
+export type NestedWorkflowStep = z.infer<typeof BaseStepDefinitionSchema> & {
+  type: 'nested_workflow';
+  workflowId: string;
+  input?: Record<string, unknown> | undefined;
+};
+
+export type StepDefinition =
+  | CodeStep
+  | LLMStep
+  | QuestionStep
+  | ConditionalStep
+  | LoopStep
+  | NestedWorkflowStep;
+
 // Forward declare for recursive types
 export const StepDefinitionSchema: z.ZodType<StepDefinition> = z.lazy(() =>
   z.union([

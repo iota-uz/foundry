@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -38,8 +38,8 @@ export function GraphQLViewer({
   loading,
   error,
 }: GraphQLViewerProps) {
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Node[]>([]);
+  const [nodes, setNodes] = useState<CustomNode[]>([]);
+  const [edges, setEdges] = useState<CustomEdge[]>([]);
   const [layoutDirection, setLayoutDirection] = useState<'TB' | 'LR'>('TB');
 
   // Parse GraphQL schema and create React Flow nodes/edges
@@ -98,15 +98,15 @@ export function GraphQLViewer({
         const edgeSet = new Set<string>();
 
         typeNodes.forEach((node) => {
-          const typeData = node.data as string;
-          if (typeData.fields) {
-            typeData.fields.forEach((field: { name: string; type: string }) => {
+          const typeData = node.data as Record<string, unknown>;
+          if (typeData.fields && Array.isArray(typeData.fields)) {
+            (typeData.fields as Array<{ name: string; type: string }>).forEach((field) => {
               // Extract referenced type from field type string
               const refType = field.type
                 .replace(/[\[\]!]/g, '')
                 .trim();
               const refNode = typeNodes.find(
-                (n) => (n.data as string).typeName === refType
+                (n) => (n.data as Record<string, unknown>).typeName === refType
               );
 
               if (refNode && refNode.id !== node.id) {
@@ -143,11 +143,11 @@ export function GraphQLViewer({
   }, [schema, loading, layoutDirection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setNodes((nds) => applyNodeChanges(changes, nds));
+    setNodes((nds) => applyNodeChanges(changes, nds) as CustomNode[]);
   }, []);
 
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    setEdges((eds) => applyEdgeChanges(changes, eds));
+    setEdges((eds) => applyEdgeChanges(changes, eds) as CustomEdge[]);
   }, []);
 
   const nodeTypes = useMemo(

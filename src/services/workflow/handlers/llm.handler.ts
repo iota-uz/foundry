@@ -8,7 +8,7 @@ import type { WorkflowContext } from '@/types/workflow/state';
 import { getLLMService } from '@/services/ai/llm.service';
 import { getPromptService } from '@/services/ai/prompt.service';
 import { getDatabaseService } from '@/services/core/database.service';
-import type { LLMCallParams } from '@/types/ai';
+import type { LLMCallParams, LLMResponse } from '@/types/ai';
 import { nanoid } from 'nanoid';
 
 /**
@@ -25,11 +25,12 @@ export async function executeLLMStep(
     const promptService = getPromptService(context.projectId);
 
     // Compile system prompt
+    const currentTopic = context.state.data.currentTopic as { id: string; name: string; description: string; estimatedQuestions?: number } | undefined;
     const systemPrompt = await promptService.compilePrompt(
       step.systemPromptFile.replace('.hbs', ''),
       {
         ...context.state.data,
-        currentTopic: context.state.data.currentTopic,
+        currentTopic,
         answers: context.state.answers,
         answersSummary: formatAnswersSummary(context.state.answers),
         phase: context.workflowId.replace('-phase', '') as 'cpo' | 'clarify' | 'cto',
@@ -42,7 +43,7 @@ export async function executeLLMStep(
       step.userPromptFile.replace('.hbs', ''),
       {
         ...context.state.data,
-        currentTopic: context.state.data.currentTopic,
+        currentTopic,
         answers: context.state.answers,
         answersSummary: formatAnswersSummary(context.state.answers),
         phase: context.workflowId.replace('-phase', '') as 'cpo' | 'clarify' | 'cto',
@@ -62,7 +63,10 @@ export async function executeLLMStep(
 
     // Add output schema if provided
     if (step.outputSchema) {
-      params.outputSchema = parseOutputSchema(step.outputSchema);
+      const parsedSchema = parseOutputSchema(step.outputSchema);
+      if (parsedSchema) {
+        params.outputSchema = parsedSchema as import('zod').ZodSchema;
+      }
     }
 
     // Execute LLM call with retry logic and timeout
@@ -93,7 +97,7 @@ export async function executeLLMStep(
     return {
       stepId: step.id,
       status: 'failed',
-      error: error.message || 'LLM step execution failed',
+      error: error instanceof Error ? error.message : 'LLM step execution failed',
       duration,
     };
   }
@@ -118,11 +122,11 @@ async function executeWithTimeout<T>(
  * Execute LLM call with exponential backoff retry
  */
 async function executeLLMWithRetry(
-  llmService: unknown,
+  llmService: { call: (params: LLMCallParams) => Promise<LLMResponse> },
   params: LLMCallParams,
   maxRetries: number,
   attempt: number = 0
-): Promise<unknown> {
+): Promise<LLMResponse> {
   try {
     return await llmService.call(params);
   } catch (error: unknown) {
@@ -149,9 +153,10 @@ async function executeLLMWithRetry(
  */
 function isRetryableError(error: unknown): boolean {
   // Retry on rate limits, timeouts, and server errors
-  if (error.type === 'rate_limit') return true;
-  if (error.type === 'timeout') return true;
-  if (error.type === 'api_error' && error.retryable) return true;
+  const err = error as { type?: string; retryable?: boolean } | null;
+  if (err?.type === 'rate_limit') return true;
+  if (err?.type === 'timeout') return true;
+  if (err?.type === 'api_error' && err?.retryable) return true;
   return false;
 }
 
@@ -204,7 +209,7 @@ function parseOutputSchema(schemaString: string): unknown {
 export function validateStructuredOutput(
   output: unknown,
   schema: unknown
-): { valid: boolean; errors?: string[] } {
+): { valid: boolean; errors?: string[] | undefined } {
   // Happy path validation: basic type checking
   if (!output) {
     return {
@@ -219,33 +224,35 @@ export function validateStructuredOutput(
   }
 
   const errors: string[] = [];
+  const schemaObj = schema as { type?: string; required?: string[] };
+  const outputObj = output as Record<string, unknown>;
 
   try {
     // Basic schema validation
-    if (schema.type === 'object' && typeof output !== 'object') {
+    if (schemaObj.type === 'object' && typeof output !== 'object') {
       errors.push(`Expected object, got ${typeof output}`);
     }
 
-    if (schema.type === 'array' && !Array.isArray(output)) {
+    if (schemaObj.type === 'array' && !Array.isArray(output)) {
       errors.push(`Expected array, got ${typeof output}`);
     }
 
-    if (schema.type === 'string' && typeof output !== 'string') {
+    if (schemaObj.type === 'string' && typeof output !== 'string') {
       errors.push(`Expected string, got ${typeof output}`);
     }
 
-    if (schema.type === 'number' && typeof output !== 'number') {
+    if (schemaObj.type === 'number' && typeof output !== 'number') {
       errors.push(`Expected number, got ${typeof output}`);
     }
 
-    if (schema.type === 'boolean' && typeof output !== 'boolean') {
+    if (schemaObj.type === 'boolean' && typeof output !== 'boolean') {
       errors.push(`Expected boolean, got ${typeof output}`);
     }
 
     // Check required properties for objects
-    if (schema.type === 'object' && schema.required && Array.isArray(schema.required)) {
-      for (const requiredProp of schema.required) {
-        if (!(requiredProp in output)) {
+    if (schemaObj.type === 'object' && schemaObj.required && Array.isArray(schemaObj.required)) {
+      for (const requiredProp of schemaObj.required) {
+        if (!(requiredProp in outputObj)) {
           errors.push(`Missing required property: ${requiredProp}`);
         }
       }
@@ -272,7 +279,7 @@ export async function logDecision(
   questionId: string,
   questionText: string,
   answer: unknown,
-  recommendation?: unknown
+  recommendation?: { recommendedOptionId?: unknown; confidence?: string; reasoning?: string } | undefined
 ): Promise<void> {
   try {
     const dbService = getDatabaseService();

@@ -73,28 +73,30 @@ export function diff(before: unknown, after: unknown): DiffResult {
   }
 
   // Handle objects
-  const beforeKeys = Object.keys(before);
-  const afterKeys = Object.keys(after);
+  const beforeObj = before as Record<string, unknown>;
+  const afterObj = after as Record<string, unknown>;
+  const beforeKeys = Object.keys(beforeObj);
+  const afterKeys = Object.keys(afterObj);
 
   // Find added keys
   afterKeys.forEach((key) => {
     if (!beforeKeys.includes(key)) {
-      result.added[key] = after[key];
+      result.added[key] = afterObj[key];
     }
   });
 
   // Find removed keys
   beforeKeys.forEach((key) => {
     if (!afterKeys.includes(key)) {
-      result.removed[key] = before[key];
+      result.removed[key] = beforeObj[key];
     }
   });
 
   // Find modified keys
   beforeKeys.forEach((key) => {
     if (afterKeys.includes(key)) {
-      const beforeValue = before[key];
-      const afterValue = after[key];
+      const beforeValue = beforeObj[key];
+      const afterValue = afterObj[key];
 
       if (JSON.stringify(beforeValue) !== JSON.stringify(afterValue)) {
         result.modified[key] = { before: beforeValue, after: afterValue };
@@ -109,7 +111,7 @@ export function diff(before: unknown, after: unknown): DiffResult {
  * Apply a diff to restore previous state
  */
 export function applyReverseDiff(current: unknown, diffResult: DiffResult): unknown {
-  const restored = deepClone(current);
+  const restored = deepClone(current) as Record<string, unknown>;
 
   // Remove added keys
   Object.keys(diffResult.added).forEach((key) => {

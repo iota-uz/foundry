@@ -39,7 +39,11 @@ function createMockResolved(
   priority: PriorityLevel = 'none',
   createdAt?: string
 ): ResolvedIssue {
-  const issue = createMockIssue(number, { createdAt });
+  const opts: Partial<QueuedIssue> = {};
+  if (createdAt !== undefined) {
+    opts.createdAt = createdAt;
+  }
+  const issue = createMockIssue(number, opts);
   return {
     issue,
     status: 'READY',

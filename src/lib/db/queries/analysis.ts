@@ -15,15 +15,15 @@ export interface AnalysisResults {
   scope: string;
   status: 'valid' | 'warnings' | 'errors';
   results: {
-    errors?: number;
-    warnings?: number;
-    info?: number;
+    errors?: number | undefined;
+    warnings?: number | undefined;
+    info?: number | undefined;
     issues?: Array<{
       severity: string;
       category: string;
       message: string;
-      location?: { file: string; line?: number };
-    }>;
+      location?: { file: string; line?: number | undefined } | undefined;
+    }> | undefined;
   };
   createdAt: string;
   expiresAt: string | null;

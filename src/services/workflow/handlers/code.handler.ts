@@ -52,7 +52,7 @@ export async function executeCodeStep(
     return {
       stepId: step.id,
       status: 'failed',
-      error: error.message || 'Code step execution failed',
+      error: error instanceof Error ? error.message : 'Code step execution failed',
       duration,
     };
   }
@@ -280,14 +280,14 @@ async function initTopicContext(
   input: Record<string, unknown>,
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const currentTopic = input.currentTopic;
+  const currentTopic = input.currentTopic as { id: string; name: string; description?: string; questionCount?: number } | undefined;
   return {
     currentTopic,
     topicContext: {
-      id: currentTopic.id,
-      name: currentTopic.name,
-      description: currentTopic.description,
-      questionCount: currentTopic.questionCount || 0,
+      id: currentTopic?.id,
+      name: currentTopic?.name,
+      description: currentTopic?.description,
+      questionCount: currentTopic?.questionCount || 0,
     },
   };
 }
@@ -303,16 +303,16 @@ async function saveAnswerToSpec(
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
-  const questionId = input.questionId;
-  const answer = input.answer;
+  const questionId = input.questionId as string;
+  const answer = input.answer as string | number | boolean | string[];
   const phase = input.phase || context.state.data.phase || 'cpo';
 
   // Store answer in context
   context.state.answers[questionId] = answer;
 
   // Determine target feature/module based on question context
-  const featureSlug = input.featureSlug || context.state.data.currentFeatureSlug;
-  const moduleSlug = input.moduleSlug || context.state.data.currentModuleSlug;
+  const featureSlug = (input.featureSlug || context.state.data.currentFeatureSlug) as string | undefined;
+  const moduleSlug = (input.moduleSlug || context.state.data.currentModuleSlug) as string | undefined;
 
   if (featureSlug && moduleSlug) {
     try {
@@ -373,7 +373,7 @@ async function formatAnswerForStorage(
       formatted = Array.isArray(answer) ? answer : [answer];
       break;
     case 'number':
-      formatted = typeof answer === 'number' ? answer : parseInt(answer, 10);
+      formatted = typeof answer === 'number' ? answer : parseInt(String(answer), 10);
       break;
     case 'boolean':
       formatted = Boolean(answer);
@@ -467,12 +467,13 @@ async function generateCTOSummary(
   const features = await specService.listFeatures(context.projectId);
   const ctoFeatures = features.filter(f => f.technical);
 
+  const ctoState = context.state.data.ctoState as { techDecisions?: Record<string, unknown> } | undefined;
   const summary = {
     phase: 'cto',
     completedAt: new Date().toISOString(),
     answeredQuestions: Object.keys(context.state.answers).length,
     featuresEnhanced: ctoFeatures.length,
-    techDecisions: context.state.data.ctoState?.techDecisions || {},
+    techDecisions: ctoState?.techDecisions || {},
     schemasGenerated: await specService.getSchema(context.projectId) ? 1 : 0,
     apisGenerated: Object.keys((await specService.getOpenAPI(context.projectId)).paths || {}).length,
   };
@@ -598,8 +599,8 @@ async function resolveAmbiguity(
   input: Record<string, unknown>,
   context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const ambiguityId = input.ambiguityId;
-  const resolution = input.resolution;
+  const ambiguityId = input.ambiguityId as string;
+  const resolution = input.resolution as string;
 
   if (!context.state.clarifyState) {
     throw new Error('Clarify state not initialized');
@@ -627,9 +628,10 @@ async function showClarifyUI(
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
   // This is a UI-side operation, no-op in handler
+  const ambiguities = input.ambiguities as unknown[] | undefined;
   return {
     ambiguitiesShown: true,
-    count: input.ambiguities?.length || 0,
+    count: ambiguities?.length || 0,
   };
 }
 
@@ -656,8 +658,8 @@ async function applyResolutionToSpec(
   }
 
   // Parse module slug from feature path
-  const moduleSlug = context.state.data.currentModuleSlug || 'core';
-  const featureSlug = context.state.data.currentFeatureSlug || 'default';
+  const moduleSlug = (context.state.data.currentModuleSlug as string | undefined) || 'core';
+  const featureSlug = (context.state.data.currentFeatureSlug as string | undefined) || 'default';
 
   // Apply resolution based on ambiguity type
   const updates: Partial<Feature> = {};
@@ -715,15 +717,16 @@ async function deferToCTO(
 
   // Store deferred ambiguity for CTO phase
   if (!context.state.data.deferredAmbiguities) {
-    context.state.data.deferredAmbiguities = [];
+    context.state.data.deferredAmbiguities = [] as Ambiguity[];
   }
 
-  context.state.data.deferredAmbiguities.push(ambiguity);
+  const deferredAmbiguities = context.state.data.deferredAmbiguities as Ambiguity[];
+  deferredAmbiguities.push(ambiguity);
 
   return {
     deferred: true,
     ambiguityId: ambiguity.id,
-    deferredCount: context.state.data.deferredAmbiguities.length,
+    deferredCount: deferredAmbiguities.length,
   };
 }
 
@@ -757,7 +760,8 @@ async function deferAmbiguity(
   input: Record<string, unknown>,
   context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const ambiguityId = input.currentAmbiguity?.id;
+  const currentAmbiguity = input.currentAmbiguity as { id?: string } | undefined;
+  const ambiguityId = currentAmbiguity?.id;
 
   if (!context.state.clarifyState || !ambiguityId) {
     throw new Error('Clarify state or ambiguity ID not provided');
@@ -774,9 +778,10 @@ async function deferAmbiguity(
 
   // Also store in deferredAmbiguities array for CTO phase
   if (!context.state.data.deferredAmbiguities) {
-    context.state.data.deferredAmbiguities = [];
+    context.state.data.deferredAmbiguities = [] as Ambiguity[];
   }
-  context.state.data.deferredAmbiguities.push(ambiguity);
+  const deferredAmbiguities = context.state.data.deferredAmbiguities as Ambiguity[];
+  deferredAmbiguities.push(ambiguity);
 
   return {
     deferred: true,
@@ -792,7 +797,7 @@ async function applyResolution(
   const specService = getSpecService(fileService);
 
   const currentAmbiguity = input.currentAmbiguity as Ambiguity;
-  const userAnswer = input.userAnswer;
+  const userAnswer = input.userAnswer as string;
 
   if (!userAnswer || !currentAmbiguity) {
     throw new Error('User answer and ambiguity are required');
@@ -928,7 +933,7 @@ async function scanDirectoryStructure(
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
   const fileService = getFileService();
-  const targetPath = input.targetPath;
+  const targetPath = input.targetPath as string | undefined;
 
   if (!targetPath) {
     throw new Error('Target path is required');
@@ -967,7 +972,7 @@ async function loadModuleFiles(
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
   const fileService = getFileService();
-  const modulePath = input.modulePath;
+  const modulePath = input.modulePath as string | undefined;
 
   if (!modulePath) {
     throw new Error('Module path is required');
@@ -1001,7 +1006,7 @@ async function findSchemaFiles(
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
   const fileService = getFileService();
-  const targetPath = input.targetPath;
+  const targetPath = input.targetPath as string;
 
   // Common schema file patterns
   const schemaFiles = await fileService.list(
@@ -1019,7 +1024,7 @@ async function findAPIFiles(
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
   const fileService = getFileService();
-  const targetPath = input.targetPath;
+  const targetPath = input.targetPath as string;
 
   // Common API file patterns
   const apiFiles = await fileService.list(
@@ -1036,12 +1041,14 @@ async function compileREResults(
   input: Record<string, unknown>,
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
+  const schemaFiles = input.schemaFiles as unknown[] | undefined;
+  const apiFiles = input.apiFiles as unknown[] | undefined;
   const report = {
     projectType: input.projectType || 'unknown',
     modulesFound: input.discoveredModules || [],
     featuresExtracted: input.discoveredFeatures || [],
-    schemasFound: input.schemaFiles?.length || 0,
-    apisFound: input.apiFiles?.length || 0,
+    schemasFound: schemaFiles?.length || 0,
+    apisFound: apiFiles?.length || 0,
     completedAt: new Date().toISOString(),
   };
 
@@ -1074,14 +1081,14 @@ async function computeDiffs(
   input: Record<string, unknown>,
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const currentSpec = input.specFeatures || [];
-  const implementedFeatures = input.implementedFeatures || [];
+  const currentSpec = (input.specFeatures || []) as Array<{ name?: string; implemented?: boolean }>;
+  const implementedFeatures = (input.implementedFeatures || []) as Array<{ name?: string }>;
 
   const diffs: unknown[] = [];
 
   // Simple diff: compare feature counts and names
   for (const implFeature of implementedFeatures) {
-    const specMatch = currentSpec.find((f: unknown) => f.name === implFeature.name);
+    const specMatch = currentSpec.find((f) => f.name === implFeature.name);
     if (!specMatch) {
       diffs.push({
         type: 'added_in_code',
@@ -1092,7 +1099,7 @@ async function computeDiffs(
   }
 
   for (const specFeature of currentSpec) {
-    const implMatch = implementedFeatures.find((f: unknown) => f.name === specFeature.name);
+    const implMatch = implementedFeatures.find((f) => f.name === specFeature.name);
     if (!implMatch && specFeature.implemented) {
       diffs.push({
         type: 'removed_from_code',
@@ -1111,13 +1118,13 @@ async function compileDriftReport(
   input: Record<string, unknown>,
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const diffs = input.structuralDiffs || [];
+  const diffs = (input.structuralDiffs || []) as Array<{ type?: string }>;
 
   const report = {
     totalDrifts: diffs.length,
-    addedInCode: diffs.filter((d: unknown) => d.type === 'added_in_code').length,
-    removedFromCode: diffs.filter((d: unknown) => d.type === 'removed_from_code').length,
-    modified: diffs.filter((d: unknown) => d.type === 'modified').length,
+    addedInCode: diffs.filter((d) => d.type === 'added_in_code').length,
+    removedFromCode: diffs.filter((d) => d.type === 'removed_from_code').length,
+    modified: diffs.filter((d) => d.type === 'modified').length,
     diffs,
     generatedAt: new Date().toISOString(),
   };
@@ -1129,10 +1136,10 @@ async function applyNonConflictingChanges(
   input: Record<string, unknown>,
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const diffs = input.structuralDiffs || [];
+  const diffs = (input.structuralDiffs || []) as Array<{ type?: string }>;
 
   // Filter for safe changes (additions only)
-  const safeChanges = diffs.filter((d: unknown) => d.type === 'added_in_code');
+  const safeChanges = diffs.filter((d) => d.type === 'added_in_code');
 
   // TODO: Actually apply these changes to specs
 
@@ -1146,13 +1153,13 @@ async function applySingleDrift(
   input: Record<string, unknown>,
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const drift = input.drift;
+  const drift = input.drift as { id?: string } | undefined;
 
   // TODO: Apply specific drift change to spec
 
   return {
     applied: true,
-    driftId: drift.id,
+    driftId: drift?.id,
   };
 }
 
@@ -1243,13 +1250,13 @@ async function validateNamingConventions(
   input: Record<string, unknown>,
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const features = input.features || [];
+  const features = (input.features || []) as Array<{ id?: string; name?: string }>;
   const namingIssues: unknown[] = [];
 
   // Check feature naming conventions
   for (const feature of features) {
     // Feature names should not contain special characters
-    if (!/^[a-zA-Z0-9\s-]+$/.test(feature.name)) {
+    if (feature.name && !/^[a-zA-Z0-9\s-]+$/.test(feature.name)) {
       namingIssues.push({
         type: 'feature_name',
         id: feature.id,
@@ -1310,12 +1317,12 @@ async function compileValidationReport(
   input: Record<string, unknown>,
   _context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const schemaRefIssues = input.schemaRefIssues || [];
-  const apiRefIssues = input.apiRefIssues || [];
-  const componentRefIssues = input.componentRefIssues || [];
-  const namingIssues = input.namingIssues || [];
-  const circularDepIssues = input.circularDepIssues || [];
-  const orphanIssues = input.orphanIssues || [];
+  const schemaRefIssues = (input.schemaRefIssues || []) as unknown[];
+  const apiRefIssues = (input.apiRefIssues || []) as unknown[];
+  const componentRefIssues = (input.componentRefIssues || []) as unknown[];
+  const namingIssues = (input.namingIssues || []) as unknown[];
+  const circularDepIssues = (input.circularDepIssues || []) as unknown[];
+  const orphanIssues = (input.orphanIssues || []) as unknown[];
 
   const allIssues = [
     ...schemaRefIssues,
@@ -1355,7 +1362,7 @@ async function loadSchemaContext(
   const features = await specService.listFeatures(context.projectId);
 
   // Extract entities from feature business/technical requirements
-  const entities: unknown[] = [];
+  const entities: Array<{ name: string; fields: unknown[] }> = [];
   const relationships: unknown[] = [];
 
   for (const feature of features) {
@@ -1430,7 +1437,7 @@ async function validateDBML(
   const specService = getSpecService(fileService);
   const validationService = getValidationService(specService);
 
-  const dbml = input.dbml;
+  const dbml = input.dbml as string;
 
   const result = validationService.validateDBML(dbml);
 
@@ -1448,7 +1455,7 @@ async function writeSchemaFile(
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
-  const dbml = input.dbml;
+  const dbml = input.dbml as string;
 
   if (!dbml) {
     throw new Error('DBML content is required');
@@ -1476,7 +1483,8 @@ async function loadAPIContext(
   const existingAPI = await specService.getOpenAPI(context.projectId);
 
   // Determine API style from features or constitution
-  const apiStyle = context.constitution?.api?.style || 'rest';
+  const constitutionApi = context.constitution?.api as { style?: string } | undefined;
+  const apiStyle = constitutionApi?.style || 'rest';
 
   // Extract endpoints from feature requirements
   const endpoints: unknown[] = [];
@@ -1542,7 +1550,7 @@ async function writeOpenAPIFile(
   const specService = getSpecService(fileService);
   const yaml = await import('js-yaml');
 
-  const openapi = input.openapi;
+  const openapi = input.openapi as string | undefined;
 
   if (!openapi) {
     throw new Error('OpenAPI content is required');
@@ -1608,7 +1616,7 @@ async function writeGraphQLFile(
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
-  const graphql = input.graphql;
+  const graphql = input.graphql as string | undefined;
 
   if (!graphql) {
     throw new Error('GraphQL schema is required');
@@ -1642,7 +1650,8 @@ async function loadComponentContext(
     }
   }
 
-  const uiFramework = context.constitution?.ui?.framework || 'react';
+  const constitutionUi = context.constitution?.ui as { framework?: string } | undefined;
+  const uiFramework = constitutionUi?.framework || 'react';
 
   return {
     screens,
@@ -1658,7 +1667,7 @@ async function generateComponent(
   const llmService = getLLMService();
   const promptService = getPromptService(context.projectId);
 
-  const componentSpec = input.componentSpec || {};
+  const componentSpec = (input.componentSpec || {}) as { id?: string };
   const uiFramework = input.uiFramework || 'react';
 
   const systemPrompt = await promptService.compilePrompt('cto-generate-component-system', {
@@ -1698,9 +1707,9 @@ async function writeComponentFile(
   const fileService = getFileService();
   const specService = getSpecService(fileService);
 
-  const html = input.html;
-  const componentId = input.componentId;
-  const componentName = input.componentName || componentId;
+  const html = input.html as string | undefined;
+  const componentId = input.componentId as string | undefined;
+  const componentName = (input.componentName || componentId) as string | undefined;
 
   if (!html || !componentId) {
     throw new Error('HTML content and component ID are required');
@@ -1708,10 +1717,10 @@ async function writeComponentFile(
 
   await specService.createComponent(context.projectId, {
     id: componentId,
-    name: componentName,
+    name: componentName || componentId,
     type: 'component',
     html,
-    description: input.description || '',
+    description: (input.description as string) || '',
   });
 
   const componentPath = path.join(

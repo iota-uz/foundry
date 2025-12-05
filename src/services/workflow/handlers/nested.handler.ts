@@ -4,7 +4,7 @@
 
 import type { NestedWorkflowStep, StepResult } from '@/types/workflow/step';
 import type { WorkflowContext } from '@/types/workflow/state';
-import type { WorkflowResult } from '@/types/workflow/workflow';
+import type { WorkflowResult, WorkflowId } from '@/types/workflow/workflow';
 
 /**
  * Execute a nested workflow step
@@ -28,11 +28,11 @@ export async function executeNestedWorkflowStep(
     const childContext: WorkflowContext = {
       ...context,
       sessionId: childSessionId,
-      workflowId: step.workflowId as string, // Cast to WorkflowId
+      workflowId: step.workflowId as WorkflowId,
       state: {
         ...context.state,
         sessionId: childSessionId,
-        workflowId: step.workflowId as string,
+        workflowId: step.workflowId as WorkflowId,
         data: {
           ...context.state.data,
           ...step.input,
@@ -75,7 +75,7 @@ export async function executeNestedWorkflowStep(
     return {
       stepId: step.id,
       status: 'failed',
-      error: error.message || 'Nested workflow execution failed',
+      error: error instanceof Error ? error.message : 'Nested workflow execution failed',
       duration,
     };
   }

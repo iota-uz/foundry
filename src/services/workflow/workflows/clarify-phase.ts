@@ -124,12 +124,13 @@ export const clarifyPhaseWorkflow: WorkflowDefinition = {
               description: 'Ask user to clarify ambiguous point',
               questionSource: 'static',
               questionData: {
+                id: 'clarify_question',
                 question: 'currentAmbiguity.question',
                 questionType: 'single_choice',
+                required: false,
                 options: 'currentAmbiguity.options',
                 context: 'currentAmbiguity.context',
-                allowSkip: true,
-              } as string,
+              } as unknown as import('@/types/ai').AIQuestion,
             },
 
             // Handle resolution

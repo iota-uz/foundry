@@ -122,7 +122,7 @@ export class WorkflowEngine {
 
       return result;
     } catch (error: unknown) {
-      const errorMessage = error.message || 'Workflow execution failed';
+      const errorMessage = error instanceof Error ? error.message : 'Workflow execution failed';
 
       // Emit error event
       this.events.emit('workflow:error', {
@@ -184,7 +184,7 @@ export class WorkflowEngine {
   /**
    * Submit answer to current question
    */
-  submitAnswer(sessionId: string, questionId: string, answer: unknown): void {
+  submitAnswer(sessionId: string, questionId: string, answer: string | string[] | number | boolean): void {
     submitAnswer(sessionId, questionId, answer);
   }
 
@@ -294,7 +294,8 @@ export class WorkflowEngine {
    */
   private async loadConstitution(projectId: string): Promise<Record<string, unknown> | null> {
     try {
-      return await this.constitutionService.getConstitution(projectId);
+      const constitution = await this.constitutionService.getConstitution(projectId);
+      return constitution as unknown as Record<string, unknown> | null;
     } catch {
       return null;
     }
@@ -385,7 +386,7 @@ export class WorkflowEngine {
         workflowId: context.workflowId,
         status: 'failed',
         data: context.state.data,
-        error: error.message || 'Workflow execution failed',
+        error: error instanceof Error ? error.message : 'Workflow execution failed',
         duration,
         startedAt: context.state.startedAt,
         completedAt: new Date().toISOString(),
@@ -448,7 +449,7 @@ export class WorkflowEngine {
           break;
 
         default:
-          throw new Error(`Unknown step type: ${(step as string).type}`);
+          throw new Error(`Unknown step type: ${(step as StepDefinition).type}`);
       }
 
       // Emit step complete event
@@ -460,17 +461,18 @@ export class WorkflowEngine {
 
       return result;
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Step execution failed';
       // Emit step error event
       this.events.emit('step:error', {
         sessionId: context.sessionId,
         stepId: step.id,
-        error: error.message || 'Step execution failed',
+        error: errorMessage,
       });
 
       return {
         stepId: step.id,
         status: 'failed',
-        error: error.message || 'Step execution failed',
+        error: errorMessage,
         duration: 0,
       };
     }

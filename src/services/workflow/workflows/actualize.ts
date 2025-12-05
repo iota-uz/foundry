@@ -141,8 +141,10 @@ export const actualizeWorkflow: WorkflowDefinition = {
           description: 'Ask user how to handle detected drift',
           questionSource: 'static',
           questionData: {
+            id: 'drift_action',
             question: 'Found {{drift.length}} differences between spec and code. How would you like to proceed?',
             questionType: 'single_choice',
+            required: true,
             options: [
               {
                 id: 'apply_all',
@@ -160,7 +162,7 @@ export const actualizeWorkflow: WorkflowDefinition = {
                 description: 'No changes, just show diff report',
               },
             ],
-          } as string,
+          },
         },
 
         // Handle user choice
@@ -198,9 +200,11 @@ export const actualizeWorkflow: WorkflowDefinition = {
                       description: 'Review single drift item',
                       questionSource: 'static',
                       questionData: {
+                        id: 'drift_review',
                         question:
                           '{{currentDrift.type}}: {{currentDrift.details}}\n\nSpec: {{currentDrift.specItem}}\nCode: {{currentDrift.codeItem}}\n\nRecommendation: {{currentDrift.recommendation}}',
                         questionType: 'single_choice',
+                        required: true,
                         options: [
                           {
                             id: 'apply',
@@ -215,7 +219,7 @@ export const actualizeWorkflow: WorkflowDefinition = {
                             label: 'Custom action',
                           },
                         ],
-                      } as string,
+                      },
                     },
                     {
                       id: 'handle_drift_action',

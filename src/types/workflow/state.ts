@@ -88,9 +88,10 @@ export interface Ambiguity {
   text: string; // The problematic text
   context: string; // Where it appears
   question: string; // Clarification question
-  options?: string[]; // Suggested answers
-  resolution?: string; // User's answer
+  options?: string[] | undefined; // Suggested answers
+  resolution?: string | undefined; // User's answer
   status: AmbiguityStatus;
+  [key: string]: unknown; // Index signature for Record<string, unknown> compatibility
 }
 
 /**

@@ -176,13 +176,21 @@ export class QuestionGenService {
     });
 
     // Build full question object
-    const questionData = response.structured;
+    const questionData = response.structured as {
+      question: string;
+      questionType: AIQuestion['questionType'];
+      description?: string;
+      options?: Array<{ id?: string; label: string; description?: string }>;
+      validation?: AIQuestion['validation'];
+      required?: boolean;
+      defaultValue?: unknown;
+    };
     const question: AIQuestion = {
       id: nanoid(),
       question: questionData.question,
       questionType: questionData.questionType,
       description: questionData.description,
-      options: questionData.options?.map((opt: unknown) => ({
+      options: questionData.options?.map((opt) => ({
         ...opt,
         id: opt.id || nanoid(),
       })),
@@ -246,13 +254,23 @@ export class QuestionGenService {
     });
 
     // Build batch object
-    const batchData = response.structured;
-    const questions: AIQuestion[] = batchData.questions.map((q: unknown) => ({
+    const batchData = response.structured as {
+      questions: Array<{
+        question: string;
+        questionType: AIQuestion['questionType'];
+        description?: string;
+        options?: Array<{ id?: string; label: string; description?: string }>;
+        validation?: AIQuestion['validation'];
+        required?: boolean;
+        defaultValue?: unknown;
+      }>;
+    };
+    const questions: AIQuestion[] = batchData.questions.map((q) => ({
       id: nanoid(),
       question: q.question,
       questionType: q.questionType,
       description: q.description,
-      options: q.options?.map((opt: unknown) => ({
+      options: q.options?.map((opt) => ({
         ...opt,
         id: opt.id || nanoid(),
       })),
@@ -285,7 +303,7 @@ export class QuestionGenService {
     question: AIQuestion,
     context: {
       previousAnswers: Answer[];
-      constitution?: unknown;
+      constitution?: Record<string, unknown> | undefined;
       workflow: 'cpo' | 'cto';
     }
   ): Promise<AIRecommendation | null> {
@@ -463,7 +481,7 @@ export class QuestionGenService {
     context: {
       workflow: 'cpo' | 'cto';
       topic: string;
-      constitution?: unknown;
+      constitution?: Record<string, unknown> | undefined;
     }
   ): Promise<AIQuestion | null> {
     const promptContext = {
@@ -497,14 +515,19 @@ export class QuestionGenService {
       constitution: context.constitution,
     });
 
-    if (!checkResponse.structured.followUpNeeded) {
+    const checkResult = checkResponse.structured as {
+      followUpNeeded: boolean;
+      reason?: string;
+    };
+
+    if (!checkResult.followUpNeeded) {
       return null;
     }
 
     // Generate follow-up question
     const genContext = {
       ...promptContext,
-      followUpReason: checkResponse.structured.reason,
+      followUpReason: checkResult.reason,
     };
 
     const genSystemPrompt = await this.promptService.compilePrompt(
@@ -525,13 +548,21 @@ export class QuestionGenService {
       constitution: context.constitution,
     });
 
-    const questionData = response.structured;
+    const questionData = response.structured as {
+      question: string;
+      questionType: AIQuestion['questionType'];
+      description?: string;
+      options?: Array<{ id?: string; label: string; description?: string }>;
+      validation?: AIQuestion['validation'];
+      required?: boolean;
+      defaultValue?: unknown;
+    };
     return {
       id: nanoid(),
       question: questionData.question,
       questionType: questionData.questionType,
       description: questionData.description,
-      options: questionData.options?.map((opt: unknown) => ({
+      options: questionData.options?.map((opt) => ({
         ...opt,
         id: opt.id || nanoid(),
       })),

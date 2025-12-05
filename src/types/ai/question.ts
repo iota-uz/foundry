@@ -9,14 +9,14 @@ export interface AIQuestion {
   id: string;
   question: string;
   questionType: QuestionType;
-  description?: string;
-  options?: QuestionOption[];
-  validation?: ValidationRule;
+  description?: string | undefined;
+  options?: QuestionOption[] | undefined;
+  validation?: ValidationRule | undefined;
   required: boolean;
-  defaultValue?: unknown;
-  context?: string; // Why AI is asking (DEPRECATED: use explainer)
-  explainer?: QuestionExplainer;
-  recommendation?: AIRecommendation;
+  defaultValue?: unknown | undefined;
+  context?: string | undefined; // Why AI is asking (DEPRECATED: use explainer)
+  explainer?: QuestionExplainer | undefined;
+  recommendation?: AIRecommendation | undefined;
 }
 
 /**
@@ -41,9 +41,9 @@ export type QuestionType =
 export interface QuestionOption {
   id: string;
   label: string;
-  description?: string;
-  icon?: string;
-  impactPreview?: ImpactPreview;
+  description?: string | undefined;
+  icon?: string | undefined;
+  impactPreview?: ImpactPreview | undefined;
 }
 
 /**
@@ -82,11 +82,11 @@ export interface QuestionExplainer {
   example?: {
     ifYouChoose: string; // Example option
     thenSpecWillHave: string; // Concrete spec outcome
-  };
+  } | undefined;
   relatedAnswer?: {
     questionId: string;
     summary: string; // Summary of related previous answer
-  };
+  } | undefined;
 }
 
 /**
@@ -97,7 +97,7 @@ export interface AIRecommendation {
   confidence: 'high' | 'medium'; // Confidence level
   reasoning: string; // Why this is recommended (max 200 chars)
   source: RecommendationSource; // Basis for recommendation
-  caveats?: string[]; // When NOT to choose this option
+  caveats?: string[] | undefined; // When NOT to choose this option
 }
 
 /**
@@ -113,12 +113,12 @@ export type RecommendationSource =
  * Validation rule for input questions
  */
 export interface ValidationRule {
-  required?: boolean;
-  min?: number;
-  max?: number;
-  minLength?: number;
-  maxLength?: number;
-  pattern?: string; // Regex for text
+  required?: boolean | undefined;
+  min?: number | undefined;
+  max?: number | undefined;
+  minLength?: number | undefined;
+  maxLength?: number | undefined;
+  pattern?: string | undefined; // Regex for text
   message: string; // Error message
 }
 
@@ -154,10 +154,10 @@ export interface Answer {
 export interface QuestionGenParams {
   workflow: 'cpo' | 'cto';
   topic: string;
-  topicDescription?: string;
+  topicDescription?: string | undefined;
   previousAnswers: Answer[];
-  constitution?: Record<string, unknown>;
-  questionCount?: number; // How many questions already asked in this topic
+  constitution?: Record<string, unknown> | undefined;
+  questionCount?: number | undefined; // How many questions already asked in this topic
 }
 
 /**

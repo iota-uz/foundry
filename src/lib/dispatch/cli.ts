@@ -15,8 +15,7 @@
  *   --help                   Show help
  */
 
-import type { DispatchConfig } from './types';
-import { DispatchError } from './types';
+import { DispatchError, type DispatchConfig } from './types';
 import {
   dispatch,
   formatResultSummary,
@@ -170,16 +169,19 @@ export function buildConfig(args: CliArgs): DispatchConfig {
     );
   }
 
-  return {
+  const config: DispatchConfig = {
     token,
     owner,
     repo,
-    queueLabel: args.label,
-    maxConcurrent: args.maxConcurrent,
     verbose: args.verbose,
     dryRun: args.dryRun,
-    outputFile: args.output,
   };
+
+  if (args.label !== undefined) config.queueLabel = args.label;
+  if (args.maxConcurrent !== undefined) config.maxConcurrent = args.maxConcurrent;
+  if (args.output !== undefined) config.outputFile = args.output;
+
+  return config;
 }
 
 /**

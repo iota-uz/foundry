@@ -65,10 +65,10 @@ export function FeatureList({
     <div className="space-y-4">
       {/* Filter */}
       <div className="flex gap-2 mb-4">
-        {['all', 'draft', 'in_progress', 'completed'].map((filter) => (
+        {(['all', 'draft', 'in_progress', 'completed'] as const).map((filter) => (
           <button
             key={filter}
-            onClick={() => setStatusFilter(filter as string)}
+            onClick={() => setStatusFilter(filter)}
             className={`
               px-3 py-1 rounded-md text-sm font-medium transition-colors
               ${statusFilter === filter

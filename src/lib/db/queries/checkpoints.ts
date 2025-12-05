@@ -237,7 +237,7 @@ function rowToWorkflowState(row: CheckpointRow): WorkflowState {
     data: JSON.parse(row.data || '{}'),
     clarifyState: row.clarify_state ? JSON.parse(row.clarify_state) : null,
     stepHistory: JSON.parse(row.step_history || '[]'),
-    checkpoint: row.checkpoint,
+    checkpoint: row.checkpoint || '',
     startedAt: row.started_at,
     lastActivityAt: row.last_activity_at,
     pausedAt: row.paused_at,

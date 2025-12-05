@@ -135,7 +135,7 @@ export class RecommendationService {
   /**
    * Update context with new answer
    */
-  updateContextWithAnswer(question: string, answer: unknown): void {
+  updateContextWithAnswer(question: string, answer: string | string[] | number | boolean): void {
     if (!this.context.previousAnswers) {
       this.context.previousAnswers = [];
     }

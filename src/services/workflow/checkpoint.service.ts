@@ -108,7 +108,7 @@ export class CheckpointService {
    */
   restoreContext(
     checkpoint: WorkflowState,
-    constitution: unknown | null
+    constitution: Record<string, unknown> | null
   ): WorkflowContext {
     return {
       sessionId: checkpoint.sessionId,

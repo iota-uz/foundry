@@ -133,7 +133,7 @@ export function LivePreview({
                         <p className="font-mono text-xs text-gray-300 break-all">
                           {update.section} {update.path && `→ ${update.path}`}
                         </p>
-                        {update.newValue && (
+                        {update.newValue !== undefined && (
                           <p className="mt-1 text-xs text-gray-400">
                             Value: {JSON.stringify(update.newValue).substring(0, 60)}
                             {JSON.stringify(update.newValue).length > 60 ? '...' : ''}

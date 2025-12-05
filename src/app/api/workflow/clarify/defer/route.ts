@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     workflowEngine.submitAnswer(
       validatedData.sessionId,
       validatedData.ambiguityId,
-      { action: 'defer' }
+      'DEFER' // Use string marker instead of object
     );
 
     // Return success response

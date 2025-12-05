@@ -11,27 +11,27 @@ export interface PromptContext {
     id: string;
     name: string;
     description: string;
-    estimatedQuestions?: number;
-  };
+    estimatedQuestions?: number | undefined;
+  } | undefined;
 
   // Previous answers
-  answers?: Record<string, unknown>;
-  answersSummary?: string;
+  answers?: Record<string, unknown> | undefined;
+  answersSummary?: string | undefined;
 
   // Phase context
-  phase?: 'cpo' | 'clarify' | 'cto';
-  workflow?: string;
+  phase?: 'cpo' | 'clarify' | 'cto' | undefined;
+  workflow?: string | undefined;
 
   // Model being used
-  model?: string;
+  model?: string | undefined;
 
   // CPO context for CTO phase
-  cpoSummary?: string;
-  techDecisionsSummary?: string;
+  cpoSummary?: string | undefined;
+  techDecisionsSummary?: string | undefined;
 
   // Feature/module context
-  featureId?: string;
-  moduleName?: string;
+  featureId?: string | undefined;
+  moduleName?: string | undefined;
 
   // Any other workflow state
   [key: string]: unknown;

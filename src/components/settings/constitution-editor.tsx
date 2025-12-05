@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '@/store';
 import { Button } from '@/components/shared';
 import { HookConfiguration } from './hook-configuration';
-import { Constitution } from '@/types';
+import type { Constitution, HookActionType } from '@/types';
 import {
   PlusIcon,
   DocumentTextIcon,
@@ -46,7 +46,7 @@ const CONSTITUTION_TEMPLATES = {
       forbidden_libraries: [],
       node_version: '',
     },
-    hooks: {} as string,
+    hooks: {},
   },
   basic: {
     version: '1.0',
@@ -86,8 +86,8 @@ const CONSTITUTION_TEMPLATES = {
     },
     hooks: {
       onFeatureSave: [
-        { action: 'validateSchema' as string },
-        { action: 'updateChecklist' as string },
+        { action: 'validateSchema' as HookActionType },
+        { action: 'updateChecklist' as HookActionType },
       ],
     },
   },
