@@ -100,7 +100,7 @@ export default function DashboardPage() {
           action={{
             label: 'Start New Spec',
             onClick: () => {
-              // TODO: Navigate to new spec wizard
+              router.push('/spec/new');
             },
           }}
         />
