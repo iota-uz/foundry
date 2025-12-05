@@ -29,12 +29,12 @@ export function NewModuleDialog({ isOpen, onClose }: NewModuleDialogProps) {
 
     setError(null);
     try {
-      const module = await createModule(name, description);
+      const newModule = await createModule(name, description);
       setName('');
       setDescription('');
       onClose();
       // Navigate to new module
-      router.push(`/modules/${module.slug}`);
+      router.push(`/modules/${newModule.slug}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create module');
     }

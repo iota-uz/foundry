@@ -62,7 +62,27 @@ export type {
   GraphContext,
   IAgentWrapper,
   GraphEngineConfig,
+  // Workflow config types
+  WorkflowState,
+  WorkflowConfig,
+  NodeDefinition,
+  AgentNodeDefinition,
+  CommandNodeDefinition,
+  ClaudeCodeNodeDefinition,
+  BaseNodeDefinition,
+  Transition,
+  StaticTransition,
+  DynamicTransition,
+  ToolReference,
+  InlineToolDefinition,
+  LoadedConfig,
+  // Message types
+  Message,
+  StoredMessage,
 } from './types';
+
+// Config validation error
+export { ConfigValidationError } from './types';
 
 // Main engine
 export { GraphEngine } from './engine';
@@ -83,3 +103,58 @@ export type { GraphTool, SdkToolDefinition } from './agent/tools';
 // Utilities
 export { createLogger } from './utils/logger';
 export type { LogContext } from './utils/logger';
+
+// Config loader
+export {
+  loadConfig,
+  validateTransitions,
+  validateConfigSchema,
+  validateRuntimeTransition,
+  resolveTransition,
+} from './config-loader';
+export type { LoadConfigOptions } from './config-loader';
+
+// Workflow definition API
+export {
+  defineWorkflow,
+  nodes,
+  AgentNode,
+  CommandNode,
+  ClaudeCodeNode,
+  createInitialState,
+} from './define-workflow';
+export type {
+  ExtractContext,
+  WorkflowStateOf,
+} from './define-workflow';
+
+// Standard library node implementations
+export {
+  // Base
+  BaseNode,
+  NodeExecutionError,
+  isInlineToolDefinition,
+  // Runtime classes
+  AgentNodeRuntime,
+  CommandNodeRuntime,
+  ClaudeCodeNodeRuntime,
+  // Factory functions
+  createAgentNode,
+  createCommandNode,
+  createClaudeCodeNode,
+} from './nodes';
+export type {
+  // Base types
+  BaseNodeConfig,
+  NodeExecutionResult,
+  // AgentNode types
+  AgentNodeConfig,
+  StoredMessage as AgentStoredMessage,
+  // CommandNode types
+  CommandNodeConfig,
+  CommandResult,
+  // ClaudeCodeNode types
+  ClaudeCodeNodeConfig,
+  ClaudeCodeCommand,
+  ClaudeCodeResult,
+} from './nodes';

@@ -1,5 +1,5 @@
 [test]
 preload = ["./happydom.ts"]
 
-[test.coverage]
-enabled = false
+# [test.coverage]
+# enabled = false
