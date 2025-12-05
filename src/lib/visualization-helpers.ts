@@ -5,9 +5,13 @@
 import { Position } from '@xyflow/react';
 import { CustomNode, CustomEdge } from '@/types/visualization';
 
+// Type imports for dagre library
+import type * as DagreTypes from '@dagrejs/dagre';
+import type * as GraphlibTypes from '@dagrejs/graphlib';
+
 // Lazy load dagre and graphlib to avoid webpack bundling issues
-let dagre: any = null;
-let graphlib: any = null;
+let dagre: typeof DagreTypes | null = null;
+let graphlib: typeof GraphlibTypes | null = null;
 
 async function loadLayoutLibraries() {
   if (!dagre || !graphlib) {
@@ -15,8 +19,8 @@ async function loadLayoutLibraries() {
       import('@dagrejs/dagre'),
       import('@dagrejs/graphlib'),
     ]);
-    dagre = dagreModule.default || dagreModule;
-    graphlib = graphlibModule.graphlib || graphlibModule;
+    dagre = (dagreModule.default || dagreModule) as typeof DagreTypes;
+    graphlib = (graphlibModule.graphlib || graphlibModule) as typeof GraphlibTypes;
   }
   return { dagre, graphlib };
 }
