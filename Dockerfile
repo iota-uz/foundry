@@ -12,10 +12,10 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
-COPY package.json bun.lockb ./
+COPY package.json ./
 
 # Install all dependencies (including devDependencies for build)
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Builder stage - build the Next.js application
 FROM base AS builder
