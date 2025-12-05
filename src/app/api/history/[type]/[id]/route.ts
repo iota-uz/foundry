@@ -5,7 +5,40 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getHistoryService } from '@/services/core/history.service';
-import type { HistoryResponse } from '@/types/api/responses';
+import type { HistoryResponse, FieldChange } from '@/types/api/responses';
+
+/**
+ * Parse changes object to FieldChange array
+ */
+function parseFieldChanges(changes: Record<string, unknown>): FieldChange[] {
+  const fieldChanges: FieldChange[] = [];
+
+  // If changes is already an array of field changes, return it
+  if (Array.isArray(changes)) {
+    return changes as FieldChange[];
+  }
+
+  // Otherwise, convert object format to field changes
+  // Support format: { field: { from: ..., to: ... } }
+  for (const [field, change] of Object.entries(changes)) {
+    if (change && typeof change === 'object' && 'from' in change && 'to' in change) {
+      fieldChanges.push({
+        field,
+        from: (change as { from: unknown }).from,
+        to: (change as { to: unknown }).to,
+      });
+    } else {
+      // If it's just a simple value change, represent as from: null, to: value
+      fieldChanges.push({
+        field,
+        from: null,
+        to: change,
+      });
+    }
+  }
+
+  return fieldChanges;
+}
 
 /**
  * GET /api/history/:type/:id - Get artifact history
@@ -55,13 +88,18 @@ export async function GET(
       updated: 'update',
       deleted: 'delete',
     };
-    const entries = dbEntries.map((entry) => ({
-      id: entry.id,
-      action: actionMap[entry.changeType] || 'update',
-      actor: entry.changedBy,
-      changes: [], // TODO: Parse entry.changes to FieldChange[]
-      timestamp: entry.createdAt,
-    }));
+    const entries = dbEntries.map((entry) => {
+      // Parse changes field to FieldChange[]
+      const changes = parseFieldChanges(entry.changes as Record<string, unknown>);
+
+      return {
+        id: entry.id,
+        action: actionMap[entry.changeType] || 'update',
+        actor: entry.changedBy,
+        changes,
+        timestamp: entry.createdAt,
+      };
+    });
 
     const response: HistoryResponse = {
       artifactType: params.type as 'feature' | 'entity' | 'endpoint' | 'component',

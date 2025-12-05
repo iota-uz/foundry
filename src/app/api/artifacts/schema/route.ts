@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSpecService } from '@/services/core';
 import { getFileService } from '@/services/core/file.service';
 import type { SchemaResponse } from '@/types/api/responses';
+import { parseDBMLEntities, parseDBMLRelationships } from '@/lib/parsers/dbml.parser';
 
 /**
  * GET /api/artifacts/schema - Get full DBML schema
@@ -31,13 +32,14 @@ export async function GET(request: NextRequest) {
     const specService = getSpecService(fileService);
     const dbml = await specService.getSchema(projectPath);
 
-    // TODO: Parse DBML to extract entities and relationships
-    // For now, return raw DBML
+    // Parse DBML to extract entities and relationships
+    const entities = parseDBMLEntities(dbml);
+    const relationships = parseDBMLRelationships(dbml);
     const response: SchemaResponse = {
       schema: {
         dbml,
-        entities: [],
-        relationships: [],
+        entities,
+        relationships,
         lastUpdated: new Date().toISOString(),
       },
     };
@@ -94,11 +96,14 @@ export async function PUT(request: NextRequest) {
     const specService = getSpecService(fileService);
     await specService.updateSchema(projectPath, dbml);
 
+    // Parse DBML to extract entities and relationships
+    const entities = parseDBMLEntities(dbml);
+    const relationships = parseDBMLRelationships(dbml);
     const response: SchemaResponse = {
       schema: {
         dbml,
-        entities: [],
-        relationships: [],
+        entities,
+        relationships,
         lastUpdated: new Date().toISOString(),
       },
     };
