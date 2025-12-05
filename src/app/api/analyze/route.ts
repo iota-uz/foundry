@@ -28,15 +28,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const startTime = Date.now();
     const analyzerService = getAnalyzerService();
     const results = await analyzerService.analyze(projectPath);
+    const duration = Date.now() - startTime;
 
     // Convert to API response format
     const response: AnalysisResults = {
       id: `analysis_${Date.now()}`,
       scope: 'project',
       ranAt: results.analyzedAt,
-      duration: 0, // TODO: Track duration
+      duration,
       summary: {
         errors: results.summary.errors,
         warnings: results.summary.warnings,
@@ -105,8 +107,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const startTime = Date.now();
     const analyzerService = getAnalyzerService();
     const results = await analyzerService.analyze(projectPath);
+    const duration = Date.now() - startTime;
 
     // Convert to API response format
     const response: AnalysisResults = {
@@ -114,7 +118,7 @@ export async function POST(request: NextRequest) {
       scope: parsed.scope,
       ...(parsed.targetId && { targetId: parsed.targetId }),
       ranAt: results.analyzedAt,
-      duration: 0, // TODO: Track duration
+      duration,
       summary: {
         errors: results.summary.errors,
         warnings: results.summary.warnings,

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSpecService } from '@/services/core';
 import { getFileService } from '@/services/core/file.service';
 import type { GraphQLResponse } from '@/types/api/responses';
+import { parseGraphQLTypes, parseGraphQLOperations } from '@/lib/parsers/graphql.parser';
 
 /**
  * GET /api/artifacts/graphql - Get GraphQL schema
@@ -31,12 +32,14 @@ export async function GET(request: NextRequest) {
     const specService = getSpecService(fileService);
     const schema = await specService.getGraphQL(projectPath);
 
-    // TODO: Parse GraphQL schema to extract types and operations
+    // Parse GraphQL schema to extract types and operations
+    const types = parseGraphQLTypes(schema);
+    const operations = parseGraphQLOperations(schema);
     const response: GraphQLResponse = {
       graphql: {
         schema,
-        types: [],
-        operations: [],
+        types,
+        operations,
         lastUpdated: new Date().toISOString(),
       },
     };
@@ -93,11 +96,14 @@ export async function PUT(request: NextRequest) {
     const specService = getSpecService(fileService);
     await specService.updateGraphQL(projectPath, schema);
 
+    // Parse GraphQL schema to extract types and operations
+    const types = parseGraphQLTypes(schema);
+    const operations = parseGraphQLOperations(schema);
     const response: GraphQLResponse = {
       graphql: {
         schema,
-        types: [],
-        operations: [],
+        types,
+        operations,
         lastUpdated: new Date().toISOString(),
       },
     };

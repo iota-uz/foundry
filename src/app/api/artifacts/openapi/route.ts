@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSpecService } from '@/services/core';
 import { getFileService } from '@/services/core/file.service';
 import type { OpenAPIResponse } from '@/types/api/responses';
+import { parseOpenAPIEndpoints } from '@/lib/parsers/openapi.parser';
 
 /**
  * GET /api/artifacts/openapi - Get OpenAPI spec
@@ -31,11 +32,12 @@ export async function GET(request: NextRequest) {
     const specService = getSpecService(fileService);
     const spec = await specService.getOpenAPI(projectPath);
 
-    // TODO: Parse OpenAPI spec to extract endpoints
+    // Parse OpenAPI spec to extract endpoints
+    const endpoints = parseOpenAPIEndpoints(spec);
     const response: OpenAPIResponse = {
       openapi: {
         spec,
-        endpoints: [],
+        endpoints,
         lastUpdated: new Date().toISOString(),
       },
     };
@@ -92,10 +94,12 @@ export async function PUT(request: NextRequest) {
     const specService = getSpecService(fileService);
     await specService.updateOpenAPI(projectPath, spec);
 
+    // Parse OpenAPI spec to extract endpoints
+    const endpoints = parseOpenAPIEndpoints(spec);
     const response: OpenAPIResponse = {
       openapi: {
         spec,
-        endpoints: [],
+        endpoints,
         lastUpdated: new Date().toISOString(),
       },
     };

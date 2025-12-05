@@ -1134,33 +1134,111 @@ async function compileDriftReport(
 
 async function applyNonConflictingChanges(
   input: Record<string, unknown>,
-  _context: WorkflowContext
+  context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const diffs = (input.structuralDiffs || []) as Array<{ type?: string }>;
+  const diffs = (input.structuralDiffs || []) as Array<{
+    type?: string;
+    feature?: string;
+    message?: string;
+  }>;
 
   // Filter for safe changes (additions only)
   const safeChanges = diffs.filter((d) => d.type === 'added_in_code');
 
-  // TODO: Actually apply these changes to specs
+  const fileService = getFileService();
+  const specService = getSpecService(fileService);
+  const appliedCount = 0;
+
+  // Apply safe changes to specs
+  for (const change of safeChanges) {
+    try {
+      if (change.type === 'added_in_code' && change.feature) {
+        // Create a new feature in the spec for code that exists but isn't documented
+        const moduleSlug = 'discovered'; // Default module for discovered features
+        const featureSlug = change.feature.toLowerCase().replace(/\s+/g, '-');
+
+        // Check if feature already exists
+        try {
+          await specService.getFeature(context.projectId, moduleSlug, featureSlug);
+          // Feature already exists, skip
+          continue;
+        } catch {
+          // Feature doesn't exist, create it
+          await specService.createFeature(context.projectId, moduleSlug, {
+            slug: featureSlug,
+            name: change.feature,
+            description: change.message || 'Discovered from code analysis',
+            status: 'completed',
+          });
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to apply change for ${change.feature}:`, error);
+    }
+  }
 
   return {
     appliedChanges: safeChanges,
-    count: safeChanges.length,
+    count: appliedCount,
   };
 }
 
 async function applySingleDrift(
   input: Record<string, unknown>,
-  _context: WorkflowContext
+  context: WorkflowContext
 ): Promise<Record<string, unknown>> {
-  const drift = input.drift as { id?: string } | undefined;
+  const drift = input.drift as {
+    id?: string;
+    type?: string;
+    feature?: string;
+    message?: string;
+    specState?: unknown;
+    codeState?: unknown;
+  } | undefined;
 
-  // TODO: Apply specific drift change to spec
+  if (!drift || !drift.id) {
+    throw new Error('Drift ID is required');
+  }
 
-  return {
-    applied: true,
-    driftId: drift?.id,
-  };
+  const fileService = getFileService();
+  const specService = getSpecService(fileService);
+
+  try {
+    if (drift.type === 'added_in_code' && drift.feature) {
+      // Add discovered feature to spec
+      const moduleSlug = 'discovered';
+      const featureSlug = drift.feature.toLowerCase().replace(/\s+/g, '-');
+
+      await specService.createFeature(context.projectId, moduleSlug, {
+        slug: featureSlug,
+        name: drift.feature,
+        description: drift.message || 'Discovered from code analysis',
+        status: 'completed',
+      });
+    } else if (drift.type === 'modified' && drift.feature) {
+      // Update existing feature with code state
+      const [moduleSlug, featureSlug] = drift.feature.split('/');
+      if (moduleSlug && featureSlug && drift.codeState) {
+        await specService.updateFeature(
+          context.projectId,
+          moduleSlug,
+          featureSlug,
+          drift.codeState as Partial<Feature>
+        );
+      }
+    }
+
+    return {
+      applied: true,
+      driftId: drift.id,
+    };
+  } catch (error) {
+    return {
+      applied: false,
+      driftId: drift.id,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
 
 // ============================================================================
