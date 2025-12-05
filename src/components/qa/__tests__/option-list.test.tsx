@@ -2,8 +2,8 @@
  * Option List Tests
  */
 
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, mock } from 'bun:test';
+import { render, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, mock, afterEach } from 'bun:test';
 import { OptionList } from '../option-list';
 import type { QuestionOption } from '@/types/ai';
 
@@ -25,10 +25,14 @@ describe('OptionList', () => {
     },
   ];
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('renders all options', () => {
     const onSelect = mock(() => {});
 
-    render(
+    const { getByText } = render(
       <OptionList
         options={mockOptions}
         mode="single"
@@ -36,15 +40,15 @@ describe('OptionList', () => {
       />
     );
 
-    expect(screen.getByText('Option 1')).toBeDefined();
-    expect(screen.getByText('Option 2')).toBeDefined();
-    expect(screen.getByText('Option 3')).toBeDefined();
+    expect(getByText('Option 1')).toBeDefined();
+    expect(getByText('Option 2')).toBeDefined();
+    expect(getByText('Option 3')).toBeDefined();
   });
 
   it('displays option descriptions', () => {
     const onSelect = mock(() => {});
 
-    render(
+    const { getByText } = render(
       <OptionList
         options={mockOptions}
         mode="single"
@@ -52,14 +56,14 @@ describe('OptionList', () => {
       />
     );
 
-    expect(screen.getByText('First option')).toBeDefined();
-    expect(screen.getByText('Second option')).toBeDefined();
+    expect(getByText('First option')).toBeDefined();
+    expect(getByText('Second option')).toBeDefined();
   });
 
   it('calls onSelect with single option when mode is single', () => {
     const onSelect = mock(() => {});
 
-    render(
+    const { getByText } = render(
       <OptionList
         options={mockOptions}
         mode="single"
@@ -67,7 +71,7 @@ describe('OptionList', () => {
       />
     );
 
-    const option = screen.getByText('Option 1').closest('button');
+    const option = getByText('Option 1').closest('button');
     if (option) {
       fireEvent.click(option);
     }
@@ -78,7 +82,7 @@ describe('OptionList', () => {
   it('handles multiple selection mode', () => {
     const onSelect = mock(() => {});
 
-    render(
+    const { getByText, rerender } = render(
       <OptionList
         options={mockOptions}
         mode="multiple"
@@ -87,12 +91,21 @@ describe('OptionList', () => {
       />
     );
 
-    const option1 = screen.getByText('Option 1').closest('button');
-    const option2 = screen.getByText('Option 2').closest('button');
-
+    const option1 = getByText('Option 1').closest('button');
     if (option1) fireEvent.click(option1);
     expect(onSelect).toHaveBeenCalledWith(['opt1'], true);
 
+    // Re-render with updated selection to simulate parent component state update
+    rerender(
+      <OptionList
+        options={mockOptions}
+        mode="multiple"
+        selected={['opt1']}
+        onSelect={onSelect}
+      />
+    );
+
+    const option2 = getByText('Option 2').closest('button');
     if (option2) fireEvent.click(option2);
     expect(onSelect).toHaveBeenCalledWith(['opt1', 'opt2'], true);
   });
@@ -117,7 +130,7 @@ describe('OptionList', () => {
   it('handles disabled state', () => {
     const onSelect = mock(() => {});
 
-    render(
+    const { getByText } = render(
       <OptionList
         options={mockOptions}
         mode="single"
@@ -126,7 +139,7 @@ describe('OptionList', () => {
       />
     );
 
-    const option = screen.getByText('Option 1').closest('button');
+    const option = getByText('Option 1').closest('button');
     if (option) {
       fireEvent.click(option);
     }
@@ -138,7 +151,7 @@ describe('OptionList', () => {
     const onSelect = mock(() => {});
     const onHover = mock(() => {});
 
-    render(
+    const { getByText } = render(
       <OptionList
         options={mockOptions}
         mode="single"
@@ -147,7 +160,7 @@ describe('OptionList', () => {
       />
     );
 
-    const option = screen.getByText('Option 1').closest('button');
+    const option = getByText('Option 1').closest('button');
     if (option) {
       fireEvent.mouseEnter(option);
     }
@@ -159,7 +172,7 @@ describe('OptionList', () => {
     const onSelect = mock(() => {});
     const onHover = mock(() => {});
 
-    render(
+    const { getByText } = render(
       <OptionList
         options={mockOptions}
         mode="single"
@@ -168,7 +181,7 @@ describe('OptionList', () => {
       />
     );
 
-    const option = screen.getByText('Option 1').closest('button');
+    const option = getByText('Option 1').closest('button');
     if (option) {
       fireEvent.mouseLeave(option);
     }
