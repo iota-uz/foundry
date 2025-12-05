@@ -3,6 +3,7 @@
  */
 
 import { NextPageContext } from 'next';
+import Link from 'next/link';
 
 interface ErrorProps {
   statusCode: number | undefined;
@@ -30,7 +31,7 @@ function Error({ statusCode }: ErrorProps) {
           ? `An error ${statusCode} occurred on server`
           : 'An error occurred on client'}
       </p>
-      <a
+      <Link
         href="/"
         style={{
           padding: '0.75rem 1.5rem',
@@ -41,7 +42,7 @@ function Error({ statusCode }: ErrorProps) {
         }}
       >
         Go home
-      </a>
+      </Link>
     </div>
   );
 }
