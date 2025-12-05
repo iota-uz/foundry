@@ -13,10 +13,8 @@ import type { TasksResponse } from '@/types/api/responses';
 /**
  * GET /api/features/:id/tasks - Get all tasks for feature
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const moduleSlug = request.nextUrl.searchParams.get('moduleSlug');

@@ -13,10 +13,8 @@ import type { ChecklistItem } from '@/types/domain/feature';
 /**
  * POST /api/features/[id]/checklist/regenerate - Regenerate checklist
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const moduleSlug = request.nextUrl.searchParams.get('moduleSlug');

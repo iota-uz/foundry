@@ -10,10 +10,8 @@ import type { ActualizeResponse } from '@/types/api/responses';
 /**
  * GET /api/workflow/actualize/[id] - Get actualize workflow status
  */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const engine = getWorkflowEngine();
     const statePromise = engine.getState(params.id);

@@ -15,10 +15,8 @@ import type { FeatureResponse } from '@/types/api/responses';
 /**
  * GET /api/features/:id - Get feature with all artifacts
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const moduleSlug = request.nextUrl.searchParams.get('moduleSlug');
@@ -77,10 +75,8 @@ export async function GET(
 /**
  * PUT /api/features/:id - Update feature
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const moduleSlug = request.nextUrl.searchParams.get('moduleSlug');
@@ -162,10 +158,8 @@ export async function PUT(
 /**
  * DELETE /api/features/:id - Delete feature
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const moduleSlug = request.nextUrl.searchParams.get('moduleSlug');

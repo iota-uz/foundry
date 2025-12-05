@@ -11,10 +11,8 @@ import path from 'path';
 /**
  * DELETE /api/lessons/:id - Remove lesson
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     if (!projectPath) {

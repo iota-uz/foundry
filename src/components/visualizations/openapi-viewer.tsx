@@ -5,9 +5,9 @@
 'use client';
 
 import React, { useRef } from 'react';
-// @ts-expect-error - Preserved for future feature
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ApiReference } from '@scalar/api-reference'; // TODO: F4 - Add tabbed view with embedded Scalar docs
+// TODO: F4 - Add tabbed view with embedded Scalar docs
+// NOTE: @scalar/api-reference import removed due to Next.js 15 incompatibility
+// Use @scalar/nextjs-api-reference or @scalar/api-reference-react instead when implementing
 
 interface OpenAPIViewerProps {
   spec: Record<string, unknown>;

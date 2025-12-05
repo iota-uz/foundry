@@ -14,8 +14,9 @@ import { UpdateChecklistRequestSchema } from '@/schemas/api';
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  props: { params: Promise<{ id: string; itemId: string }> }
 ) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const moduleSlug = request.nextUrl.searchParams.get('moduleSlug');

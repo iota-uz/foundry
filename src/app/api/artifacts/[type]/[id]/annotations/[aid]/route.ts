@@ -35,8 +35,9 @@ interface AnnotationRow {
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { type: string; id: string; aid: string } }
+  props: { params: Promise<{ type: string; id: string; aid: string }> }
 ) {
+  const params = await props.params;
   try {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM annotations WHERE id = ?');
@@ -76,8 +77,9 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { type: string; id: string; aid: string } }
+  props: { params: Promise<{ type: string; id: string; aid: string }> }
 ) {
+  const params = await props.params;
   try {
     const body = await request.json();
     const parsed = UpdateAnnotationRequestSchema.parse(body);
@@ -147,8 +149,9 @@ export async function PATCH(
  */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { type: string; id: string; aid: string } }
+  props: { params: Promise<{ type: string; id: string; aid: string }> }
 ) {
+  const params = await props.params;
   try {
     // Check if annotation exists
     const db = getDatabase();

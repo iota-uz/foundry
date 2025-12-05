@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, use } from 'react';
 import { useProjectStore } from '@/store';
 import { Breadcrumbs } from '@/components/layout';
 import { Button, SkeletonCard, EmptyState } from '@/components/shared';
@@ -9,10 +9,11 @@ import { PlusIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import type { Module } from '@/types';
 
 interface ModulePageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default function ModulePage({ params }: ModulePageProps) {
+export default function ModulePage(props: ModulePageProps) {
+  const params = use(props.params);
   const { modules, features, loading } = useProjectStore();
   const [module, setModule] = useState<Module | null>(null);
   const [mounted, setMounted] = useState(false);

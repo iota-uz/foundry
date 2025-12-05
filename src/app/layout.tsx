@@ -14,9 +14,12 @@ export const metadata: Metadata = {
   title: 'Foundry - Technical Specification Constructor',
   description:
     'CLI-based technical specification constructor with AI-driven Q&A and visual artifacts',
-  generator: 'Next.js 14',
+  generator: 'Next.js 15',
   robots: 'index, follow',
 };
+
+// Force dynamic rendering to avoid SSG issues with client components
+export const dynamic = 'force-dynamic';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

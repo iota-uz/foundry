@@ -13,14 +13,13 @@ const nextConfig = {
   transpilePackages: ['@dagrejs/dagre', '@dagrejs/graphlib'],
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals.push('better-sqlite3', 'chokidar');
+      config.externals.push('chokidar');
     } else {
       // Don't bundle server-only modules in client
       config.resolve.fallback = {
         ...config.resolve.fallback,
         chokidar: false,
         fsevents: false,
-        'better-sqlite3': false,
         fs: false,
       };
     }

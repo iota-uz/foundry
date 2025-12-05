@@ -32,10 +32,8 @@ interface EntityDetail {
 /**
  * GET /api/artifacts/schema/entities/[name] - Get entity details
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { name: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ name: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
 

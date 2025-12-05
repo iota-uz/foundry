@@ -13,8 +13,9 @@ import type { ReferencesResponse, Reference } from '@/types/api/responses';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { type: string; id: string } }
+  props: { params: Promise<{ type: string; id: string }> }
 ) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
 

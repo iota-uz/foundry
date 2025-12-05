@@ -15,10 +15,8 @@ const ApplyChangesRequestSchema = z.object({
 /**
  * POST /api/workflow/actualize/[id]/apply - Apply changes
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const engine = getWorkflowEngine();
     const statePromise = engine.getState(params.id);

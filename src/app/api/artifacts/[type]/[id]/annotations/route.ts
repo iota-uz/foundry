@@ -20,8 +20,9 @@ import type { AnnotationsResponse } from '@/types/api/responses';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { type: string; id: string } }
+  props: { params: Promise<{ type: string; id: string }> }
 ) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
 
@@ -77,8 +78,9 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { type: string; id: string } }
+  props: { params: Promise<{ type: string; id: string }> }
 ) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const projectId = request.nextUrl.searchParams.get('projectId');

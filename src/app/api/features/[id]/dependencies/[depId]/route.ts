@@ -12,8 +12,9 @@ import { getFileService } from '@/services/core/file.service';
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; depId: string } }
+  props: { params: Promise<{ id: string; depId: string }> }
 ) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const moduleSlug = request.nextUrl.searchParams.get('moduleSlug');

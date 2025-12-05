@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, use } from 'react';
 import { useProjectStore } from '@/store';
 import { Breadcrumbs } from '@/components/layout';
 import { Button, SkeletonCard, EmptyState } from '@/components/shared';
@@ -22,12 +22,13 @@ import {
 import type { Feature, Module, TaskStatus } from '@/types';
 
 interface FeaturePageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 type TabType = 'business' | 'technical' | 'tasks' | 'checklist' | 'history';
 
-export default function FeaturePage({ params }: FeaturePageProps) {
+export default function FeaturePage(props: FeaturePageProps) {
+  const params = use(props.params);
   const { modules, features, loading, updateFeature } = useProjectStore();
   const [feature, setFeature] = useState<Feature | null>(null);
   const [module, setModule] = useState<Module | null>(null);

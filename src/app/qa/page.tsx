@@ -13,7 +13,7 @@ import type { AIQuestion, QuestionBatch, Answer } from '@/types/ai';
 export default function QAPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const sessionId = searchParams.get('sessionId');
+  const sessionId = searchParams?.get('sessionId') ?? null;
 
   const [currentQuestion, setCurrentQuestion] = useState<AIQuestion | null>(null);
   const [currentBatch, setCurrentBatch] = useState<QuestionBatch | null>(null);

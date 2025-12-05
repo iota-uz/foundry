@@ -15,10 +15,8 @@ import type { ComponentResponse } from '@/types/api/responses';
 /**
  * GET /api/artifacts/components/:id - Get component
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     if (!projectPath) {
@@ -69,10 +67,8 @@ export async function GET(
 /**
  * PUT /api/artifacts/components/:id - Update component
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     if (!projectPath) {
@@ -150,10 +146,8 @@ export async function PUT(
 /**
  * DELETE /api/artifacts/components/:id - Delete component
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     if (!projectPath) {
