@@ -75,7 +75,8 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
  * POST /api/features/:id/checklist - Regenerate checklist
  * Expects action=regenerate in the body
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const projectPath = request.nextUrl.searchParams.get('projectPath');
     const moduleSlug = request.nextUrl.searchParams.get('moduleSlug');
@@ -107,17 +108,67 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Implement checklist regeneration from acceptance criteria
-    // This would involve AI service to generate checklist
-    return NextResponse.json(
-      {
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Checklist regeneration not yet implemented',
-        },
-      },
-      { status: 501 }
+    // Get the feature to ensure it exists and has acceptance criteria
+    const fileService = getFileService();
+    const specService = getSpecService(fileService);
+    const feature = await specService.getFeature(
+      projectPath,
+      moduleSlug,
+      params.id
     );
+
+    // Check if feature has acceptance criteria
+    if (!feature.business?.acceptanceCriteria || feature.business.acceptanceCriteria.length === 0) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Feature has no acceptance criteria to generate checklist from',
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generate checklist items from acceptance criteria
+    // For now, we'll do a simple 1:1 mapping (no AI needed for basic implementation)
+    // In the future, this could use AI to break down complex criteria into smaller checklist items
+    const { generateId } = await import('@/lib/utils/id');
+    const checklist = feature.business.acceptanceCriteria.map((criterion, index) => {
+      const item: {
+        id: string;
+        criterion: string;
+        source: string;
+        verified: boolean;
+        verifiedAt?: string;
+        verifiedBy?: 'user' | 'ai';
+        notes?: string;
+      } = {
+        id: generateId('check'),
+        criterion,
+        source: `business.acceptanceCriteria.${index}`,
+        verified: false,
+      };
+      return item;
+    });
+
+    // Update feature with new checklist
+    feature.checklist = checklist;
+    feature.checklistProgress = {
+      total: checklist.length,
+      verified: 0,
+      percentComplete: 0,
+    };
+
+    // Save the updated feature
+    await specService.updateFeature(projectPath, moduleSlug, params.id, feature);
+
+    const response: ChecklistResponse = {
+      items: checklist,
+      progress: feature.checklistProgress,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
