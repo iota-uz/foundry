@@ -5,11 +5,16 @@
  * Usage: foundry <command> [options]
  *
  * Commands:
+ *   run         Execute atomic workflows
  *   dispatch    Run the GitHub Issue DAG dispatcher
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
+import { spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -22,6 +27,9 @@ USAGE
   foundry <command> [options]
 
 COMMANDS
+  run         Execute atomic workflows from configuration
+              Loads atomic.config.ts and runs the workflow engine
+
   dispatch    Run the GitHub Issue DAG dispatcher
               Analyzes GitHub issues and generates execution matrix
 
@@ -29,22 +37,34 @@ OPTIONS
   --help, -h  Show this help message
 
 EXAMPLES
-  foundry dispatch --help
+  # Execute a workflow
+  foundry run --config atomic.config.ts
+
+  # Execute with context
+  foundry run --context '{"issueId": 123}'
+
+  # Run dispatcher
   foundry dispatch --owner iota-uz --repo foundry
+
+For command-specific help:
+  foundry run --help
+  foundry dispatch --help
 `);
 }
 
-async function runDispatch(dispatchArgs) {
-  // Use bun or tsx to run TypeScript directly
-  const cliPath = path.join(__dirname, '..', 'src', 'lib', 'dispatch', 'cli-entry.ts');
-  
+/**
+ * Run a TypeScript CLI script using bun or tsx
+ * @param {string} scriptPath - Path to the TypeScript file
+ * @param {string[]} scriptArgs - Arguments to pass to the script
+ */
+async function runTypescriptCli(scriptPath, scriptArgs) {
   // Try to use bun first, fall back to tsx
   const runners = ['bun', 'npx tsx'];
   
   for (const runner of runners) {
     try {
       const [cmd, ...cmdArgs] = runner.split(' ');
-      const child = spawn(cmd, [...cmdArgs, cliPath, ...dispatchArgs], {
+      const child = spawn(cmd, [...cmdArgs, scriptPath, ...scriptArgs], {
         stdio: 'inherit',
         shell: process.platform === 'win32',
       });
@@ -69,7 +89,21 @@ async function runDispatch(dispatchArgs) {
   process.exit(1);
 }
 
+async function runRun(runArgs) {
+  const cliPath = path.join(__dirname, '..', 'src', 'cli', 'run-entry.ts');
+  await runTypescriptCli(cliPath, runArgs);
+}
+
+async function runDispatch(dispatchArgs) {
+  const cliPath = path.join(__dirname, '..', 'src', 'lib', 'dispatch', 'cli-entry.ts');
+  await runTypescriptCli(cliPath, dispatchArgs);
+}
+
 switch (command) {
+  case 'run':
+    runRun(args.slice(1));
+    break;
+
   case 'dispatch':
     runDispatch(args.slice(1));
     break;
