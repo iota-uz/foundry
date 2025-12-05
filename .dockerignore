@@ -44,11 +44,10 @@ yarn-error.log*
 Thumbs.db
 *.pem
 
-# Package manager files
+# Package manager files (except bun.lockb)
 pnpm-lock.yaml
 package-lock.json
 yarn.lock
-bun.lockb
 
 # Development files
 .prettierignore
