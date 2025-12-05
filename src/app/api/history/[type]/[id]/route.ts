@@ -49,9 +49,14 @@ export async function GET(
     );
 
     // Map DB entries to API format
+    const actionMap: Record<string, 'create' | 'update' | 'delete'> = {
+      created: 'create',
+      updated: 'update',
+      deleted: 'delete',
+    };
     const entries = dbEntries.map((entry) => ({
       id: entry.id,
-      action: entry.changeType,
+      action: actionMap[entry.changeType] || 'update',
       actor: entry.changedBy,
       changes: [], // TODO: Parse entry.changes to FieldChange[]
       timestamp: entry.createdAt,
@@ -60,7 +65,7 @@ export async function GET(
     const response: HistoryResponse = {
       artifactType: params.type as 'feature' | 'entity' | 'endpoint' | 'component',
       artifactId: params.id,
-      entries: entries as string, // Type assertion since mapping is correct
+      entries,
     };
 
     return NextResponse.json(response);

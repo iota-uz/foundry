@@ -248,9 +248,10 @@ function parseOpenAPIEndpoints(
   if (!spec.paths) return endpoints;
 
   for (const [path, pathItem] of Object.entries(spec.paths as Record<string, unknown>)) {
-    for (const [method, operation] of Object.entries(pathItem)) {
+    if (!pathItem || typeof pathItem !== 'object') continue;
+    for (const [method, operation] of Object.entries(pathItem as Record<string, unknown>)) {
       if (['get', 'post', 'put', 'patch', 'delete'].includes(method.toLowerCase())) {
-        const op = operation as string;
+        const op = operation as { summary?: string; description?: string };
         endpoints.push({
           path,
           method: method.toLowerCase(),

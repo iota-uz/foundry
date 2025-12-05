@@ -1,17 +1,17 @@
 /**
- * SQLite database client using better-sqlite3
+ * SQLite database client using bun:sqlite
  */
 
-import Database from 'better-sqlite3';
+import { Database } from 'bun:sqlite';
 import fs from 'fs';
 import path from 'path';
 
-let db: Database.Database | null = null;
+let db: Database | null = null;
 
 /**
  * Get the database instance (singleton)
  */
-export function getDatabase(dbPath?: string): Database.Database {
+export function getDatabase(dbPath?: string): Database {
   if (db) {
     return db;
   }
@@ -28,8 +28,8 @@ export function getDatabase(dbPath?: string): Database.Database {
   db = new Database(finalPath);
 
   // Enable WAL mode for better concurrent access
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  db.run('PRAGMA journal_mode = WAL');
+  db.run('PRAGMA foreign_keys = ON');
 
   // Run migrations
   runMigrations(db);
@@ -66,7 +66,7 @@ function getDefaultDbPath(): string {
 /**
  * Run database migrations
  */
-function runMigrations(database: Database.Database): void {
+function runMigrations(database: Database): void {
   // Create migrations table if it doesn't exist
   database.exec(`
     CREATE TABLE IF NOT EXISTS migrations (
@@ -124,8 +124,8 @@ function runMigrations(database: Database.Database): void {
  * Execute a query within a transaction
  */
 export function transaction<T>(
-  fn: (db: Database.Database) => T,
-  dbInstance?: Database.Database
+  fn: (db: Database) => T,
+  dbInstance?: Database
 ): T {
   const database = dbInstance || getDatabase();
   const txn = database.transaction(fn);

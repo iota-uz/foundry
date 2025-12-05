@@ -105,7 +105,7 @@ export async function PUT(
     const moduleData = await specService.updateModule(
       projectPath,
       params.id,
-      updates as string
+      updates
     );
 
     const features = await specService.listFeatures(projectPath, params.id);

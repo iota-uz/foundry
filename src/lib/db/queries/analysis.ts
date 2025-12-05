@@ -2,7 +2,7 @@
  * Analysis results queries
  */
 
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 import { getDatabase } from '../client';
 import { isExpired } from '@/lib/utils';
 
@@ -173,7 +173,7 @@ function rowToAnalysisResults(row: AnalysisRow): AnalysisResults {
     id: row.id,
     projectId: row.project_id,
     scope: row.scope,
-    status: row.status,
+    status: row.status as AnalysisResults['status'],
     results: JSON.parse(row.results),
     createdAt: row.created_at,
     expiresAt: row.expires_at,

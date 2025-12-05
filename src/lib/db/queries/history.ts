@@ -2,7 +2,7 @@
  * Artifact history queries
  */
 
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 import { getDatabase } from '../client';
 
 /**
@@ -19,6 +19,23 @@ export interface HistoryEntry {
   changedBy: string;
   sessionId: string | null;
   createdAt: string;
+}
+
+interface HistoryRow {
+  id: string;
+  project_id: string;
+  artifact_type: string;
+  artifact_id: string;
+  version: number;
+  change_type: string;
+  changes: string;
+  changed_by: string;
+  session_id: string | null;
+  created_at: string;
+}
+
+interface MaxVersionRow {
+  max_version: number | null;
 }
 
 /**
@@ -72,7 +89,7 @@ export function getHistory(
     ORDER BY version DESC
   `);
 
-  const rows = stmt.all(...params) as unknown[];
+  const rows = stmt.all(artifactType, artifactId) as HistoryRow[];
 
   return rows.map(rowToHistoryEntry);
 }
@@ -93,7 +110,7 @@ export function getLatestVersion(
     WHERE artifact_type = ? AND artifact_id = ?
   `);
 
-  const row = stmt.get(...params) as unknown;
+  const row = stmt.get(artifactType, artifactId) as MaxVersionRow | null;
 
   return row?.max_version || 0;
 }
@@ -120,8 +137,8 @@ export function getProjectHistory(
 
   const stmt = database.prepare(sql);
   const rows = limit
-    ? (stmt.all(...params) as unknown[])
-    : (stmt.all(...params) as unknown[]);
+    ? (stmt.all(projectId, limit) as HistoryRow[])
+    : (stmt.all(projectId) as HistoryRow[]);
 
   return rows.map(rowToHistoryEntry);
 }
@@ -141,7 +158,7 @@ export function getHistoryBySession(
     ORDER BY created_at ASC
   `);
 
-  const rows = stmt.all(...params) as unknown[];
+  const rows = stmt.all(sessionId) as HistoryRow[];
 
   return rows.map(rowToHistoryEntry);
 }
@@ -149,14 +166,14 @@ export function getHistoryBySession(
 /**
  * Convert database row to HistoryEntry
  */
-function rowToHistoryEntry(row: unknown): HistoryEntry {
+function rowToHistoryEntry(row: HistoryRow): HistoryEntry {
   return {
     id: row.id,
     projectId: row.project_id,
-    artifactType: row.artifact_type,
+    artifactType: row.artifact_type as HistoryEntry['artifactType'],
     artifactId: row.artifact_id,
     version: row.version,
-    changeType: row.change_type,
+    changeType: row.change_type as HistoryEntry['changeType'],
     changes: JSON.parse(row.changes),
     changedBy: row.changed_by,
     sessionId: row.session_id,

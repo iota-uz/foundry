@@ -2,9 +2,33 @@
  * Workflow checkpoint queries
  */
 
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 import type { WorkflowState } from '@/types/workflow/state';
 import { getDatabase } from '../client';
+
+interface CheckpointRow {
+  id: string;
+  session_id: string;
+  project_id: string;
+  workflow_id: string;
+  current_step_id: string;
+  status: string;
+  current_topic_index: number;
+  current_question_index: number;
+  topic_question_counts: string;
+  answers: string;
+  skipped_questions: string;
+  data: string;
+  clarify_state: string | null;
+  step_history: string;
+  checkpoint: string | null;
+  started_at: string;
+  last_activity_at: string;
+  paused_at: string | null;
+  completed_at: string | null;
+  last_error: string | null;
+  retry_count: number;
+}
 
 /**
  * Save a workflow checkpoint
@@ -82,7 +106,7 @@ export function getCheckpoint(
     WHERE session_id = ?
   `);
 
-  const row = stmt.get(...params) as unknown;
+  const row = stmt.get(sessionId) as CheckpointRow | null;
 
   if (!row) {
     return null;
@@ -106,7 +130,7 @@ export function listCheckpoints(
     ORDER BY last_activity_at DESC
   `);
 
-  const rows = stmt.all(...params) as unknown[];
+  const rows = stmt.all(projectId) as CheckpointRow[];
 
   return rows.map(rowToWorkflowState);
 }
@@ -142,7 +166,7 @@ export function getActiveCheckpoint(
     LIMIT 1
   `);
 
-  const row = stmt.get(...params) as unknown;
+  const row = stmt.get(projectId) as CheckpointRow | null;
 
   if (!row) {
     return null;
@@ -198,13 +222,13 @@ export function updateCheckpointStatus(
 /**
  * Convert database row to WorkflowState
  */
-function rowToWorkflowState(row: unknown): WorkflowState {
+function rowToWorkflowState(row: CheckpointRow): WorkflowState {
   return {
     sessionId: row.session_id,
     projectId: row.project_id,
-    workflowId: row.workflow_id,
+    workflowId: row.workflow_id as WorkflowState['workflowId'],
     currentStepId: row.current_step_id,
-    status: row.status,
+    status: row.status as WorkflowState['status'],
     currentTopicIndex: row.current_topic_index,
     currentQuestionIndex: row.current_question_index,
     topicQuestionCounts: JSON.parse(row.topic_question_counts || '{}'),

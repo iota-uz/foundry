@@ -102,7 +102,7 @@ export async function PUT(
     const component = await specService.updateComponent(
       projectPath,
       params.id,
-      updates as string
+      updates
     );
 
     const response: ComponentResponse = { component };

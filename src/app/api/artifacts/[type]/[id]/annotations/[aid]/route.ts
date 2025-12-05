@@ -15,6 +15,21 @@ import {
 } from '@/lib/db/queries/annotations';
 import { UpdateAnnotationRequestSchema } from '@/schemas/api';
 
+interface AnnotationRow {
+  id: string;
+  project_id: string;
+  artifact_type: string;
+  artifact_id: string;
+  artifact_path: string | null;
+  content: string;
+  author: string;
+  annotation_type: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
+}
+
 /**
  * GET /api/artifacts/[type]/[id]/annotations/[aid] - Get annotation
  */
@@ -25,7 +40,7 @@ export async function GET(
   try {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM annotations WHERE id = ?');
-    const row = stmt.get(params.aid) as string;
+    const row = stmt.get(params.aid) as AnnotationRow | null;
 
     if (!row) {
       return NextResponse.json(
@@ -70,7 +85,7 @@ export async function PATCH(
     // Check if annotation exists
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM annotations WHERE id = ?');
-    const row = stmt.get(params.aid) as string;
+    const row = stmt.get(params.aid) as AnnotationRow | null;
 
     if (!row) {
       return NextResponse.json(
@@ -96,7 +111,7 @@ export async function PATCH(
     updateAnnotation(params.aid, updates);
 
     // Get updated annotation
-    const updatedRow = stmt.get(params.aid) as string;
+    const updatedRow = stmt.get(params.aid) as AnnotationRow;
     const annotation = rowToAnnotation(updatedRow);
 
     return NextResponse.json({ annotation: toApiAnnotation(annotation) });
@@ -138,7 +153,7 @@ export async function DELETE(
     // Check if annotation exists
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM annotations WHERE id = ?');
-    const row = stmt.get(params.aid) as string;
+    const row = stmt.get(params.aid) as AnnotationRow | null;
 
     if (!row) {
       return NextResponse.json(
@@ -172,17 +187,17 @@ export async function DELETE(
 /**
  * Convert database row to Annotation
  */
-function rowToAnnotation(row: unknown): Annotation {
+function rowToAnnotation(row: AnnotationRow): Annotation {
   return {
     id: row.id,
     projectId: row.project_id,
-    artifactType: row.artifact_type,
+    artifactType: row.artifact_type as Annotation['artifactType'],
     artifactId: row.artifact_id,
     artifactPath: row.artifact_path,
     content: row.content,
-    author: row.author,
-    annotationType: row.annotation_type,
-    status: row.status,
+    author: row.author as Annotation['author'],
+    annotationType: row.annotation_type as Annotation['annotationType'],
+    status: row.status as Annotation['status'],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     resolvedAt: row.resolved_at,

@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
     if (parsed.description !== undefined) updates.description = parsed.description;
     if (parsed.settings !== undefined) updates.settings = parsed.settings;
 
-    const project = await specService.updateProject(projectPath, updates as string);
+    const project = await specService.updateProject(projectPath, updates);
 
     const response: ProjectResponse = { project };
     return NextResponse.json(response);

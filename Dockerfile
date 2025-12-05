@@ -8,9 +8,6 @@ FROM oven/bun:1.3.3 AS base
 FROM base AS deps
 WORKDIR /app
 
-# Install dependencies needed for better-sqlite3 compilation
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
-
 # Copy package files
 COPY package.json bun.lockb ./
 
@@ -20,9 +17,6 @@ RUN bun install --frozen-lockfile
 # Builder stage - build the Next.js application
 FROM base AS builder
 WORKDIR /app
-
-# Install dependencies needed for better-sqlite3 during build
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules

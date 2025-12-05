@@ -40,10 +40,10 @@ export async function POST(
     const parsed = ApplyChangesRequestSchema.parse(body);
 
     // Get drift items to apply
-    const drift = state.data.drift || [];
+    const drift = (state.data.drift || []) as Array<{ id: string; autoFixable?: boolean }>;
     const itemsToApply = parsed.applyAll
-      ? drift.filter((d: unknown) => d.autoFixable)
-      : drift.filter((d: unknown) => parsed.changes.includes(d.id));
+      ? drift.filter((d) => d.autoFixable)
+      : drift.filter((d) => parsed.changes.includes(d.id));
 
     if (itemsToApply.length === 0) {
       return NextResponse.json(

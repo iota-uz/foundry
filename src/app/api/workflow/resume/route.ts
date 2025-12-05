@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const totalTopics = state ? Object.keys(state.topicQuestionCounts).length : 8;
     const response: WorkflowStateResponse = {
       sessionId: validatedData.sessionId,
-      workflowId: (state?.workflowId as string) || 'cpo-phase',
+      workflowId: state?.workflowId || 'cpo-phase',
       currentStepId: state?.currentStepId || 'unknown',
       status: 'running',
       progress: {

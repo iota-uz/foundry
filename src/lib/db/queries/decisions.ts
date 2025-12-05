@@ -2,7 +2,7 @@
  * Decision journal queries
  */
 
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 import { getDatabase } from '../client';
 import { now } from '@/lib/utils';
 
@@ -46,6 +46,33 @@ export interface DecisionFilters {
   sessionId?: string;
   cascadeGroup?: string;
   undone?: boolean;
+}
+
+interface DecisionRow {
+  id: string;
+  project_id: string;
+  feature_id: string | null;
+  session_id: string;
+  question_id: string;
+  question_text: string;
+  answer_given: string;
+  alternatives: string | null;
+  category: string;
+  phase: string;
+  batch_id: string | null;
+  artifacts_affected: string | null;
+  spec_changes: string | null;
+  cascade_group: string | null;
+  can_undo: number;
+  undone_at: string | null;
+  undone_by: string | null;
+  ai_recommendation: string | null;
+  recommendation_followed: number | null;
+  rationale_explicit: string | null;
+  rationale_inferred: string | null;
+  rationale_confidence: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -170,7 +197,7 @@ export function getDecisions(
   sql += ` ORDER BY created_at DESC`;
 
   const stmt = database.prepare(sql);
-  const rows = stmt.all(...params) as unknown[];
+  const rows = stmt.all(...params) as DecisionRow[];
 
   return rows.map(rowToDecision);
 }
@@ -188,7 +215,7 @@ export function getDecision(
     SELECT * FROM decisions WHERE id = ?
   `);
 
-  const row = stmt.get(...params) as unknown;
+  const row = stmt.get(decisionId) as DecisionRow | null;
 
   if (!row) {
     return null;
@@ -236,7 +263,7 @@ export function getDecisionsByCascadeGroup(
     ORDER BY created_at ASC
   `);
 
-  const rows = stmt.all(...params) as unknown[];
+  const rows = stmt.all(cascadeGroup) as DecisionRow[];
 
   return rows.map(rowToDecision);
 }
@@ -244,7 +271,7 @@ export function getDecisionsByCascadeGroup(
 /**
  * Convert database row to Decision
  */
-function rowToDecision(row: unknown): Decision {
+function rowToDecision(row: DecisionRow): Decision {
   return {
     id: row.id,
     projectId: row.project_id,
@@ -255,7 +282,7 @@ function rowToDecision(row: unknown): Decision {
     answerGiven: JSON.parse(row.answer_given),
     alternatives: row.alternatives ? JSON.parse(row.alternatives) : null,
     category: row.category,
-    phase: row.phase,
+    phase: row.phase as Decision['phase'],
     batchId: row.batch_id,
     artifactsAffected: row.artifacts_affected
       ? JSON.parse(row.artifacts_affected)
@@ -274,7 +301,7 @@ function rowToDecision(row: unknown): Decision {
         : null,
     rationaleExplicit: row.rationale_explicit,
     rationaleInferred: row.rationale_inferred,
-    rationaleConfidence: row.rationale_confidence,
+    rationaleConfidence: row.rationale_confidence as Decision['rationaleConfidence'],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

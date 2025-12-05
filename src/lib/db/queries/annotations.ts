@@ -2,7 +2,7 @@
  * Annotation queries
  */
 
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 import { getDatabase } from '../client';
 
 /**
@@ -21,6 +21,21 @@ export interface Annotation {
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;
+}
+
+interface AnnotationRow {
+  id: string;
+  project_id: string;
+  artifact_type: string;
+  artifact_id: string;
+  artifact_path: string | null;
+  content: string;
+  author: string;
+  annotation_type: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
 }
 
 /**
@@ -78,7 +93,7 @@ export function getAnnotations(
     ORDER BY created_at DESC
   `);
 
-  const rows = stmt.all(...params) as unknown[];
+  const rows = stmt.all(artifactType, artifactId) as AnnotationRow[];
 
   return rows.map(rowToAnnotation);
 }
@@ -99,7 +114,7 @@ export function getAnnotationsByStatus(
     ORDER BY created_at DESC
   `);
 
-  const rows = stmt.all(...params) as unknown[];
+  const rows = stmt.all(projectId, status) as AnnotationRow[];
 
   return rows.map(rowToAnnotation);
 }
@@ -115,7 +130,7 @@ export function updateAnnotation(
   const database = db || getDatabase();
 
   const fields: string[] = [];
-  const values: unknown[] = [];
+  const values: (string | number | null)[] = [];
 
   if (updates.content !== undefined) {
     fields.push('content = ?');
@@ -172,17 +187,17 @@ export function deleteAnnotation(id: string, db?: Database): void {
 /**
  * Convert database row to Annotation
  */
-function rowToAnnotation(row: unknown): Annotation {
+function rowToAnnotation(row: AnnotationRow): Annotation {
   return {
     id: row.id,
     projectId: row.project_id,
-    artifactType: row.artifact_type,
+    artifactType: row.artifact_type as Annotation['artifactType'],
     artifactId: row.artifact_id,
     artifactPath: row.artifact_path,
     content: row.content,
-    author: row.author,
-    annotationType: row.annotation_type,
-    status: row.status,
+    author: row.author as Annotation['author'],
+    annotationType: row.annotation_type as Annotation['annotationType'],
+    status: row.status as Annotation['status'],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     resolvedAt: row.resolved_at,

@@ -3,7 +3,7 @@
  * Handles all SQLite database operations
  */
 
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 import { getDatabase, closeDatabase } from '@/lib/db/client';
 import type { WorkflowState } from '@/types/workflow/state';
 import type { StepExecution } from '@/types/workflow/step';
@@ -212,20 +212,35 @@ export class DatabaseService implements IDatabaseService {
   }
 
   async getStepExecutions(checkpointId: string): Promise<StepExecution[]> {
+    interface StepExecutionRow {
+      id: string;
+      checkpoint_id: string;
+      step_id: string;
+      step_type: string;
+      status: string;
+      started_at: string;
+      completed_at: string | null;
+      input_data: string | null;
+      output_data: string | null;
+      error: string | null;
+      llm_tokens_used: number | null;
+      duration_ms: number;
+    }
+
     const stmt = this.db.prepare(`
       SELECT * FROM step_executions
       WHERE checkpoint_id = ?
       ORDER BY started_at ASC
     `);
 
-    const rows = stmt.all(checkpointId) as string[];
+    const rows = stmt.all(checkpointId) as StepExecutionRow[];
 
     return rows.map((row) => ({
       id: row.id,
       checkpointId: row.checkpoint_id,
       stepId: row.step_id,
-      stepType: row.step_type,
-      status: row.status,
+      stepType: row.step_type as StepExecution['stepType'],
+      status: row.status as StepExecution['status'],
       startedAt: row.started_at,
       completedAt: row.completed_at,
       inputData: row.input_data ? JSON.parse(row.input_data) : undefined,
@@ -392,19 +407,19 @@ export class DatabaseService implements IDatabaseService {
    */
   async transaction<T>(fn: (db: Database) => Promise<T> | T): Promise<T> {
     // Begin transaction
-    this.db.prepare('BEGIN').run();
+    this.db.run('BEGIN');
 
     try {
       // Execute operations
       const result = await Promise.resolve(fn(this.db));
 
       // Commit transaction
-      this.db.prepare('COMMIT').run();
+      this.db.run('COMMIT');
 
       return result;
     } catch (error) {
       // Rollback on error
-      this.db.prepare('ROLLBACK').run();
+      this.db.run('ROLLBACK');
       throw error;
     }
   }

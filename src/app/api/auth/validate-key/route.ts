@@ -40,8 +40,9 @@ export async function POST(request: NextRequest) {
         message: 'API key is valid',
       });
     } catch (error: unknown) {
-      // Check error type
-      if (error.status === 401 || error.status === 403) {
+      // Check error type - Anthropic SDK errors have a status property
+      const apiError = error as { status?: number };
+      if (apiError.status === 401 || apiError.status === 403) {
         return NextResponse.json(
           {
             valid: false,
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (error.status === 429) {
+      if (apiError.status === 429) {
         return NextResponse.json(
           {
             valid: false,

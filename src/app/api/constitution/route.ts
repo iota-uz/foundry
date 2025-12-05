@@ -106,7 +106,7 @@ export async function PUT(request: NextRequest) {
         ...(parsed.hooks && { hooks: { ...existing.hooks, ...parsed.hooks } }),
         updatedAt: new Date().toISOString(),
       };
-      constitution = merged as Constitution;
+      constitution = merged as unknown as Constitution;
     } else {
       // Create new constitution - provide defaults for all required fields
       const defaultConstitution: Record<string, unknown> = {
@@ -145,7 +145,7 @@ export async function PUT(request: NextRequest) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      constitution = defaultConstitution as Constitution;
+      constitution = defaultConstitution as unknown as Constitution;
     }
 
     await fileService.writeYaml(constitutionPath, constitution);

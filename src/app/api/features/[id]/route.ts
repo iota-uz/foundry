@@ -114,7 +114,7 @@ export async function PUT(
       projectPath,
       moduleSlug,
       params.id,
-      updates as string
+      updates
     );
 
     const response: FeatureResponse = { feature };

@@ -32,18 +32,23 @@ export async function GET(
     }
 
     // Build response based on workflow state
+    const drift = (state.data.drift || []) as ActualizeResponse['drift']['specToCode'];
+    const codeToSpec = (state.data.codeToSpec || []) as ActualizeResponse['drift']['codeToSpec'];
+    const schemaDrift = (state.data.schemaDrift || []) as ActualizeResponse['drift']['schemaDrift'];
+    const apiDrift = (state.data.apiDrift || []) as ActualizeResponse['drift']['apiDrift'];
+
     const response: ActualizeResponse = {
       id: params.id,
-      status: state.data.drift && state.data.drift.length > 0 ? 'drift_detected' : 'synced',
+      status: drift.length > 0 ? 'drift_detected' : 'synced',
       drift: {
-        specToCode: state.data.drift || [],
-        codeToSpec: state.data.codeToSpec || [],
-        schemaDrift: state.data.schemaDrift || [],
-        apiDrift: state.data.apiDrift || [],
+        specToCode: drift,
+        codeToSpec,
+        schemaDrift,
+        apiDrift,
       },
       summary: {
-        totalDriftItems: (state.data.drift || []).length,
-        requiresAction: (state.data.drift || []).filter((d: unknown) => !d.autoFixable).length,
+        totalDriftItems: drift.length,
+        requiresAction: drift.length, // All drift items require action
       },
     };
 

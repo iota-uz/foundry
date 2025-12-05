@@ -2,7 +2,7 @@
  * Undo/redo action queries
  */
 
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 import { getDatabase } from '../client';
 
 /**
@@ -175,7 +175,7 @@ function rowToUndoAction(row: UndoActionRow): UndoAction {
   return {
     id: row.id,
     projectId: row.project_id,
-    actionType: row.action_type,
+    actionType: row.action_type as UndoAction['actionType'],
     targetType: row.target_type,
     targetId: row.target_id,
     beforeState: row.before_state ? JSON.parse(row.before_state) : null,
