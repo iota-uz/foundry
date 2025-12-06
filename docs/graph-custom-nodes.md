@@ -3,7 +3,7 @@ layout: default
 title: Custom Nodes
 nav_order: 32
 parent: Graph Workflow Engine
-description: "Creating custom node types for the Graph Workflow Engine"
+description: 'Creating custom node types for the Graph Workflow Engine'
 ---
 
 # Creating Custom Nodes
@@ -171,16 +171,16 @@ You can extend the existing runtime classes for specialized behavior:
 ```typescript
 import { AgentNodeRuntime, type AgentNodeConfig } from '@sys/graph/nodes';
 
-class RetryAgentNode<TContext extends Record<string, unknown>>
-  extends AgentNodeRuntime<TContext>
-{
+class RetryAgentNode<TContext extends Record<string, unknown>> extends AgentNodeRuntime<TContext> {
   private maxRetries: number;
   private retryDelay: number;
 
-  constructor(config: AgentNodeConfig<TContext> & {
-    maxRetries?: number;
-    retryDelay?: number;
-  }) {
+  constructor(
+    config: AgentNodeConfig<TContext> & {
+      maxRetries?: number;
+      retryDelay?: number;
+    }
+  ) {
     super(config);
     this.maxRetries = config.maxRetries ?? 3;
     this.retryDelay = config.retryDelay ?? 1000;

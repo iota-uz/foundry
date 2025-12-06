@@ -2,7 +2,7 @@
 layout: default
 title: Graph Workflow Engine
 nav_order: 31
-description: "FSM-based agentic workflow engine with Claude Agent SDK integration"
+description: 'FSM-based agentic workflow engine with Claude Agent SDK integration'
 ---
 
 # Graph Workflow Engine
@@ -65,34 +65,34 @@ export default defineWorkflow({
       role: 'architect',
       system: 'You are a Tech Lead. Analyze the request and output a JSON plan.',
       tools: ['list_files', 'read_file'],
-      next: 'IMPLEMENT'
+      next: 'IMPLEMENT',
     }),
 
     IMPLEMENT: nodes.AgentNode({
       role: 'builder',
       system: 'You are a Senior Developer. Implement the planned tasks.',
       tools: ['write_file', 'read_file', 'bash'],
-      next: (state) => state.context.allTasksDone ? 'TEST' : 'IMPLEMENT'
+      next: (state) => (state.context.allTasksDone ? 'TEST' : 'IMPLEMENT'),
     }),
 
     TEST: nodes.CommandNode({
       command: 'bun test',
-      next: (state) => state.context.testsPassed ? 'COMMIT' : 'FIX'
+      next: (state) => (state.context.testsPassed ? 'COMMIT' : 'FIX'),
     }),
 
     FIX: nodes.AgentNode({
       role: 'debugger',
       system: 'Fix the failing tests based on the error output.',
       tools: ['read_file', 'write_file'],
-      next: 'TEST'
+      next: 'TEST',
     }),
 
     COMMIT: nodes.SlashCommandNode({
       command: 'commit',
       args: 'Implement feature with passing tests',
-      next: 'END'
-    })
-  }
+      next: 'END',
+    }),
+  },
 });
 ```
 
@@ -108,8 +108,8 @@ const result = await engine.run('feature-development', {
   context: {
     request: 'Add user authentication to the API',
     allTasksDone: false,
-    testsPassed: false
-  }
+    testsPassed: false,
+  },
 });
 
 console.log('Final state:', result.status);
@@ -123,15 +123,16 @@ Executes Claude Agent SDK queries with tool access.
 
 ```typescript
 nodes.AgentNode({
-  role: 'architect',           // Role identifier
-  system: 'System prompt...',  // AI instructions
-  tools: ['list_files'],       // Stdlib tool names
-  maxTurns: 10,                // Max conversation turns
-  next: 'NEXT_NODE'            // Static or dynamic transition
-})
+  role: 'architect', // Role identifier
+  system: 'System prompt...', // AI instructions
+  tools: ['list_files'], // Stdlib tool names
+  maxTurns: 10, // Max conversation turns
+  next: 'NEXT_NODE', // Static or dynamic transition
+});
 ```
 
 **Features:**
+
 - Full Claude Agent SDK integration
 - Tool execution with Zod validation
 - Conversation history persistence
@@ -143,14 +144,16 @@ Executes shell commands.
 
 ```typescript
 nodes.CommandNode({
-  command: 'bun test',         // Shell command to run
-  next: (state) => {           // Dynamic transition
+  command: 'bun test', // Shell command to run
+  next: (state) => {
+    // Dynamic transition
     return state.context.exitCode === 0 ? 'SUCCESS' : 'FAILURE';
-  }
-})
+  },
+});
 ```
 
 **Features:**
+
 - Captures stdout/stderr
 - Exit code in context
 - Timeout support
@@ -161,13 +164,14 @@ Invokes Claude Code slash commands.
 
 ```typescript
 nodes.SlashCommandNode({
-  command: 'edit',             // Claude Code command (without leading /)
-  args: 'Add error handling',  // Command arguments/instructions
-  next: 'END'                  // Static or dynamic transition
-})
+  command: 'edit', // Claude Code command (without leading /)
+  args: 'Add error handling', // Command arguments/instructions
+  next: 'END', // Static or dynamic transition
+});
 ```
 
 **Configuration:**
+
 - `command` - The slash command to run (without the `/` prefix)
 - `args` - Arguments or instructions passed to the command
 - `next` - Transition to next node (string or function)
@@ -178,10 +182,10 @@ After execution, the result is stored in `state.context.lastSlashCommandResult`:
 
 ```typescript
 interface SlashCommandResult {
-  success: boolean;      // Whether command completed successfully
-  output?: string;       // Command output (stdout)
-  error?: string;        // Error message if failed
-  exitCode?: number;     // Exit code from command
+  success: boolean; // Whether command completed successfully
+  output?: string; // Command output (stdout)
+  error?: string; // Error message if failed
+  exitCode?: number; // Exit code from command
 }
 ```
 
@@ -197,11 +201,12 @@ nodes.SlashCommandNode({
       return 'DEPLOY';
     }
     return 'FIX_TESTS';
-  }
-})
+  },
+});
 ```
 
 **Supported commands:**
+
 - `/edit` - Edit files
 - `/commit` - Git commit
 - `/test` - Run tests
@@ -213,11 +218,11 @@ nodes.SlashCommandNode({
 
 ```typescript
 interface WorkflowState<TContext> {
-  currentNode: string;                    // Current FSM node
+  currentNode: string; // Current FSM node
   status: 'pending' | 'running' | 'completed' | 'failed';
-  updatedAt: string;                      // ISO timestamp
-  conversationHistory: Message[];         // Full chat history
-  context: TContext;                      // User-defined data
+  updatedAt: string; // ISO timestamp
+  conversationHistory: Message[]; // Full chat history
+  context: TContext; // User-defined data
 }
 ```
 
@@ -264,35 +269,39 @@ State flows through the workflow as a single object that each node can read and 
 **How nodes communicate:**
 
 1. **Read from context** - Access data set by previous nodes:
+
    ```typescript
    next: (state) => {
      // Read plan created by PLAN node
      const plan = state.context.plan;
      // Read result from previous command
      const result = state.context.lastCommandResult;
-   }
+   };
    ```
 
 2. **Write to context** - AgentNodes can update context via tool calls or structured output:
+
    ```typescript
    // Agent sets context.plan via a tool
-   tools: [{
-     name: 'save_plan',
-     schema: z.object({ tasks: z.array(z.string()) }),
-     execute: async (args) => {
-       // Tool result is available to the agent
-       return { saved: true, taskCount: args.tasks.length };
-     }
-   }]
+   tools: [
+     {
+       name: 'save_plan',
+       schema: z.object({ tasks: z.array(z.string()) }),
+       execute: async (args) => {
+         // Tool result is available to the agent
+         return { saved: true, taskCount: args.tasks.length };
+       },
+     },
+   ];
    ```
 
 3. **Auto-populated results** - Each node type automatically stores its result:
 
-   | Node Type | Result Key | Contains |
-   |-----------|------------|----------|
-   | `CommandNode` | `lastCommandResult` | `exitCode`, `stdout`, `stderr` |
-   | `SlashCommandNode` | `lastSlashCommandResult` | `success`, `output`, `error` |
-   | `AgentNode` | `lastAgentResponse` | Final agent response text |
+   | Node Type          | Result Key               | Contains                       |
+   | ------------------ | ------------------------ | ------------------------------ |
+   | `CommandNode`      | `lastCommandResult`      | `exitCode`, `stdout`, `stderr` |
+   | `SlashCommandNode` | `lastSlashCommandResult` | `success`, `output`, `error`   |
+   | `AgentNode`        | `lastAgentResponse`      | Final agent response text      |
 
 **Example: Complete data flow**
 
@@ -309,7 +318,7 @@ defineWorkflow<{
     PLAN: nodes.AgentNode({
       role: 'planner',
       system: 'Create a task plan. Output JSON: { "tasks": [...] }',
-      next: 'BUILD'
+      next: 'BUILD',
     }),
 
     // Node 2: Reads context.plan, runs command
@@ -321,22 +330,22 @@ defineWorkflow<{
           return 'TEST';
         }
         return 'FIX';
-      }
+      },
     }),
 
     // Node 3: Reads lastCommandResult if build failed
     FIX: nodes.SlashCommandNode({
       command: 'edit',
       args: 'Fix the build errors shown in lastCommandResult.stderr',
-      next: 'BUILD'  // Loop back
+      next: 'BUILD', // Loop back
     }),
 
     TEST: nodes.SlashCommandNode({
       command: 'test',
       args: 'Run tests',
-      next: 'END'
-    })
-  }
+      next: 'END',
+    }),
+  },
 });
 ```
 
@@ -375,10 +384,12 @@ const workflow = defineWorkflow<MyContext>({
       plan: null,
       completedTasks: [],
       testResults: [],
-      allTasksDone: false
-    }
+      allTasksDone: false,
+    },
   },
-  nodes: { /* ... */ }
+  nodes: {
+    /* ... */
+  },
 });
 ```
 
@@ -387,7 +398,7 @@ const workflow = defineWorkflow<MyContext>({
 ### Static Transitions
 
 ```typescript
-next: 'NEXT_NODE'  // Always go to NEXT_NODE
+next: 'NEXT_NODE'; // Always go to NEXT_NODE
 ```
 
 ### Dynamic Transitions
@@ -397,7 +408,7 @@ next: (state) => {
   if (state.context.error) return 'ERROR_HANDLER';
   if (state.context.done) return 'END';
   return 'CONTINUE';
-}
+};
 ```
 
 ### Special Nodes
@@ -425,16 +436,16 @@ nodes.AgentNode({
       description: 'Analyze code complexity metrics',
       schema: z.object({
         filePath: z.string(),
-        threshold: z.number().optional()
+        threshold: z.number().optional(),
       }),
       execute: async ({ filePath, threshold }) => {
         // Custom implementation
         return { complexity: 42, exceeds: false };
-      }
-    }
+      },
+    },
   ],
-  next: 'REPORT'
-})
+  next: 'REPORT',
+});
 ```
 
 ### Tool Schema Validation
@@ -465,10 +476,10 @@ Tools use Zod for input validation:
 nodes.AgentNode({
   role: 'builder',
   system: '...',
-  maxRetries: 3,           // Retry on failure
-  retryDelay: 1000,        // Delay between retries (ms)
-  next: 'NEXT'
-})
+  maxRetries: 3, // Retry on failure
+  retryDelay: 1000, // Delay between retries (ms)
+  next: 'NEXT',
+});
 ```
 
 ### Error Transitions
@@ -481,8 +492,8 @@ nodes.CommandNode({
       return 'HANDLE_ERROR';
     }
     return 'DEPLOY';
-  }
-})
+  },
+});
 ```
 
 ### Workflow Status
@@ -511,21 +522,21 @@ defineWorkflow({
   nodes: {
     FETCH_PR: nodes.CommandNode({
       command: 'gh pr view --json files,body',
-      next: 'ANALYZE'
+      next: 'ANALYZE',
     }),
 
     ANALYZE: nodes.AgentNode({
       role: 'reviewer',
       system: `You are a senior code reviewer. Analyze the PR changes and provide feedback.`,
       tools: ['read_file', 'list_files'],
-      next: 'COMMENT'
+      next: 'COMMENT',
     }),
 
     COMMENT: nodes.CommandNode({
       command: 'gh pr comment --body "$REVIEW_COMMENT"',
-      next: 'END'
-    })
-  }
+      next: 'END',
+    }),
+  },
 });
 ```
 
@@ -539,27 +550,27 @@ defineWorkflow({
       role: 'debugger',
       system: 'Analyze the bug report and create a reproduction test.',
       tools: ['read_file', 'write_file', 'bash'],
-      next: 'FIX'
+      next: 'FIX',
     }),
 
     FIX: nodes.AgentNode({
       role: 'developer',
       system: 'Fix the bug. The reproduction test should pass.',
       tools: ['read_file', 'write_file'],
-      next: 'VERIFY'
+      next: 'VERIFY',
     }),
 
     VERIFY: nodes.CommandNode({
       command: 'bun test --grep "bug-123"',
-      next: (state) => state.context.testsPassed ? 'COMMIT' : 'FIX'
+      next: (state) => (state.context.testsPassed ? 'COMMIT' : 'FIX'),
     }),
 
     COMMIT: nodes.SlashCommandNode({
       command: 'commit',
       args: 'Fix bug #123',
-      next: 'END'
-    })
-  }
+      next: 'END',
+    }),
+  },
 });
 ```
 
@@ -612,14 +623,14 @@ const nodes = {
 
 ## Comparison with Dispatch
 
-| Feature | Dispatch | Graph Engine |
-|---------|----------|--------------|
-| **Purpose** | GitHub CI/CD automation | AI workflow orchestration |
-| **Graph Type** | DAG (issue dependencies) | FSM (node transitions) |
-| **AI Integration** | None | Claude Agent SDK |
-| **Parallelization** | Matrix jobs | Sequential nodes |
-| **Persistence** | Ephemeral | Full checkpoint/resume |
-| **Use Case** | Manage issue queues | Build multi-step AI workflows |
+| Feature             | Dispatch                 | Graph Engine                  |
+| ------------------- | ------------------------ | ----------------------------- |
+| **Purpose**         | GitHub CI/CD automation  | AI workflow orchestration     |
+| **Graph Type**      | DAG (issue dependencies) | FSM (node transitions)        |
+| **AI Integration**  | None                     | Claude Agent SDK              |
+| **Parallelization** | Matrix jobs              | Sequential nodes              |
+| **Persistence**     | Ephemeral                | Full checkpoint/resume        |
+| **Use Case**        | Manage issue queues      | Build multi-step AI workflows |
 
 ## Testing
 

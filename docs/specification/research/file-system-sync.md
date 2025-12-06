@@ -19,19 +19,21 @@ Foundry needs to read/write specification files to the local file system and wat
 ### File Watching Libraries
 
 **Sources:**
+
 - [Chokidar GitHub](https://github.com/paulmillr/chokidar)
 - [npm comparison: chokidar vs alternatives](https://npm-compare.com/chokidar,fsevents,gaze,node-watch,watch)
 
-| Library | Weekly Downloads | Cross-Platform | Recommendation |
-|---------|------------------|----------------|----------------|
-| chokidar | 50M+ | Yes | **Recommended** |
-| node-watch | 1M+ | Yes | Lightweight alternative |
-| watchpack | 15M+ | Yes | Webpack-focused |
-| gaze | 500K | Yes | Older, less maintained |
+| Library    | Weekly Downloads | Cross-Platform | Recommendation          |
+| ---------- | ---------------- | -------------- | ----------------------- |
+| chokidar   | 50M+             | Yes            | **Recommended**         |
+| node-watch | 1M+              | Yes            | Lightweight alternative |
+| watchpack  | 15M+             | Yes            | Webpack-focused         |
+| gaze       | 500K             | Yes            | Older, less maintained  |
 
 ### Chokidar (Recommended)
 
 **Why Chokidar:**
+
 - Used in ~30 million repositories
 - Battle-tested since 2012 (Brunch)
 - v4 (Sept 2024): Reduced dependencies from 13 to 1
@@ -39,11 +41,13 @@ Foundry needs to read/write specification files to the local file system and wat
 - Low CPU usage (no polling by default)
 
 **Platform-Specific Behavior:**
+
 - **macOS:** Uses FSEvents (native, efficient)
 - **Linux:** Uses inotify (native, efficient)
 - **Windows:** Uses ReadDirectoryChangesW (native)
 
 **Key Features:**
+
 - Recursive directory watching
 - Glob pattern support (v3, removed in v4)
 - Event debouncing
@@ -53,11 +57,13 @@ Foundry needs to read/write specification files to the local file system and wat
 ### Chokidar v4 Changes
 
 **Breaking Changes from v3:**
+
 - Glob support removed (use `picomatch` separately if needed)
 - Minimum Node.js version: 14
 - ESM/CommonJS dual support
 
 **For Foundry:**
+
 - We watch specific directories (`.foundry/`), not globs
 - v4's reduced dependencies is beneficial
 - Node 14+ requirement is acceptable
@@ -84,19 +90,20 @@ Foundry needs to read/write specification files to the local file system and wat
 
 ### Event Types to Handle
 
-| Event | Trigger | Action |
-|-------|---------|--------|
-| `add` | New file created | Load into state |
-| `change` | File modified | Reload file, update state |
-| `unlink` | File deleted | Remove from state |
-| `addDir` | New directory | Update navigation tree |
-| `unlinkDir` | Directory deleted | Update navigation tree |
+| Event       | Trigger           | Action                    |
+| ----------- | ----------------- | ------------------------- |
+| `add`       | New file created  | Load into state           |
+| `change`    | File modified     | Reload file, update state |
+| `unlink`    | File deleted      | Remove from state         |
+| `addDir`    | New directory     | Update navigation tree    |
+| `unlinkDir` | Directory deleted | Update navigation tree    |
 
 ### External Change Detection
 
 **Scenario:** User edits `.foundry/features/login.yaml` in VS Code while Foundry is open.
 
 **Handling Strategy:**
+
 1. Chokidar detects `change` event
 2. Compare file mtime with last known mtime
 3. If newer, read file content
@@ -126,6 +133,7 @@ Foundry needs to read/write specification files to the local file system and wat
 ### The Problem
 
 Non-atomic writes can cause:
+
 1. **Partial reads:** Watcher triggers before write completes
 2. **Data corruption:** Reader sees incomplete file
 3. **Race conditions:** Multiple processes writing
@@ -142,14 +150,17 @@ Non-atomic writes can cause:
 ### Implementation Considerations
 
 **POSIX (macOS, Linux):**
+
 - `rename()` is atomic within same filesystem
 - Use `fsync()` before rename for durability
 
 **Windows:**
+
 - `MoveFileEx` with `MOVEFILE_REPLACE_EXISTING` is atomic
 - Need to handle locked files (antivirus, etc.)
 
 **Chokidar Atomic Detection:**
+
 - Chokidar has `atomic` option for detecting write-rename pattern
 - Set `atomic: true` to coalesce rapid events
 
@@ -160,6 +171,7 @@ Non-atomic writes can cause:
 **Decision:** .foundry directory is created at Git root.
 
 **Detection Strategy:**
+
 ```
 1. Start from current working directory
 2. Walk up directory tree
@@ -171,6 +183,7 @@ Non-atomic writes can cause:
 ### Git Status Monitoring
 
 **What to Track:**
+
 - Current branch name
 - Ahead/behind counts
 - Staged files
@@ -179,6 +192,7 @@ Non-atomic writes can cause:
 - Conflict markers
 
 **Polling vs Events:**
+
 - Git doesn't have native file watching
 - Poll `git status` on:
   - App startup
@@ -189,6 +203,7 @@ Non-atomic writes can cause:
 ### Conflict Detection
 
 **Pre-Save Check:**
+
 ```
 1. Run `git status --porcelain`
 2. Check for conflict markers (UU, AA, DD, etc.)
@@ -205,15 +220,15 @@ Non-atomic writes can cause:
 
 ### Git Operations
 
-| Operation | Command | Notes |
-|-----------|---------|-------|
-| Status | `git status --porcelain` | Parse output |
-| Branch | `git branch --show-current` | Current branch name |
-| Branches | `git branch -a` | All branches |
-| Checkout | `git checkout <branch>` | Switch branch |
-| Pull | `git pull` | May cause conflicts |
-| Commit | `git commit -m "message"` | After staging |
-| Push | `git push` | May fail if behind |
+| Operation | Command                     | Notes               |
+| --------- | --------------------------- | ------------------- |
+| Status    | `git status --porcelain`    | Parse output        |
+| Branch    | `git branch --show-current` | Current branch name |
+| Branches  | `git branch -a`             | All branches        |
+| Checkout  | `git checkout <branch>`     | Switch branch       |
+| Pull      | `git pull`                  | May cause conflicts |
+| Commit    | `git commit -m "message"`   | After staging       |
+| Push      | `git push`                  | May fail if behind  |
 
 ## Open Questions
 
@@ -222,11 +237,13 @@ Non-atomic writes can cause:
 **Question:** Should Foundry lock files while editing?
 
 **Options:**
+
 1. **No locking:** Rely on conflict detection
 2. **Advisory locks:** Create .lock files
 3. **OS locks:** Use flock/lockfile
 
 **Recommendation:** No locking (option 1)
+
 - Simpler implementation
 - Users expect to edit files externally
 - Conflict detection is sufficient
@@ -236,11 +253,13 @@ Non-atomic writes can cause:
 **Question:** How long to debounce file events?
 
 **Considerations:**
+
 - Too short: Multiple events for single save
 - Too long: Sluggish UI updates
 - Editors save differently (VS Code atomic, vim temp files)
 
 **Recommendation:** 100-300ms debounce
+
 - Test with common editors
 - Make configurable if needed
 
@@ -249,6 +268,7 @@ Non-atomic writes can cause:
 **Question:** What if schema.dbml becomes very large?
 
 **Thresholds to Consider:**
+
 - < 100KB: Read entirely into memory
 - 100KB - 1MB: Stream with progress
 - > 1MB: Warn user, consider optimization
@@ -260,6 +280,7 @@ Non-atomic writes can cause:
 ### 1. Use Chokidar v4
 
 **Rationale:**
+
 - Industry standard
 - Minimal dependencies
 - Native performance
@@ -268,6 +289,7 @@ Non-atomic writes can cause:
 ### 2. Implement Write-Rename Pattern
 
 **Rationale:**
+
 - Prevents partial reads
 - Works cross-platform
 - Chokidar handles atomic detection
@@ -275,6 +297,7 @@ Non-atomic writes can cause:
 ### 3. Auto-Reload External Changes (When Safe)
 
 **Rationale:**
+
 - Better UX than always prompting
 - Only prompt on actual conflicts
 - Users expect live updates
@@ -282,6 +305,7 @@ Non-atomic writes can cause:
 ### 4. Poll Git Status (Don't Watch .git)
 
 **Rationale:**
+
 - .git directory changes frequently
 - Watching it causes noise
 - Polling on save/timer is sufficient
@@ -289,6 +313,7 @@ Non-atomic writes can cause:
 ### 5. Block Save on Git Conflicts
 
 **Rationale:**
+
 - Prevents data loss
 - Forces user to resolve properly
 - Clear UX (not hidden auto-merge)

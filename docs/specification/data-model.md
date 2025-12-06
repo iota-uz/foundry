@@ -11,19 +11,20 @@ nav_order: 5
 ## Overview
 
 Foundry uses a hybrid storage approach:
+
 - **File System:** Project structure, specs, artifacts (Git-trackable)
 - **SQLite:** Workflow checkpoints, undo stack, analysis results (local only)
 
 ## Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| File Format | YAML | Human-readable, good Git diffs, familiar to developers |
-| ID Format | Slug-based | Human-readable (e.g., `user-login`, `checkout`) |
-| ID Scope | Per-module | Same slug allowed in different modules |
-| ID Conflicts | Block + prompt | User chooses unique name |
-| Relationships | Bidirectional | Both sides store refs for navigation |
-| Schema Version | Global | Single version in project.yaml |
+| Decision       | Choice         | Rationale                                              |
+| -------------- | -------------- | ------------------------------------------------------ |
+| File Format    | YAML           | Human-readable, good Git diffs, familiar to developers |
+| ID Format      | Slug-based     | Human-readable (e.g., `user-login`, `checkout`)        |
+| ID Scope       | Per-module     | Same slug allowed in different modules                 |
+| ID Conflicts   | Block + prompt | User chooses unique name                               |
+| Relationships  | Bidirectional  | Both sides store refs for navigation                   |
+| Schema Version | Global         | Single version in project.yaml                         |
 
 ## File System Structure
 
@@ -71,6 +72,7 @@ project-root/
 ```
 
 **Key Changes from Original:**
+
 - Features organized under their module directories (scoped IDs)
 - Slug-based IDs (directory/file names are the IDs)
 - Bidirectional references between artifacts
@@ -80,40 +82,40 @@ project-root/
 ### project.yaml
 
 ```yaml
-id: "proj_abc123"
-name: "My SaaS App"
-description: "A project management tool for remote teams"
-mode: "new"                     # new | reverse_engineered
-phase: "cto"                    # cpo | clarify | cto | complete
-version: "1"
+id: 'proj_abc123'
+name: 'My SaaS App'
+description: 'A project management tool for remote teams'
+mode: 'new' # new | reverse_engineered
+phase: 'cto' # cpo | clarify | cto | complete
+version: '1'
 settings:
-  defaultBranch: "main"
+  defaultBranch: 'main'
   autoSave: true
   autoCommit: false
-createdAt: "2025-01-15T10:00:00Z"
-updatedAt: "2025-01-15T14:30:00Z"
+createdAt: '2025-01-15T10:00:00Z'
+updatedAt: '2025-01-15T14:30:00Z'
 ```
 
 ### Constitution File (constitution.yaml) - Optional (F6)
 
 ```yaml
-version: "1.0"
-createdAt: "2025-01-15T10:00:00Z"
-updatedAt: "2025-01-15T14:30:00Z"
+version: '1.0'
+createdAt: '2025-01-15T10:00:00Z'
+updatedAt: '2025-01-15T14:30:00Z'
 
 # Guiding principles for all AI decisions
 principles:
-  - "User data privacy is paramount"
-  - "Fail fast, fail gracefully"
-  - "Accessibility is not optional"
+  - 'User data privacy is paramount'
+  - 'Fail fast, fail gracefully'
+  - 'Accessibility is not optional'
 
 # Coding standards
 coding:
   naming:
-    functions: "snake_case"
-    classes: "PascalCase"
-    database_tables: "snake_case_singular"
-    database_columns: "snake_case"
+    functions: 'snake_case'
+    classes: 'PascalCase'
+    database_tables: 'snake_case_singular'
+    database_columns: 'snake_case'
   style:
     max_function_length: 50
     require_docstrings: true
@@ -121,30 +123,30 @@ coding:
 
 # Security requirements
 security:
-  authentication: "JWT with refresh tokens"
-  authorization: "Role-based access control"
-  input_validation: "Sanitize all user input at API boundary"
-  secrets: "Environment variables only, never hardcode"
-  password_hashing: "bcrypt with cost factor 12"
+  authentication: 'JWT with refresh tokens'
+  authorization: 'Role-based access control'
+  input_validation: 'Sanitize all user input at API boundary'
+  secrets: 'Environment variables only, never hardcode'
+  password_hashing: 'bcrypt with cost factor 12'
 
 # UX patterns
 ux:
-  error_format: "Include: what went wrong, why, how to fix"
-  loading_states: "Skeleton screens, not spinners"
-  accessibility: "WCAG 2.1 AA compliance"
-  responsive: "Mobile-first design"
+  error_format: 'Include: what went wrong, why, how to fix'
+  loading_states: 'Skeleton screens, not spinners'
+  accessibility: 'WCAG 2.1 AA compliance'
+  responsive: 'Mobile-first design'
 
 # Tech constraints
 constraints:
   allowed_libraries:
-    - "axios"
-    - "lodash"
-    - "date-fns"
+    - 'axios'
+    - 'lodash'
+    - 'date-fns'
   forbidden_libraries:
-    - "moment.js"
-    - "jquery"
-  node_version: ">=20.0.0"
-  typescript: "strict mode required"
+    - 'moment.js'
+    - 'jquery'
+  node_version: '>=20.0.0'
+  typescript: 'strict mode required'
 
 # Agent hooks (F12)
 hooks:
@@ -162,119 +164,119 @@ hooks:
         failOnWarning: false
 ```
 
-### Module File (modules/*.yaml)
+### Module File (modules/\*.yaml)
 
 ```yaml
-id: "mod_xyz789"
-name: "Authentication"
-description: "User authentication and authorization"
+id: 'mod_xyz789'
+name: 'Authentication'
+description: 'User authentication and authorization'
 order: 1
 features:
-  - "feat_login"
-  - "feat_register"
-  - "feat_password_reset"
-createdAt: "2025-01-15T10:30:00Z"
-updatedAt: "2025-01-15T12:00:00Z"
+  - 'feat_login'
+  - 'feat_register'
+  - 'feat_password_reset'
+createdAt: '2025-01-15T10:30:00Z'
+updatedAt: '2025-01-15T12:00:00Z'
 ```
 
-### Feature File (features/*.yaml)
+### Feature File (features/\*.yaml)
 
 ```yaml
-id: "feat_login"
-moduleId: "mod_xyz789"
-name: "User Login"
-description: "Allow users to authenticate with email/password"
-status: "completed"             # draft | in_progress | completed
-phase: "complete"               # cpo | clarify | cto | complete
-implemented: false              # true for features extracted via reverse engineering
-source: "new"                   # new | reverse_engineered
+id: 'feat_login'
+moduleId: 'mod_xyz789'
+name: 'User Login'
+description: 'Allow users to authenticate with email/password'
+status: 'completed' # draft | in_progress | completed
+phase: 'complete' # cpo | clarify | cto | complete
+implemented: false # true for features extracted via reverse engineering
+source: 'new' # new | reverse_engineered
 
 # Implementation files - populated for implemented features (reverse engineered)
 # Empty array for new features until they are implemented
 implementationFiles:
-  - path: "src/auth/login.ts"
-    description: "Login endpoint handler"
-  - path: "src/auth/auth.service.ts"
-    description: "Authentication service with password verification"
-  - path: "src/models/user.ts"
-    description: "User entity definition"
+  - path: 'src/auth/login.ts'
+    description: 'Login endpoint handler'
+  - path: 'src/auth/auth.service.ts'
+    description: 'Authentication service with password verification'
+  - path: 'src/models/user.ts'
+    description: 'User entity definition'
 
 # Business requirements (CPO phase)
 business:
-  userStory: "As a user, I want to log in so I can access my account"
+  userStory: 'As a user, I want to log in so I can access my account'
   acceptanceCriteria:
-    - "User can enter email and password"
-    - "Invalid credentials show error message"
-    - "Successful login redirects to dashboard"
-  priority: "high"
+    - 'User can enter email and password'
+    - 'Invalid credentials show error message'
+    - 'Successful login redirects to dashboard'
+  priority: 'high'
 
 # Technical details (CTO phase)
 technical:
   # References to unified schema entities
   schemaRefs:
-    - entity: "User"
-      usage: "Verify credentials"
-    - entity: "Session"
-      usage: "Create on successful login"
+    - entity: 'User'
+      usage: 'Verify credentials'
+    - entity: 'Session'
+      usage: 'Create on successful login'
 
   # References to API endpoints
   apiRefs:
-    - type: "rest"
-      method: "POST"
-      path: "/auth/login"
-    - type: "graphql"
-      operation: "mutation login"
+    - type: 'rest'
+      method: 'POST'
+      path: '/auth/login'
+    - type: 'graphql'
+      operation: 'mutation login'
 
   # References to UI components
   componentRefs:
-    - id: "comp_login_page"
-      type: "page"
-    - id: "comp_login_form"
-      type: "component"
+    - id: 'comp_login_page'
+      type: 'page'
+    - id: 'comp_login_form'
+      type: 'component'
 
 # Feature dependencies
 dependencies:
-  - "feat_user_management"      # Depends on user entity
+  - 'feat_user_management' # Depends on user entity
 
 # Implementation plan
 implementationPlan:
-  - id: "step_1"
+  - id: 'step_1'
     order: 1
-    title: "Create Session entity in database"
-    description: "Add sessions table with user_id, token, expires_at"
-    complexity: "low"
-  - id: "step_2"
+    title: 'Create Session entity in database'
+    description: 'Add sessions table with user_id, token, expires_at'
+    complexity: 'low'
+  - id: 'step_2'
     order: 2
-    title: "Implement login API endpoint"
-    description: "POST /auth/login - validate credentials, create session"
-    complexity: "medium"
-  - id: "step_3"
+    title: 'Implement login API endpoint'
+    description: 'POST /auth/login - validate credentials, create session'
+    complexity: 'medium'
+  - id: 'step_3'
     order: 3
-    title: "Build login page UI"
-    description: "Login form with email, password, error states"
-    complexity: "medium"
+    title: 'Build login page UI'
+    description: 'Login form with email, password, error states'
+    complexity: 'medium'
 
 # Task breakdown (F8) - auto-generated from implementationPlan
 tasks:
-  - id: "task_1"
-    title: "Create Session entity in database"
-    status: "completed"           # pending | in_progress | completed
-    complexity: "low"
+  - id: 'task_1'
+    title: 'Create Session entity in database'
+    status: 'completed' # pending | in_progress | completed
+    complexity: 'low'
     dependsOn: []
-    implementationStepId: "step_1"
-    completedAt: "2025-01-15T14:00:00Z"
-  - id: "task_2"
-    title: "Implement login API endpoint"
-    status: "in_progress"
-    complexity: "medium"
-    dependsOn: ["task_1"]
-    implementationStepId: "step_2"
-  - id: "task_3"
-    title: "Build login page UI"
-    status: "pending"
-    complexity: "medium"
-    dependsOn: ["task_2"]
-    implementationStepId: "step_3"
+    implementationStepId: 'step_1'
+    completedAt: '2025-01-15T14:00:00Z'
+  - id: 'task_2'
+    title: 'Implement login API endpoint'
+    status: 'in_progress'
+    complexity: 'medium'
+    dependsOn: ['task_1']
+    implementationStepId: 'step_2'
+  - id: 'task_3'
+    title: 'Build login page UI'
+    status: 'pending'
+    complexity: 'medium'
+    dependsOn: ['task_2']
+    implementationStepId: 'step_3'
 
 taskProgress:
   total: 3
@@ -285,28 +287,28 @@ taskProgress:
 
 # Implementation checklist (F10) - auto-generated from acceptanceCriteria
 checklist:
-  - id: "check_1"
-    criterion: "User can enter email and password"
-    source: "business.acceptanceCriteria.0"
+  - id: 'check_1'
+    criterion: 'User can enter email and password'
+    source: 'business.acceptanceCriteria.0'
     verified: true
-    verifiedAt: "2025-01-15T15:00:00Z"
-    verifiedBy: "user"
-    notes: "Tested on desktop and mobile"
-  - id: "check_2"
-    criterion: "Invalid credentials show error message"
-    source: "business.acceptanceCriteria.1"
+    verifiedAt: '2025-01-15T15:00:00Z'
+    verifiedBy: 'user'
+    notes: 'Tested on desktop and mobile'
+  - id: 'check_2'
+    criterion: 'Invalid credentials show error message'
+    source: 'business.acceptanceCriteria.1'
     verified: false
     verifiedAt: null
     verifiedBy: null
-    notes: ""
+    notes: ''
 
 checklistProgress:
   total: 2
   verified: 1
   percentComplete: 50
 
-createdAt: "2025-01-15T11:00:00Z"
-updatedAt: "2025-01-15T15:30:00Z"
+createdAt: '2025-01-15T11:00:00Z'
+updatedAt: '2025-01-15T15:30:00Z'
 ```
 
 ## SQLite Schema
@@ -361,6 +363,7 @@ erDiagram
 ### Tables
 
 #### workflow_checkpoints
+
 ```sql
 CREATE TABLE workflow_checkpoints (
   id TEXT PRIMARY KEY,
@@ -377,6 +380,7 @@ CREATE TABLE workflow_checkpoints (
 ```
 
 #### undo_history
+
 ```sql
 CREATE TABLE undo_history (
   id TEXT PRIMARY KEY,
@@ -390,6 +394,7 @@ CREATE TABLE undo_history (
 ```
 
 #### analysis_results
+
 ```sql
 CREATE TABLE analysis_results (
   id TEXT PRIMARY KEY,
@@ -417,6 +422,7 @@ CREATE INDEX idx_analysis_results_created ON analysis_results(created_at);
 See [decisions.md](decisions.md) D22 for detailed versioning approach.
 
 **Summary:**
+
 - All artifact files include `version: "1.0"` field
 - Schema version tracked globally in `project.yaml`
 - Breaking changes increment major version

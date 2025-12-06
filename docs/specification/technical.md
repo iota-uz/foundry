@@ -10,17 +10,17 @@ nav_order: 3
 
 ## Technology Stack
 
-| Layer | Technology | Rationale |
-|-------|------------|-----------|
-| Runtime | Node.js | Required for npm distribution |
-| Framework | Next.js 14+ (App Router) | Server components, API routes, file-based routing |
-| Styling | Tailwind CSS v4 + Headless UI | Utility-first, accessible components |
-| State | Zustand | Single source of truth, simple API |
-| AI | Claude Code SDK | Native tool support, streaming |
-| Diagrams | React Flow | Unified visualization for all diagram types |
-| API Docs | Scalar | Modern API documentation UI |
-| Storage | File System + SQLite | Specs as files, history in SQLite |
-| Distribution | npm package | `npx foundry` or global install |
+| Layer        | Technology                    | Rationale                                         |
+| ------------ | ----------------------------- | ------------------------------------------------- |
+| Runtime      | Node.js                       | Required for npm distribution                     |
+| Framework    | Next.js 14+ (App Router)      | Server components, API routes, file-based routing |
+| Styling      | Tailwind CSS v4 + Headless UI | Utility-first, accessible components              |
+| State        | Zustand                       | Single source of truth, simple API                |
+| AI           | Claude Code SDK               | Native tool support, streaming                    |
+| Diagrams     | React Flow                    | Unified visualization for all diagram types       |
+| API Docs     | Scalar                        | Modern API documentation UI                       |
+| Storage      | File System + SQLite          | Specs as files, history in SQLite                 |
+| Distribution | npm package                   | `npx foundry` or global install                   |
 
 ## Architecture Overview
 
@@ -212,12 +212,14 @@ foundry open [path]
 ### Hybrid Launch Mode
 
 **Development Mode (`foundry dev`):**
+
 - Runs Next.js dev server
 - Hot module replacement enabled
 - Source maps for debugging
 - Slower initial start, fast iteration
 
 **Production Mode (`foundry serve`):**
+
 - Serves pre-built static assets
 - Express server for API routes
 - Fast startup time
@@ -226,6 +228,7 @@ foundry open [path]
 ## AI Integration
 
 **See also:**
+
 - [research/claude-agent-sdk.md](research/claude-agent-sdk.md) - Integration patterns and capabilities
 - [research/claude-agent-sdk-apis.md](research/claude-agent-sdk-apis.md) - Complete API reference
 
@@ -268,6 +271,7 @@ Foundry uses a **workflow-based** architecture instead of agent-based. This prov
 ```
 
 **Phase Flow:**
+
 ```
 CPO Workflow → (auto) → Clarify Workflow → CTO Workflow
                               │
@@ -315,6 +319,7 @@ interface StepExecutor {
 ```
 
 **Checkpoint Strategy:**
+
 - Checkpoint saved after each step completion
 - On failure: state preserved at failed step
 - On resume: re-execute from checkpoint
@@ -323,18 +328,21 @@ interface StepExecutor {
 ## Error Handling
 
 ### AI Failures
+
 - Show error immediately with details
 - Provide "Retry" button
 - Log to conversation history for debugging
 - No auto-retry (user controls retry)
 
 ### Git Conflicts
+
 - Detect conflicts before save
 - Block save operation
 - Display conflict resolution guide
 - Link to external merge tool instructions
 
 ### Workflow Recovery
+
 - Full workflow state checkpointed to SQLite after each step
 - On browser close: state saved automatically at current step
 - On reopen: exact state restored, can resume from checkpoint
@@ -344,12 +352,14 @@ interface StepExecutor {
 ## Performance Considerations
 
 ### Large Codebase Analysis
+
 - Progressive streaming of results
 - Incremental UI updates as artifacts discovered
 - Cancelable analysis operation
 - Memory-efficient file processing
 
 ### Visualization Performance
+
 - React Flow virtualization for large diagrams
 - Lazy loading of node details
 - Debounced layout recalculation
@@ -416,20 +426,20 @@ hooks:
 
 ### Available Hook Events
 
-| Event | Triggered When |
-|-------|----------------|
-| `onFeatureSave` | Feature file saved (manual or AI) |
-| `onSchemaChange` | DBML schema modified |
-| `onAPIChange` | OpenAPI or GraphQL spec modified |
-| `onComponentChange` | UI component HTML modified |
-| `preCommit` | Before git commit operation |
+| Event               | Triggered When                    |
+| ------------------- | --------------------------------- |
+| `onFeatureSave`     | Feature file saved (manual or AI) |
+| `onSchemaChange`    | DBML schema modified              |
+| `onAPIChange`       | OpenAPI or GraphQL spec modified  |
+| `onComponentChange` | UI component HTML modified        |
+| `preCommit`         | Before git commit operation       |
 
 ### Available Hook Actions
 
-| Action | Description |
-|--------|-------------|
-| `validateSchema` | Validate DBML syntax and references |
+| Action            | Description                             |
+| ----------------- | --------------------------------------- |
+| `validateSchema`  | Validate DBML syntax and references     |
 | `updateChecklist` | Sync checklist with acceptance criteria |
-| `regenerateAPIs` | Update API specs from schema changes |
-| `runAnalyzer` | Run full consistency analyzer |
-| `notifyUser` | Show toast notification |
+| `regenerateAPIs`  | Update API specs from schema changes    |
+| `runAnalyzer`     | Run full consistency analyzer           |
+| `notifyUser`      | Show toast notification                 |

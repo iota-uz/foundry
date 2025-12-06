@@ -62,18 +62,18 @@ Always visible below top bar:
 
 **Leader Key Pattern:** `Cmd+K` (or `Ctrl+K` on Windows/Linux) as prefix to avoid browser conflicts.
 
-| Action | Shortcut | Notes |
-|--------|----------|-------|
-| Command Palette | `Cmd+K` | Opens command palette / acts as leader |
-| Save | `Cmd+K, S` | Save current artifact |
-| Undo | `Cmd+K, Z` | Undo last action |
-| Redo | `Cmd+K, Y` | Redo last undone action |
-| Search | `Cmd+K, F` | Global search |
-| New Feature | `Cmd+K, N` | Create new feature |
-| Toggle Sidebar | `Cmd+K, B` | Collapse/expand sidebar |
-| Toggle AI Panel | `Cmd+K, A` | Show/hide AI Q&A panel |
-| Decision Journal | `Cmd+K, J` | Open decision journal timeline |
-| Toggle Preview | `Cmd+K, P` | Toggle live spec preview panel |
+| Action           | Shortcut   | Notes                                  |
+| ---------------- | ---------- | -------------------------------------- |
+| Command Palette  | `Cmd+K`    | Opens command palette / acts as leader |
+| Save             | `Cmd+K, S` | Save current artifact                  |
+| Undo             | `Cmd+K, Z` | Undo last action                       |
+| Redo             | `Cmd+K, Y` | Redo last undone action                |
+| Search           | `Cmd+K, F` | Global search                          |
+| New Feature      | `Cmd+K, N` | Create new feature                     |
+| Toggle Sidebar   | `Cmd+K, B` | Collapse/expand sidebar                |
+| Toggle AI Panel  | `Cmd+K, A` | Show/hide AI Q&A panel                 |
+| Decision Journal | `Cmd+K, J` | Open decision journal timeline         |
+| Toggle Preview   | `Cmd+K, P` | Toggle live spec preview panel         |
 
 ## Color Palette (Dark Theme)
 
@@ -104,10 +104,12 @@ Border:
 **Minimum viewport:** 1024px width (desktop-first, no mobile support)
 
 **Breakpoints:**
+
 - 1024px - 1280px: Collapsed sidebar by default
 - 1280px+: Full sidebar visible
 
 **Panel priorities:**
+
 1. Main content (always visible)
 2. Sidebar (collapsible)
 3. AI panel (collapsible)
@@ -118,6 +120,7 @@ Border:
 ### Question Types
 
 **Single Choice:**
+
 ```
 ○ Option A
 ● Option B  ← selected (filled circle)
@@ -125,6 +128,7 @@ Border:
 ```
 
 **Multiple Choice:**
+
 ```
 ☐ Option A
 ☑ Option B  ← selected (checkbox)
@@ -135,20 +139,24 @@ Border:
 ### States
 
 **Loading:**
+
 - Skeleton loaders for content areas
 - Spinner with message for AI operations
 - Progress bar for codebase analysis
 
 **Empty:**
+
 - Illustrated empty states with clear CTA
 - "No features yet. [+ Add Feature]"
 
 **Error:**
+
 - Red banner at top of affected area
 - Clear error message + retry button
 - Link to troubleshooting if applicable
 
 **Success:**
+
 - Green toast notification (auto-dismiss 3s)
 - Subtle highlight on updated content
 

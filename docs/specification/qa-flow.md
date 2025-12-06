@@ -14,6 +14,7 @@ nav_order: 6
 The AI Q&A flow is the core interaction model for building specifications. This document details question types, navigation, phase transitions, and workflow state management.
 
 **Architecture:** Q&A is implemented as **workflows** (deterministic step sequences) rather than autonomous agents. This provides:
+
 - Predictable question progression through predefined topics
 - AI-generated questions within topic constraints
 - Clear progress tracking ("Question 8 of ~20")
@@ -27,13 +28,13 @@ The AI Q&A flow is the core interaction model for building specifications. This 
 
 ### Supported Input Types
 
-| Type | Use Case | Example |
-|------|----------|---------|
-| Single Choice | One option from list | "What database will you use?" |
-| Multiple Choice | Several options from list | "Which user roles exist?" |
-| Text Input | Names, descriptions | "What is the feature name?" |
-| Number Input | Quantities, limits | "Maximum file upload size (MB)?" |
-| Date Input | Deadlines, schedules | "Target launch date?" |
+| Type            | Use Case                  | Example                          |
+| --------------- | ------------------------- | -------------------------------- |
+| Single Choice   | One option from list      | "What database will you use?"    |
+| Multiple Choice | Several options from list | "Which user roles exist?"        |
+| Text Input      | Names, descriptions       | "What is the feature name?"      |
+| Number Input    | Quantities, limits        | "Maximum file upload size (MB)?" |
+| Date Input      | Deadlines, schedules      | "Target launch date?"            |
 
 ### Question Structure
 
@@ -42,26 +43,26 @@ interface AIQuestion {
   id: string;
   type: 'single_choice' | 'multiple_choice' | 'text' | 'number' | 'date';
   question: string;
-  description?: string;           // Additional context
-  options?: QuestionOption[];     // For choice questions
-  validation?: ValidationRule;    // For input questions
+  description?: string; // Additional context
+  options?: QuestionOption[]; // For choice questions
+  validation?: ValidationRule; // For input questions
   required: boolean;
   defaultValue?: any;
-  context?: string;               // Why AI is asking this
+  context?: string; // Why AI is asking this
 }
 
 interface QuestionOption {
   id: string;
   label: string;
   description?: string;
-  icon?: string;                  // Optional visual indicator
+  icon?: string; // Optional visual indicator
 }
 
 interface ValidationRule {
   min?: number;
   max?: number;
-  pattern?: string;               // Regex for text
-  message: string;                // Error message
+  pattern?: string; // Regex for text
+  message: string; // Error message
 }
 ```
 
@@ -70,6 +71,7 @@ interface ValidationRule {
 ### Full Navigation Model
 
 Users can:
+
 1. **Skip questions** - AI adapts, may ask later
 2. **Go back** - Revisit and change previous answers
 3. **Edit previous answers** - Triggers re-evaluation
@@ -105,6 +107,7 @@ When user clicks [Skip]:
 **CPO → Clarify (Automatic) → CTO**
 
 Key Difference from Agent Model:
+
 - Topics are predefined (workflow controls sequence)
 - Question content is AI-generated within topic constraints (bounded LLM call)
 - Generator workflows auto-invoke after relevant CTO topics
@@ -176,6 +179,7 @@ stateDiagram-v2
 **Trigger:** CPO workflow completes all topic loops.
 
 **Flow:**
+
 1. CPO workflow shows summary
 2. Highlights any gaps or [TBD] items
 3. **Transitions to Clarify workflow automatically**
@@ -188,6 +192,7 @@ stateDiagram-v2
 **Trigger:** Automatically invoked when CPO completes
 
 **Clarify Workflow Steps:**
+
 1. **Scan** - Rule-based detection of vague words and missing fields
 2. **Categorize** - LLM assigns severity and generates clarifying questions
 3. **Present** - Display ambiguity summary to user
@@ -197,6 +202,7 @@ stateDiagram-v2
 #### CTO → Generators (Automatic)
 
 After relevant CTO topics complete:
+
 - Data Model topic → Schema Generator Workflow
 - API Design topic → API Generator Workflow
 - UI Components topic → Component Generator Workflow
@@ -288,12 +294,14 @@ interface WorkflowCheckpoint {
 ### State Persistence
 
 **Checkpoint Timing:**
+
 - After each step completes
 - Persisted to SQLite via `workflow_checkpoints` table
 - On pause: Current state saved at paused step
 - On resume: State restored from checkpoint, ready to continue
 
 **Recovery on Browser Close:**
+
 - All session state saved to SQLite
 - On reopen: User can resume from exact checkpoint
 - Step-level granularity allows retry of individual steps
