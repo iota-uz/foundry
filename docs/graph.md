@@ -221,6 +221,125 @@ interface WorkflowState<TContext> {
 }
 ```
 
+### Data Flow Between Nodes
+
+State flows through the workflow as a single object that each node can read and modify:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         WorkflowState                                │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │ context: {                                                   │    │
+│  │   // User-defined fields (persist across all nodes)         │    │
+│  │   plan: { tasks: [...] },                                   │    │
+│  │   allTasksDone: false,                                      │    │
+│  │                                                              │    │
+│  │   // Auto-populated by node types                           │    │
+│  │   lastCommandResult: { exitCode, stdout, stderr },          │    │
+│  │   lastSlashCommandResult: { success, output, error },       │    │
+│  │   lastAgentResponse: "..."                                  │    │
+│  │ }                                                            │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+    ┌───────────────────────────────────┐
+    │           Node Execution           │
+    │                                    │
+    │  1. Receives current state         │
+    │  2. Performs work (AI/command)     │
+    │  3. Returns partial state update   │
+    │  4. Engine merges into state       │
+    └───────────────────────────────────┘
+                    │
+                    ▼
+    ┌───────────────────────────────────┐
+    │         Transition (next)          │
+    │                                    │
+    │  Receives updated state, returns   │
+    │  next node name or 'END'           │
+    └───────────────────────────────────┘
+```
+
+**How nodes communicate:**
+
+1. **Read from context** - Access data set by previous nodes:
+   ```typescript
+   next: (state) => {
+     // Read plan created by PLAN node
+     const plan = state.context.plan;
+     // Read result from previous command
+     const result = state.context.lastCommandResult;
+   }
+   ```
+
+2. **Write to context** - AgentNodes can update context via tool calls or structured output:
+   ```typescript
+   // Agent sets context.plan via a tool
+   tools: [{
+     name: 'save_plan',
+     schema: z.object({ tasks: z.array(z.string()) }),
+     execute: async (args) => {
+       // Tool result is available to the agent
+       return { saved: true, taskCount: args.tasks.length };
+     }
+   }]
+   ```
+
+3. **Auto-populated results** - Each node type automatically stores its result:
+
+   | Node Type | Result Key | Contains |
+   |-----------|------------|----------|
+   | `CommandNode` | `lastCommandResult` | `exitCode`, `stdout`, `stderr` |
+   | `SlashCommandNode` | `lastSlashCommandResult` | `success`, `output`, `error` |
+   | `AgentNode` | `lastAgentResponse` | Final agent response text |
+
+**Example: Complete data flow**
+
+```typescript
+defineWorkflow<{
+  plan?: { tasks: string[] };
+  currentTask?: string;
+  lastCommandResult?: CommandResult;
+  lastSlashCommandResult?: SlashCommandResult;
+}>({
+  id: 'example',
+  nodes: {
+    // Node 1: Creates a plan, stores in context.plan
+    PLAN: nodes.AgentNode({
+      role: 'planner',
+      system: 'Create a task plan. Output JSON: { "tasks": [...] }',
+      next: 'BUILD'
+    }),
+
+    // Node 2: Reads context.plan, runs command
+    BUILD: nodes.CommandNode({
+      command: 'bun build',
+      next: (state) => {
+        // CommandNode auto-populates lastCommandResult
+        if (state.context.lastCommandResult?.exitCode === 0) {
+          return 'TEST';
+        }
+        return 'FIX';
+      }
+    }),
+
+    // Node 3: Reads lastCommandResult if build failed
+    FIX: nodes.SlashCommandNode({
+      command: 'edit',
+      args: 'Fix the build errors shown in lastCommandResult.stderr',
+      next: 'BUILD'  // Loop back
+    }),
+
+    TEST: nodes.SlashCommandNode({
+      command: 'test',
+      args: 'Run tests',
+      next: 'END'
+    })
+  }
+});
+```
+
 ### Persistence
 
 State is automatically saved after each node execution:
