@@ -1,0 +1,54 @@
+# Foundry Documentation Site Configuration
+title: Foundry
+description: CLI-based technical specification constructor with AI-driven Q&A
+author: Foundry Team
+email: your-email@domain.com
+
+# Build settings
+theme: jekyll-theme-midnight
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    default_lang: html
+
+# GitHub Pages settings
+url: "https://iota-uz.github.io"
+baseurl: "/foundry"
+repository: iota-uz/foundry
+
+# Navigation
+navigation:
+  - title: Home
+    url: /
+  - title: Getting Started
+    url: /getting-started/
+  - title: Specification
+    url: /specification/
+  - title: Features
+    url: /features/
+  - title: Research
+    url: /research/
+
+# Search settings
+search_enabled: true
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Exclude from processing
+exclude:
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/

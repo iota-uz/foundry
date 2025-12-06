@@ -6,10 +6,10 @@ model: haiku
 ## Specs
 
 **Single-file:**
-!`ls -1 .claude/specs/*.md 2>/dev/null || echo "None"`
+!`ls -1 docs/specification/*.md 2>/dev/null || echo "None"`
 
 **Multi-file:**
-!`ls -d .claude/specs/*/ 2>/dev/null || echo "None"`
+!`ls -d docs/specification/*/ 2>/dev/null || echo "None"`
 
 ## Instructions
 

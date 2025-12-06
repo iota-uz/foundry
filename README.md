@@ -99,9 +99,10 @@ See `.env.example` for available configuration options.
 
 ## Documentation
 
-- **Specifications**: See `.claude/specs/foundry-core/` for full technical specifications
+- **Full Documentation**: Visit [https://iota-uz.github.io/foundry](https://iota-uz.github.io/foundry) (GitHub Pages)
+- **Specifications**: See `docs/specification/` for full technical specifications
 - **AI Context**: See `CLAUDE.md` for project context and AI instructions
-- **Architecture**: See `.claude/specs/foundry-core/technical.md` for detailed architecture
+- **Architecture**: See `docs/specification/technical.md` for detailed architecture
 
 ## Development Commands
 

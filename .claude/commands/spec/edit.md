@@ -9,14 +9,14 @@ You are editing an existing feature specification. Suggest changes, never decide
 
 ## Available Specs
 
-Single-file: !`ls -1 .claude/specs/*.md 2>/dev/null | xargs -I {} basename {} .md || echo "None"`
-Multi-file: !`ls -d .claude/specs/*/ 2>/dev/null | xargs -I {} basename {} || echo "None"`
+Single-file: !`ls -1 docs/specification/*.md 2>/dev/null | xargs -I {} basename {} .md || echo "None"`
+Multi-file: !`ls -d docs/specification/*/ 2>/dev/null | xargs -I {} basename {} || echo "None"`
 
 ## Step 1: Load Spec
 
 Spec argument: $1
 
-- If `$1` provided: Load `.claude/specs/$1/` (directory) or `.claude/specs/$1.md` (file)
+- If `$1` provided: Load `docs/specification/$1/` (directory) or `docs/specification/$1.md` (file)
 - If empty or not found: Use `AskUserQuestion` to select from available specs
 
 ## Step 2: Detect Structure

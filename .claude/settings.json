@@ -147,7 +147,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "mkdir -p .claude/dumps .claude/backlog .claude/specs"
+            "command": "mkdir -p .claude/dumps .claude/backlog docs/specification"
           }
         ]
       }
