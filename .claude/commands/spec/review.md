@@ -9,14 +9,14 @@ You are reviewing a specification for completeness and readiness for implementat
 
 ## Available Specs
 
-Single-file: !`ls -1 .claude/specs/*.md 2>/dev/null | xargs -I {} basename {} .md || echo "None"`
-Multi-file: !`ls -d .claude/specs/*/ 2>/dev/null | xargs -I {} basename {} || echo "None"`
+Single-file: !`ls -1 docs/specification/*.md 2>/dev/null | xargs -I {} basename {} .md || echo "None"`
+Multi-file: !`ls -d docs/specification/*/ 2>/dev/null | xargs -I {} basename {} || echo "None"`
 
 ## Step 1: Load Spec
 
 Spec argument: $1
 
-- If `$1` provided: Load `.claude/specs/$1/` or `.claude/specs/$1.md`
+- If `$1` provided: Load `docs/specification/$1/` or `docs/specification/$1.md`
 - If empty: Use `AskUserQuestion` to select from available specs
 
 ## Step 2: Completeness Check
@@ -89,4 +89,4 @@ If approved:
 2. Add approval date (format: YYYY-MM-DD)
 3. For multi-file: update `index.md` status
 
-Confirm: "Spec approved: `.claude/specs/{name}` - Ready for `/backlog:add`"
+Confirm: "Spec approved: `docs/specification/{name}` - Ready for `/backlog:add`"

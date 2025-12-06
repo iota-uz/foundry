@@ -120,11 +120,11 @@ Think very hard about what could go wrong. Ask about relevant scenarios (skip in
 ## Phase 8: Generate Spec
 
 **Single-file:** Use template @.claude/guides/spec/single-file.md
-Save to `.claude/specs/{feature-name}.md`
+Save to `docs/specification/{feature-name}.md`
 
 **Multi-file:**
 
-1. Create directory `.claude/specs/{feature-name}/`
+1. Create directory `docs/specification/{feature-name}/`
 2. Create index.md using @.claude/guides/spec/index.md
 3. Create each document using corresponding template from `.claude/guides/spec/`
 

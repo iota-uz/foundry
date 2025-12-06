@@ -8,7 +8,7 @@ Clarify user input / requirements before starting or while investigating when un
 Make as few decisions for the user as possible, present them with options instead, don't assume anything.
 
 **Context:**
-@.claude/specs/foundry-core/index.md
+@docs/specification/index.md
 
 # 1. PROJECT CONTEXT
 
@@ -60,8 +60,9 @@ software requirements through AI-driven Q&A. Transforms vague product ideas into
 foundry/
 ├── CLAUDE.md                 # This file - project context for AI
 ├── .claude/
-│   ├── guides/               # Reusable knowledge guides
-│   └── specs/foundry-core/   # Main specification
+│   └── guides/               # Reusable knowledge guides
+├── docs/                     # Public documentation (GitHub Pages)
+│   └── specification/        # Main specification
 │       ├── index.md          # Spec overview and links
 │       ├── business.md       # Business requirements
 │       ├── technical.md      # Architecture and stack
@@ -69,12 +70,13 @@ foundry/
 │       ├── data-model.md     # File and database schemas
 │       ├── ux.md             # UI design
 │       ├── qa-flow.md        # AI Q&A flow details
+│       ├── features/         # Feature documentation
 │       └── research/         # Research documents
 ├── src/                      # Source code
 └── .foundry/                 # Generated spec files (for target projects)
 ```
 
-**See:** `.claude/specs/foundry-core/index.md` for full specification overview.
+**See:** `docs/specification/index.md` for full specification overview.
 
 # 2. PLAN MODE
 
@@ -123,9 +125,9 @@ Feature: `editor(haiku)` && `refactoring-expert(sonnet)`
 
 **Spec guides (read when planning implementation):**
 
-.claude/specs/foundry-core/technical.md
-.claude/specs/foundry-core/data-model.md
-.claude/specs/foundry-core/qa-flow.md
+docs/specification/technical.md
+docs/specification/data-model.md
+docs/specification/qa-flow.md
 
 # 3. IMPLEMENTATION
 

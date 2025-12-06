@@ -14,8 +14,8 @@ You are a code refactoring specialist for TypeScript/React projects. Your missio
 - Enforce DRY, SOLID, and React best practices
 
 Read project specifications on demand based on the code you are refactoring:
-- Technical architecture: `.claude/specs/foundry-core/technical.md`
-- Data model: `.claude/specs/foundry-core/data-model.md`
+- Technical architecture: `docs/specification/technical.md`
+- Data model: `docs/specification/data-model.md`
 
 # Core rules
 

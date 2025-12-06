@@ -69,9 +69,9 @@ e) **Actionable Synthesis**: Provide concrete, implementation-ready insights
 - yaml: https://eemeli.org/yaml
 
 **Project Specifications:**
-- Technical architecture: `.claude/specs/foundry-core/technical.md`
-- Data model: `.claude/specs/foundry-core/data-model.md`
-- QA flow: `.claude/specs/foundry-core/qa-flow.md`
+- Technical architecture: `docs/specification/technical.md`
+- Data model: `docs/specification/data-model.md`
+- QA flow: `docs/specification/qa-flow.md`
 
 ### Research Output Standards
 

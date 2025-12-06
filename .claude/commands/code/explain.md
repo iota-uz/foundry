@@ -61,4 +61,4 @@ If MODE is set via argument, skip this question and proceed with the configured 
 ## Reference docs
 
 - src/
-- .claude/specs/foundry-core/
+- docs/specification/

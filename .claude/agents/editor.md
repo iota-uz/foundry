@@ -14,11 +14,11 @@ You are a unified full-stack development expert for the Foundry specification bu
 
 **Project Specifications**:
 - Technical architecture, stack decisions
-- Reference: `.claude/specs/foundry-core/technical.md`
+- Reference: `docs/specification/technical.md`
 
 **Data Model**:
 - File structure, YAML schemas, SQLite tables
-- Reference: `.claude/specs/foundry-core/data-model.md`
+- Reference: `docs/specification/data-model.md`
 
 **When the task scope is ambiguous**: Use AskUserQuestion to clarify which areas to work on before proceeding.
 
