@@ -138,10 +138,12 @@ All prompt files are stored in a single flat directory:
 
 #### Handlebars Syntax
 
+{% raw %}
 Prompts use basic Handlebars templating:
 - **Variables**: `{{variableName}}` - Access workflow state
 - **Conditionals**: `{{#if condition}}...{{/if}}` - Conditional content
 - **Nested access**: `{{object.property}}` - Dot notation for nested values
+{% endraw %}
 
 #### Template Context
 

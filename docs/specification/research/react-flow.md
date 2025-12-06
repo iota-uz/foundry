@@ -81,6 +81,7 @@ const loadTableSchema = async (tableId) => {
 **Architecture:** Each handle needs a unique `id` prop. Position them dynamically using inline styles.
 
 **Pattern for ERD Tables:**
+{% raw %}
 ```jsx
 export const DatabaseTableNode = ({ id, data }) => {
   const foreignKeyFields = data.fields.filter(f => f.isForeignKey);
@@ -122,6 +123,7 @@ export const DatabaseTableNode = ({ id, data }) => {
   );
 };
 ```
+{% endraw %}
 
 **Dynamic Positioning Gotcha:**
 - If handle positions change (e.g., window resize, field reordering), call `updateNodeInternals(nodeId)`
