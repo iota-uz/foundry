@@ -101,11 +101,11 @@
               </svg>
             </button>
             <ul class="nav-children">
-              <li class="nav-item {% if page.url == '/graph.html' or page.url == '/graph' %}active{% endif %}">
-                <a href="{{ '/graph.html' | relative_url }}" class="nav-link">Overview</a>
+              <li class="nav-item {% if page.url == '/graph/' or page.url == '/graph/index.html' %}active{% endif %}">
+                <a href="{{ '/graph/' | relative_url }}" class="nav-link">Overview</a>
               </li>
-              <li class="nav-item {% if page.url contains '/graph-custom-nodes' %}active{% endif %}">
-                <a href="{{ '/graph-custom-nodes.html' | relative_url }}" class="nav-link">Custom Nodes</a>
+              <li class="nav-item {% if page.url contains '/graph/custom-nodes' %}active{% endif %}">
+                <a href="{{ '/graph/custom-nodes.html' | relative_url }}" class="nav-link">Custom Nodes</a>
               </li>
             </ul>
           </div>
