@@ -19,7 +19,7 @@
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     {% include head-custom.html %}
   </head>
-  <body>
+  <body class="gradient-bg">
       <div id="header">
         <nav>
           <ul>
@@ -57,17 +57,24 @@
     </div>
 
     <script>
-      // Initialize Mermaid with dark theme (don't start automatically)
+      // Initialize Mermaid with Linear-inspired dark theme
       mermaid.initialize({
         startOnLoad: false,
         theme: 'dark',
         themeVariables: {
-          primaryColor: '#1a3a5c',
-          primaryTextColor: '#fff',
-          primaryBorderColor: '#87ceeb',
-          lineColor: '#87ceeb',
-          secondaryColor: '#0d0d0d',
-          tertiaryColor: '#1a1a1a'
+          primaryColor: '#1c1c1f',
+          primaryTextColor: '#fafafa',
+          primaryBorderColor: '#818cf8',
+          lineColor: '#818cf8',
+          secondaryColor: '#111113',
+          tertiaryColor: '#18181b',
+          background: '#0a0a0b',
+          mainBkg: '#1c1c1f',
+          nodeBorder: '#818cf8',
+          clusterBkg: '#18181b',
+          clusterBorder: 'rgba(255, 255, 255, 0.08)',
+          titleColor: '#fafafa',
+          edgeLabelBackground: '#18181b'
         }
       });
 
