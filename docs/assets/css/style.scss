@@ -36,10 +36,10 @@
 
 /* Sidebar */
 .sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: 280px;
+  min-width: 280px;
   background: #0d0d0d;
-  border-right: 1px solid #333;
+  border-right: 1px solid #222;
   padding: 20px 0;
   position: sticky;
   top: 0;
@@ -62,13 +62,13 @@
 
 .sidebar-header {
   padding: 0 20px 20px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #222;
   margin-bottom: 15px;
 }
 
 .sidebar-title {
-  font-size: 1.5em;
-  font-weight: bold;
+  font-size: 1.4em;
+  font-weight: 600;
   color: #87ceeb;
   text-decoration: none;
 
@@ -79,51 +79,182 @@
 
 /* Navigation */
 .sidebar-nav {
-  padding: 0 15px;
+  padding: 0 12px;
 }
 
-.nav-section {
+.nav-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.nav-group {
-  margin-top: 20px;
+/* Navigation Icons */
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
-.nav-group-title {
-  font-size: 0.75em;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #888;
-  margin: 0 0 8px 5px;
-  font-weight: 600;
+/* Navigation Links */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  color: #b0b0b0;
+  text-decoration: none;
+  font-size: 0.9em;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #1a1a1a;
+    color: #fff;
+
+    .nav-icon {
+      opacity: 1;
+    }
+  }
 }
 
+/* Navigation Items */
 .nav-item {
   margin: 2px 0;
 
-  a {
-    display: block;
-    padding: 6px 10px;
-    color: #ccc;
-    text-decoration: none;
-    font-size: 0.9em;
-    border-radius: 4px;
-    transition: all 0.2s;
+  &.active > .nav-link {
+    background: linear-gradient(135deg, #1a3a5c 0%, #1a3a4a 100%);
+    color: #87ceeb;
+    font-weight: 500;
 
-    &:hover {
-      background: #252525;
-      color: #fff;
+    .nav-icon {
+      opacity: 1;
+      color: #87ceeb;
+    }
+  }
+}
+
+/* Collapsible Navigation Groups */
+.nav-group {
+  margin: 4px 0;
+}
+
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: #b0b0b0;
+  font-size: 0.9em;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #1a1a1a;
+    color: #fff;
+
+    .nav-icon {
+      opacity: 1;
     }
   }
 
-  &.active a {
-    background: #1a3a4a;
-    color: #87ceeb;
-    font-weight: 500;
+  span {
+    flex: 1;
   }
+}
+
+/* Chevron icon */
+.nav-chevron {
+  width: 16px;
+  height: 16px;
+  opacity: 0.5;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+/* Collapsed state (default) */
+.nav-group .nav-children {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0;
+  overflow: hidden;
+}
+
+/* Expanded state */
+.nav-group.open {
+  .nav-chevron {
+    transform: rotate(180deg);
+    opacity: 0.8;
+  }
+
+  .nav-children {
+    display: block;
+  }
+
+  .nav-group-toggle {
+    color: #e0e0e0;
+
+    .nav-icon {
+      opacity: 1;
+      color: #87ceeb;
+    }
+  }
+}
+
+/* Nested items styling */
+.nav-children {
+  .nav-item {
+    margin: 1px 0;
+  }
+
+  .nav-link {
+    padding: 8px 12px 8px 40px;
+    font-size: 0.85em;
+    color: #909090;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #404040;
+      transition: all 0.15s ease;
+    }
+
+    &:hover {
+      color: #fff;
+
+      &::before {
+        background: #666;
+      }
+    }
+  }
+
+  .nav-item.active .nav-link {
+    color: #87ceeb;
+    background: rgba(135, 206, 235, 0.1);
+
+    &::before {
+      background: #87ceeb;
+    }
+  }
+}
+
+/* Active group highlight */
+.nav-group.open > .nav-group-toggle {
+  background: rgba(135, 206, 235, 0.05);
 }
 
 /* Main Content */
@@ -168,7 +299,7 @@
 
   .sidebar {
     position: fixed;
-    left: -280px;
+    left: -300px;
     top: 0;
     z-index: 1000;
     transition: left 0.3s ease;
@@ -201,8 +332,8 @@
   }
 
   .sidebar {
-    width: 240px;
-    min-width: 240px;
+    width: 260px;
+    min-width: 260px;
   }
 }
 
