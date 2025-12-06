@@ -51,6 +51,7 @@ function createMockResolved(
     blockedBy: [],
     priority,
     priorityScore: getPriorityScore(priority),
+    isLeaf: true,
   };
 }
 

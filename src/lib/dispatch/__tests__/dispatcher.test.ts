@@ -23,15 +23,22 @@ function createMockIssue(
     htmlUrl: opts.htmlUrl ?? `https://github.com/owner/repo/issues/${number}`,
     owner: opts.owner ?? 'owner',
     repo: opts.repo ?? 'repo',
+    subIssueNumbers: opts.subIssueNumbers ?? [],
+    parentIssueNumber: opts.parentIssueNumber ?? null,
   };
 }
 
 function createMockResolved(
   number: number,
   priority: PriorityLevel = 'none',
-  title?: string
+  title?: string,
+  opts: { isLeaf?: boolean; parentIssueNumber?: number | null; subIssueNumbers?: number[] } = {}
 ): ResolvedIssue {
-  const issue = createMockIssue(number, { title: title ?? `Issue #${number}` });
+  const issue = createMockIssue(number, {
+    title: title ?? `Issue #${number}`,
+    parentIssueNumber: opts.parentIssueNumber ?? null,
+    subIssueNumbers: opts.subIssueNumbers ?? [],
+  });
   return {
     issue,
     status: 'READY',
@@ -39,6 +46,7 @@ function createMockResolved(
     blockedBy: [],
     priority,
     priorityScore: getPriorityScore(priority),
+    isLeaf: opts.isLeaf ?? true,
   };
 }
 
@@ -121,8 +129,8 @@ describe('dispatcher', () => {
 
       expect(summary).toContain('DISPATCH SUMMARY');
       expect(summary).toContain('Total Issues: 5');
-      expect(summary).toContain('Ready Issues: 2');
-      expect(summary).toContain('READY FOR EXECUTION');
+      expect(summary).toContain('Ready Leaf Issues: 2');
+      expect(summary).toContain('READY FOR EXECUTION (leaf issues only)');
       expect(summary).toContain('Ready issue 1');
     });
 
@@ -216,6 +224,97 @@ describe('dispatcher', () => {
       expect(summary).toContain('MATRIX OUTPUT');
       expect(summary).toContain('"include"');
       expect(summary).toContain('"issue_number": 1');
+    });
+  });
+
+  describe('sub-issues support', () => {
+    const config = {
+      token: 'token',
+      owner: 'iota-uz',
+      repo: 'foundry',
+    };
+
+    it('should include parent_issue_number in matrix entries', () => {
+      const childIssue = createMockResolved(11, 'high', 'Child issue', {
+        isLeaf: true,
+        parentIssueNumber: 10,
+      });
+
+      const matrix = generateMatrix([childIssue], config);
+
+      expect(matrix.include).toHaveLength(1);
+      expect(matrix.include[0]?.parent_issue_number).toBe(10);
+    });
+
+    it('should set parent_issue_number to null for root issues', () => {
+      const rootIssue = createMockResolved(1, 'none', 'Root issue', {
+        isLeaf: true,
+        parentIssueNumber: null,
+      });
+
+      const matrix = generateMatrix([rootIssue], config);
+
+      expect(matrix.include[0]?.parent_issue_number).toBeNull();
+    });
+
+    it('should format sub-issues with parent info in summary', () => {
+      const childIssue = createMockResolved(11, 'high', 'Child task', {
+        isLeaf: true,
+        parentIssueNumber: 10,
+      });
+
+      const result: DispatchResult = {
+        totalIssues: 2,
+        readyIssues: [childIssue],
+        blockedIssues: [],
+        cycleWarnings: [],
+        matrix: {
+          include: [
+            {
+              issue_number: 11,
+              title: 'Child task',
+              priority: 'high',
+              priority_score: 1,
+              repository: 'owner/repo',
+              url: 'https://github.com/owner/repo/issues/11',
+              parent_issue_number: 10,
+            },
+          ],
+        },
+        timestamp: '2024-01-01T00:00:00.000Z',
+        dryRun: false,
+      };
+
+      const summary = formatResultSummary(result);
+
+      expect(summary).toContain('(child of #10)');
+    });
+
+    it('should mark parent issues as PARENT in blocked list', () => {
+      const parentIssue = createMockResolved(10, 'none', 'Parent epic', {
+        isLeaf: false,
+        subIssueNumbers: [11, 12],
+      });
+      parentIssue.status = 'BLOCKED';
+      parentIssue.blockedBy = [
+        { owner: 'owner', repo: 'repo', number: 11 },
+        { owner: 'owner', repo: 'repo', number: 12 },
+      ];
+
+      const result: DispatchResult = {
+        totalIssues: 3,
+        readyIssues: [],
+        blockedIssues: [parentIssue],
+        cycleWarnings: [],
+        matrix: { include: [] },
+        timestamp: '2024-01-01T00:00:00.000Z',
+        dryRun: false,
+      };
+
+      const summary = formatResultSummary(result);
+
+      expect(summary).toContain('[PARENT]');
+      expect(summary).toContain('Parent epic');
     });
   });
 });

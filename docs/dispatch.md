@@ -122,6 +122,44 @@ After #100, owner/repo#101
 
 Multiple dependencies can be comma-separated on a single line.
 
+## GitHub Sub-Issues Support
+
+The dispatcher natively supports GitHub's sub-issues feature, automatically fetching parent-child relationships from the GitHub API.
+
+### How It Works
+
+1. **Automatic Detection**: The dispatcher fetches sub-issue relationships for all queued issues using GitHub's REST API
+2. **Implicit Dependencies**: Parent issues are automatically blocked by their sub-issues (children must close before parent becomes ready)
+3. **Leaf-Only Dispatch**: Only leaf issues (issues without sub-issues) are dispatched to workers
+
+### Example Hierarchy
+
+```
+#10 Epic: User Authentication [BLOCKED - has sub-issues]
+├── #11 Implement login API [READY - leaf]
+├── #12 Implement logout API [READY - leaf]
+└── #13 Add session management [READY - leaf]
+```
+
+In this example:
+- Issue #10 is BLOCKED because it has open sub-issues (#11, #12, #13)
+- Issues #11, #12, #13 are READY and will be dispatched (they are leaf issues)
+- When all sub-issues are closed, #10 becomes READY but won't be dispatched (it's a parent)
+
+### Behavior Summary
+
+| Issue Type | Has Sub-Issues | Status When Children Open | Dispatched? |
+|------------|----------------|---------------------------|-------------|
+| Leaf       | No             | READY (if no other deps)  | Yes         |
+| Parent     | Yes            | BLOCKED                   | Never       |
+| Parent     | Yes (all closed) | READY                   | Never       |
+
+### Limitations
+
+- **Same repo only**: Sub-issues are only fetched from the same repository
+- **One parent**: GitHub sub-issues support only one parent per issue
+- **API calls**: Each issue requires 2 additional API calls (sub-issues + parent)
+
 ## Priority Labels
 
 Issues are prioritized based on labels:
@@ -217,11 +255,14 @@ jobs:
       "priority": "high",
       "priority_score": 1,
       "repository": "iota-uz/foundry",
-      "url": "https://github.com/iota-uz/foundry/issues/123"
+      "url": "https://github.com/iota-uz/foundry/issues/123",
+      "parent_issue_number": 100
     }
   ]
 }
 ```
+
+The `parent_issue_number` field is included when the issue is a sub-issue of another issue (null otherwise).
 
 ## Key Types
 
@@ -236,11 +277,34 @@ interface DispatchConfig {
   verbose?: boolean;
 }
 
+// Queued issue with sub-issue info
+interface QueuedIssue {
+  number: number;
+  title: string;
+  body: string;
+  state: 'open' | 'closed';
+  labels: string[];
+  subIssueNumbers?: number[]; // Child issue numbers
+  parentIssueNumber?: number | null; // Parent issue number
+  // ... other fields
+}
+
 // Issue dependency references
 interface DependencyRef {
   owner: string; // Can span repos
   repo: string;
   number: number;
+}
+
+// Resolved issue with computed status
+interface ResolvedIssue {
+  issue: QueuedIssue;
+  status: IssueStatus;
+  dependencies: DependencyRef[];
+  blockedBy: DependencyRef[];
+  priority: PriorityLevel;
+  priorityScore: number;
+  isLeaf: boolean; // True if no sub-issues (dispatchable)
 }
 
 // DAG Node representation
