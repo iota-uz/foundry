@@ -68,6 +68,18 @@
     </div>
 
     <div class="nav-group">
+      <h3 class="nav-group-title">Frameworks</h3>
+      <ul class="nav-section">
+        <li class="nav-item {% if page.url contains '/dispatch' %}active{% endif %}">
+          <a href="{{ '/dispatch.html' | relative_url }}">Issue Dispatcher</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/graph' %}active{% endif %}">
+          <a href="{{ '/graph.html' | relative_url }}">Graph Engine</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="nav-group">
       <h3 class="nav-group-title">Research</h3>
       <ul class="nav-section">
         <li class="nav-item {% if page.url contains '/research/claude-agent-sdk' and page.url != '/specification/research/claude-agent-sdk-apis.html' %}active{% endif %}">
