@@ -11,12 +11,12 @@ import {
   type BaseNodeConfig,
   type NodeExecutionResult,
   NodeExecutionError,
-} from './base';
+} from '../base';
 import type {
   WorkflowState,
   GraphContext,
   Transition,
-} from '../types';
+} from '../../types';
 
 /**
  * Result of a shell command execution.

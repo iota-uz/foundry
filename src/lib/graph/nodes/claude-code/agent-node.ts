@@ -16,14 +16,14 @@ import {
   type NodeExecutionResult,
   isInlineToolDefinition,
   NodeExecutionError,
-} from './base';
+} from '../base';
 import type {
   WorkflowState,
   GraphContext,
   Transition,
   ToolReference,
   InlineToolDefinition,
-} from '../types';
+} from '../../types';
 
 /**
  * Configuration for AgentNode.

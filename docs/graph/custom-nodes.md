@@ -1,51 +1,42 @@
 ---
 layout: default
 title: Custom Nodes
-nav_order: 32
 parent: Graph Workflow Engine
-description: 'Creating custom node types for the Graph Workflow Engine'
+nav_order: 5
+description: 'Creating custom node types'
 ---
 
-# Creating Custom Nodes
+# Custom Nodes
 
-Extend the Graph Workflow Engine by creating custom node types for specialized behavior.
+Extend the Graph Engine by creating custom node types for specialized behavior.
 
-## Overview
+## When to Create Custom Nodes
 
-While the built-in node types (`AgentNode`, `CommandNode`, `SlashCommandNode`) cover most use cases, you can create custom nodes for:
+Create custom nodes for:
 
 - Specialized integrations (databases, APIs, external services)
 - Complex business logic that doesn't fit the agent model
 - Performance-critical operations
 - Custom error handling and retry strategies
 
-## Node Architecture
+## Node Interface
 
 Every node implements the `GraphNode` interface:
 
 ```typescript
 interface GraphNode<TState extends BaseState> {
-  /** Unique identifier for this node */
   name: string;
 
-  /**
-   * Execute the node's business logic.
-   * @param state - Current workflow state
-   * @param context - Execution context with agent and logger
-   * @returns Partial state to merge with current state
-   */
-  execute(state: TState, context: GraphContext): Promise<Partial<TState>>;
+  execute(
+    state: TState,
+    context: GraphContext
+  ): Promise<Partial<TState>>;
 
-  /**
-   * Determine the next node based on updated state.
-   * @param state - State after execution
-   * @returns Next node name or 'END' to terminate
-   */
   next(state: TState): string;
 }
 ```
 
-## Creating a Custom Node
+## Basic Custom Node
 
 ### Step 1: Define the Node Class
 
@@ -53,15 +44,10 @@ interface GraphNode<TState extends BaseState> {
 import type { GraphNode, GraphContext, WorkflowState } from '@sys/graph';
 
 interface HttpNodeConfig<TContext extends Record<string, unknown>> {
-  /** HTTP method */
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  /** URL to fetch (can use template variables) */
   url: string;
-  /** Optional request body */
   body?: Record<string, unknown>;
-  /** Key to store response in context */
   resultKey: string;
-  /** Transition configuration */
   next: string | ((state: WorkflowState<TContext>) => string);
 }
 
@@ -123,7 +109,7 @@ class HttpNode<TContext extends Record<string, unknown>>
 }
 ```
 
-### Step 2: Create a Factory Function
+### Step 2: Create Factory Function
 
 ```typescript
 export function createHttpNode<TContext extends Record<string, unknown>>(
@@ -137,10 +123,6 @@ export function createHttpNode<TContext extends Record<string, unknown>>(
 ### Step 3: Use in Workflow
 
 ```typescript
-import { GraphEngine } from '@sys/graph';
-import { createHttpNode } from './http-node';
-
-// Create custom node
 const fetchUserNode = createHttpNode('FETCH_USER', {
   method: 'GET',
   url: 'https://api.example.com/users/123',
@@ -152,35 +134,25 @@ const fetchUserNode = createHttpNode('FETCH_USER', {
     return 'HANDLE_ERROR';
   },
 });
-
-// Register with engine
-const engine = new GraphEngine({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-  nodes: {
-    FETCH_USER: fetchUserNode,
-    PROCESS_USER: processUserNode,
-    HANDLE_ERROR: handleErrorNode,
-  },
-});
 ```
 
 ## Extending Built-in Nodes
 
-You can extend the existing runtime classes for specialized behavior:
+Extend existing runtime classes for specialized behavior:
 
 ```typescript
 import { AgentNodeRuntime, type AgentNodeConfig } from '@sys/graph/nodes';
 
-class RetryAgentNode<TContext extends Record<string, unknown>> extends AgentNodeRuntime<TContext> {
+class RetryAgentNode<TContext extends Record<string, unknown>>
+  extends AgentNodeRuntime<TContext>
+{
   private maxRetries: number;
   private retryDelay: number;
 
-  constructor(
-    config: AgentNodeConfig<TContext> & {
-      maxRetries?: number;
-      retryDelay?: number;
-    }
-  ) {
+  constructor(config: AgentNodeConfig<TContext> & {
+    maxRetries?: number;
+    retryDelay?: number;
+  }) {
     super(config);
     this.maxRetries = config.maxRetries ?? 3;
     this.retryDelay = config.retryDelay ?? 1000;
@@ -198,11 +170,11 @@ class RetryAgentNode<TContext extends Record<string, unknown>> extends AgentNode
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         context.logger.warn(
-          `[${this.name}] Attempt ${attempt}/${this.maxRetries} failed: ${lastError.message}`
+          `[${this.name}] Attempt ${attempt}/${this.maxRetries} failed`
         );
 
         if (attempt < this.maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
+          await new Promise((r) => setTimeout(r, this.retryDelay));
         }
       }
     }
@@ -212,93 +184,9 @@ class RetryAgentNode<TContext extends Record<string, unknown>> extends AgentNode
 }
 ```
 
-## Best Practices
-
-### 1. Immutable State Updates
-
-Always return new state objects, never mutate:
-
-```typescript
-// Good
-return {
-  context: {
-    ...state.context,
-    newValue: 'data',
-  },
-};
-
-// Bad - mutates state
-state.context.newValue = 'data';
-return state;
-```
-
-### 2. Proper Error Handling
-
-Store errors in context for downstream nodes:
-
-```typescript
-async execute(state, context) {
-  try {
-    const result = await riskyOperation();
-    return {
-      context: {
-        ...state.context,
-        operationResult: { success: true, data: result },
-      },
-    };
-  } catch (error) {
-    return {
-      context: {
-        ...state.context,
-        operationResult: {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        },
-      },
-    };
-  }
-}
-```
-
-### 3. Logging
-
-Use the provided logger for observability:
-
-```typescript
-async execute(state, context) {
-  context.logger.info(`[${this.name}] Starting operation`);
-  context.logger.debug(`[${this.name}] Input:`, state.context.input);
-
-  // ... operation ...
-
-  context.logger.info(`[${this.name}] Completed successfully`);
-}
-```
-
-### 4. Type Safety
-
-Define proper context types:
-
-```typescript
-interface MyContext {
-  userId: string;
-  userData?: {
-    success: boolean;
-    data?: UserData;
-    error?: string;
-  };
-}
-
-class MyNode implements GraphNode<WorkflowState<MyContext>> {
-  // Full type safety for state.context
-}
-```
-
 ## Example: Database Node
 
 ```typescript
-import type { GraphNode, GraphContext, WorkflowState } from '@sys/graph';
-
 interface DbQueryConfig<TContext extends Record<string, unknown>> {
   query: string;
   params?: unknown[];
@@ -360,24 +248,84 @@ class DbQueryNode<TContext extends Record<string, unknown>>
     return this.config.next;
   }
 }
+```
 
-// Usage
-const queryUsersNode = new DbQueryNode(
-  'QUERY_USERS',
-  {
-    query: 'SELECT * FROM users WHERE active = ?',
-    params: [true],
-    resultKey: 'usersQuery',
-    next: (state) => {
-      const result = state.context.usersQuery;
-      if (result?.success && result.rowCount > 0) {
-        return 'PROCESS_USERS';
-      }
-      return 'NO_USERS';
-    },
+## Best Practices
+
+### 1. Immutable State Updates
+
+Always return new state objects:
+
+```typescript
+// Good
+return {
+  context: {
+    ...state.context,
+    newValue: 'data',
   },
-  database
-);
+};
+
+// Bad - mutates state
+state.context.newValue = 'data';
+return state;
+```
+
+### 2. Proper Error Handling
+
+Store errors in context for downstream nodes:
+
+```typescript
+async execute(state, context) {
+  try {
+    const result = await riskyOperation();
+    return {
+      context: {
+        ...state.context,
+        result: { success: true, data: result },
+      },
+    };
+  } catch (error) {
+    return {
+      context: {
+        ...state.context,
+        result: {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown',
+        },
+      },
+    };
+  }
+}
+```
+
+### 3. Use the Logger
+
+```typescript
+async execute(state, context) {
+  context.logger.info(`[${this.name}] Starting operation`);
+  context.logger.debug(`[${this.name}] Input:`, state.context.input);
+
+  // ... operation ...
+
+  context.logger.info(`[${this.name}] Completed`);
+}
+```
+
+### 4. Type Safety
+
+```typescript
+interface MyContext {
+  userId: string;
+  userData?: {
+    success: boolean;
+    data?: UserData;
+    error?: string;
+  };
+}
+
+class MyNode implements GraphNode<WorkflowState<MyContext>> {
+  // Full type safety for state.context
+}
 ```
 
 ## Testing Custom Nodes
@@ -410,7 +358,6 @@ describe('HttpNode', () => {
     const result = await node.execute(initialState, mockContext);
 
     expect(result.context?.testResult).toBeDefined();
-    expect(result.context?.testResult.success).toBe(true);
   });
 
   it('should handle dynamic transitions', () => {
@@ -418,7 +365,7 @@ describe('HttpNode', () => {
       method: 'GET',
       url: 'https://api.example.com/test',
       resultKey: 'testResult',
-      next: (state) => (state.context.testResult?.success ? 'SUCCESS' : 'FAIL'),
+      next: (state) => state.context.testResult?.success ? 'OK' : 'FAIL',
     });
 
     const successState = {
@@ -429,7 +376,7 @@ describe('HttpNode', () => {
       context: { testResult: { success: true } },
     };
 
-    expect(node.next(successState)).toBe('SUCCESS');
+    expect(node.next(successState)).toBe('OK');
   });
 });
 ```

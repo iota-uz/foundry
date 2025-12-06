@@ -243,12 +243,47 @@ export interface SlashCommandNodeDefinition<TContext extends Record<string, unkn
 }
 
 /**
+ * GitHubProjectNode definition - a node that updates GitHub Project status.
+ *
+ * All fields are explicit - use process.env.* if you need environment variables.
+ */
+export interface GitHubProjectNodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>>
+  extends BaseNodeDefinition<TContext> {
+  type: 'github-project';
+
+  /** GitHub token with project scope */
+  token: string;
+
+  /** Project owner (user or organization) */
+  projectOwner: string;
+
+  /** Project number (from project URL) */
+  projectNumber: number;
+
+  /** Repository owner */
+  owner: string;
+
+  /** Repository name */
+  repo: string;
+
+  /** Target status to set (must match project option) */
+  status: string;
+
+  /** Issue number (or use issueNumberKey to read from context) */
+  issueNumber?: number;
+
+  /** Context key to read issue number from */
+  issueNumberKey?: string;
+}
+
+/**
  * Union type of all supported node definitions.
  */
 export type NodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>> =
   | AgentNodeDefinition<TContext>
   | CommandNodeDefinition<TContext>
-  | SlashCommandNodeDefinition<TContext>;
+  | SlashCommandNodeDefinition<TContext>
+  | GitHubProjectNodeDefinition<TContext>;
 
 /**
  * The main workflow configuration schema.
