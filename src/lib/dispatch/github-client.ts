@@ -34,7 +34,7 @@ export class GitHubClient {
   private readonly verbose: boolean;
 
   constructor(config: DispatchConfig) {
-    this.baseUrl = process.env['GITHUB_API_URL'] ?? 'https://api.github.com';
+    this.baseUrl = 'https://api.github.com';
     this.token = config.token;
     this.owner = config.owner;
     this.repo = config.repo;

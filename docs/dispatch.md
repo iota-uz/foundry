@@ -76,7 +76,6 @@ foundry dispatch [options]
 |----------|-------------|
 | `GITHUB_TOKEN` | GitHub personal access token |
 | `GITHUB_REPOSITORY` | Repository in `owner/repo` format (auto-parsed) |
-| `GITHUB_API_URL` | GitHub API URL (for GitHub Enterprise) |
 
 ### Programmatic API
 

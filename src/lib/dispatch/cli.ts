@@ -4,9 +4,9 @@
  * Usage: foundry dispatch [options]
  *
  * Options:
- *   --owner <owner>          Repository owner (required, or set GITHUB_REPOSITORY_OWNER)
- *   --repo <repo>            Repository name (required, or set GITHUB_REPOSITORY_NAME)
- *   --token <token>          GitHub token (required, or set GITHUB_TOKEN)
+ *   --owner <owner>          Repository owner (parsed from GITHUB_REPOSITORY)
+ *   --repo <repo>            Repository name (parsed from GITHUB_REPOSITORY)
+ *   --token <token>          GitHub token (or set GITHUB_TOKEN)
  *   --label <label>          Queue label (default: 'queue')
  *   --max-concurrent <n>     Maximum concurrent issues (default: unlimited)
  *   --output <file>          Output file for matrix JSON
@@ -142,11 +142,11 @@ export function buildConfig(args: CliArgs): DispatchConfig {
     );
   }
 
-  // Get owner/repo from args or environment
-  let owner = args.owner ?? process.env['GITHUB_REPOSITORY_OWNER'];
-  let repo = args.repo ?? process.env['GITHUB_REPOSITORY_NAME'];
+  // Get owner/repo from GITHUB_REPOSITORY or CLI args
+  let owner = args.owner;
+  let repo = args.repo;
 
-  // Try to parse from GITHUB_REPOSITORY (owner/repo format)
+  // Parse from GITHUB_REPOSITORY (owner/repo format)
   if ((!owner || !repo) && process.env['GITHUB_REPOSITORY']) {
     const parts = process.env['GITHUB_REPOSITORY'].split('/');
     if (parts.length === 2) {
@@ -157,14 +157,14 @@ export function buildConfig(args: CliArgs): DispatchConfig {
 
   if (!owner) {
     throw new DispatchError(
-      'Repository owner is required. Set GITHUB_REPOSITORY_OWNER or use --owner',
+      'Repository owner is required. Set GITHUB_REPOSITORY or use --owner',
       'INVALID_CONFIG'
     );
   }
 
   if (!repo) {
     throw new DispatchError(
-      'Repository name is required. Set GITHUB_REPOSITORY_NAME or use --repo',
+      'Repository name is required. Set GITHUB_REPOSITORY or use --repo',
       'INVALID_CONFIG'
     );
   }
@@ -199,8 +199,8 @@ USAGE
   foundry dispatch [options]
 
 OPTIONS
-  --owner <owner>          Repository owner (or set GITHUB_REPOSITORY_OWNER)
-  --repo <repo>            Repository name (or set GITHUB_REPOSITORY_NAME)
+  --owner <owner>          Repository owner (parsed from GITHUB_REPOSITORY)
+  --repo <repo>            Repository name (parsed from GITHUB_REPOSITORY)
   --token <token>          GitHub token (or set GITHUB_TOKEN)
   --label <label>          Queue label to filter issues (default: 'queue')
   --max-concurrent <n>     Maximum concurrent issues in matrix
@@ -211,10 +211,7 @@ OPTIONS
 
 ENVIRONMENT VARIABLES
   GITHUB_TOKEN             GitHub personal access token
-  GITHUB_REPOSITORY        Repository in owner/repo format
-  GITHUB_REPOSITORY_OWNER  Repository owner
-  GITHUB_REPOSITORY_NAME   Repository name
-  GITHUB_API_URL           GitHub API URL (for GitHub Enterprise)
+  GITHUB_REPOSITORY        Repository in owner/repo format (auto-parsed)
 
 DEPENDENCY SYNTAX
   Issues can declare dependencies in their body using:
