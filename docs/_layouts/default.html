@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="{{ '/assets/css/ie.css' | relative_url }}">
     <![endif]-->
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!-- Mermaid.js for diagram rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     {% include head-custom.html %}
   </head>
   <body>
@@ -55,7 +57,36 @@
     </div>
 
     <script>
+      // Initialize Mermaid with dark theme (don't start automatically)
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        themeVariables: {
+          primaryColor: '#1a3a5c',
+          primaryTextColor: '#fff',
+          primaryBorderColor: '#87ceeb',
+          lineColor: '#87ceeb',
+          secondaryColor: '#0d0d0d',
+          tertiaryColor: '#1a1a1a'
+        }
+      });
+
       document.addEventListener('DOMContentLoaded', function() {
+        // Convert markdown mermaid code blocks to mermaid divs
+        var mermaidBlocks = document.querySelectorAll('code.language-mermaid');
+        mermaidBlocks.forEach(function(codeBlock) {
+          var pre = codeBlock.parentElement;
+          var mermaidDiv = document.createElement('div');
+          mermaidDiv.className = 'mermaid';
+          mermaidDiv.textContent = codeBlock.textContent;
+          pre.parentNode.replaceChild(mermaidDiv, pre);
+        });
+
+        // Now render all mermaid diagrams
+        if (mermaidBlocks.length > 0) {
+          mermaid.run();
+        }
+
         // Toggle sidebar on mobile
         var toggle = document.querySelector('.sidebar-toggle');
         var sidebar = document.querySelector('.sidebar');
