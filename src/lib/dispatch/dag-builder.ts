@@ -108,22 +108,53 @@ export class DagBuilder {
     this.nodes.clear();
     this.issueStateCache.clear();
 
+    // Enrich issues with sub-issue data (fetches from GitHub API)
+    this.log('Fetching sub-issue relationships...');
+    await this.client.enrichWithSubIssueData(issues);
+
+    // Build lookup map for quick access by issue number
+    const issuesByNumber = new Map<number, QueuedIssue>();
+    for (const issue of issues) {
+      issuesByNumber.set(issue.number, issue);
+    }
+
     // First pass: create nodes and parse dependencies
     for (const issue of issues) {
       const id = createIssueId(issue.owner, issue.repo, issue.number);
       this.log(`Processing issue: ${id}`);
 
+      // Parse text-based dependencies from issue body
       const dependencies = parseDependencies(
         issue.body,
         this.config.owner,
         this.config.repo
       );
 
+      // Add implicit dependencies for sub-issues (parent depends on children)
+      // This means parent is BLOCKED until all sub-issues are closed
+      const subIssueNumbers = issue.subIssueNumbers ?? [];
+      for (const subIssueNum of subIssueNumbers) {
+        const subIssueDep: DependencyRef = {
+          owner: this.config.owner,
+          repo: this.config.repo,
+          number: subIssueNum,
+        };
+        // Avoid duplicates
+        const depId = dependencyRefToId(subIssueDep);
+        if (!dependencies.some((d) => dependencyRefToId(d) === depId)) {
+          dependencies.push(subIssueDep);
+          this.log(`  Added implicit sub-issue dependency: #${subIssueNum}`);
+        }
+      }
+
       const priority = extractPriority(issue.labels);
       const priorityScore = getPriorityScore(priority);
 
       // Determine initial status (will be updated after analyzing dependencies)
       const status: IssueStatus = issue.state === 'closed' ? 'CLOSED' : 'READY';
+
+      // Issue is a leaf if it has no sub-issues
+      const isLeaf = subIssueNumbers.length === 0;
 
       const resolved: ResolvedIssue = {
         issue,
@@ -132,6 +163,7 @@ export class DagBuilder {
         blockedBy: [], // Will be populated in second pass
         priority,
         priorityScore,
+        isLeaf,
       };
 
       this.nodes.set(id, {
@@ -271,11 +303,30 @@ export class DagBuilder {
   }
 
   /**
+   * Get all ready leaf issues (ready issues with no sub-issues)
+   * Only leaf issues should be dispatched to workers
+   */
+  getReadyLeafIssues(): ResolvedIssue[] {
+    return Array.from(this.nodes.values())
+      .filter((node) => node.issue.status === 'READY' && node.issue.isLeaf)
+      .map((node) => node.issue);
+  }
+
+  /**
    * Get all blocked issues
    */
   getBlockedIssues(): ResolvedIssue[] {
     return Array.from(this.nodes.values())
       .filter((node) => node.issue.status === 'BLOCKED')
+      .map((node) => node.issue);
+  }
+
+  /**
+   * Get all parent issues (non-leaf issues)
+   */
+  getParentIssues(): ResolvedIssue[] {
+    return Array.from(this.nodes.values())
+      .filter((node) => !node.issue.isLeaf)
       .map((node) => node.issue);
   }
 

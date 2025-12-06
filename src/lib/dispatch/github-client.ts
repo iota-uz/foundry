@@ -24,6 +24,24 @@ interface GitHubIssueResponse {
 }
 
 /**
+ * GitHub API response for sub-issue (simplified)
+ */
+interface GitHubSubIssueResponse {
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+}
+
+/**
+ * GitHub API response for parent issue
+ */
+interface GitHubParentIssueResponse {
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+}
+
+/**
  * GitHub client for fetching issues
  */
 export class GitHubClient {
@@ -202,6 +220,102 @@ export class GitHubClient {
   async isDependencyClosed(dep: DependencyRef): Promise<boolean> {
     const issue = await this.fetchIssue(dep.owner, dep.repo, dep.number);
     return issue?.state === 'closed';
+  }
+
+  /**
+   * Fetch sub-issues for a given issue (same repo only)
+   * @returns Array of sub-issue numbers, or empty array if none/error
+   */
+  async fetchSubIssues(issueNumber: number): Promise<number[]> {
+    try {
+      const path = `/repos/${this.owner}/${this.repo}/issues/${issueNumber}/sub_issues`;
+      this.log(`Fetching sub-issues for #${issueNumber}`);
+
+      const response = await fetch(`${this.baseUrl}${path}`, {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${this.token}`,
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      });
+
+      if (!response.ok) {
+        // Sub-issues endpoint may 404 if feature not enabled or no sub-issues
+        if (response.status === 404) {
+          this.log(`No sub-issues found for #${issueNumber} (404)`);
+          return [];
+        }
+        this.log(`Error fetching sub-issues for #${issueNumber}: ${response.status}`);
+        return [];
+      }
+
+      const data = (await response.json()) as GitHubSubIssueResponse[];
+      const subIssueNumbers = data.map((sub) => sub.number);
+      this.log(`Found ${subIssueNumbers.length} sub-issues for #${issueNumber}: ${subIssueNumbers.join(', ')}`);
+      return subIssueNumbers;
+    } catch (error) {
+      this.log(`Error fetching sub-issues for #${issueNumber}: ${error}`);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch parent issue for a given issue (same repo only)
+   * @returns Parent issue number, or null if no parent
+   */
+  async fetchParentIssue(issueNumber: number): Promise<number | null> {
+    try {
+      const path = `/repos/${this.owner}/${this.repo}/issues/${issueNumber}/parent`;
+      this.log(`Fetching parent issue for #${issueNumber}`);
+
+      const response = await fetch(`${this.baseUrl}${path}`, {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${this.token}`,
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      });
+
+      if (!response.ok) {
+        // 404 means no parent issue
+        if (response.status === 404) {
+          this.log(`No parent issue for #${issueNumber}`);
+          return null;
+        }
+        this.log(`Error fetching parent for #${issueNumber}: ${response.status}`);
+        return null;
+      }
+
+      const data = (await response.json()) as GitHubParentIssueResponse;
+      this.log(`Parent issue for #${issueNumber}: #${data.number}`);
+      return data.number;
+    } catch (error) {
+      this.log(`Error fetching parent for #${issueNumber}: ${error}`);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch sub-issues and parent for all issues in batch
+   * Populates subIssueNumbers and parentIssueNumber fields
+   */
+  async enrichWithSubIssueData(issues: QueuedIssue[]): Promise<void> {
+    this.log(`Enriching ${issues.length} issues with sub-issue data`);
+
+    // Fetch sub-issues and parent in parallel for each issue
+    await Promise.all(
+      issues.map(async (issue) => {
+        const [subIssueNumbers, parentIssueNumber] = await Promise.all([
+          this.fetchSubIssues(issue.number),
+          this.fetchParentIssue(issue.number),
+        ]);
+
+        issue.subIssueNumbers = subIssueNumbers;
+        issue.parentIssueNumber = parentIssueNumber;
+      })
+    );
+
+    this.log('Sub-issue enrichment complete');
   }
 
   /**

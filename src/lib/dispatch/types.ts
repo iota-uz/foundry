@@ -48,6 +48,10 @@ export interface QueuedIssue {
   owner: string;
   /** Repository name (for cross-repo dependencies) */
   repo: string;
+  /** Sub-issue numbers (children of this issue) */
+  subIssueNumbers?: number[];
+  /** Parent issue number (if this is a sub-issue) */
+  parentIssueNumber?: number | null;
 }
 
 /**
@@ -88,6 +92,8 @@ export interface ResolvedIssue {
   priority: PriorityLevel;
   /** Numeric priority for sorting (lower is higher priority) */
   priorityScore: number;
+  /** Whether this is a leaf issue (no sub-issues) - only leaves are dispatched */
+  isLeaf: boolean;
 }
 
 /**
@@ -140,6 +146,8 @@ export interface MatrixEntry {
   repository: string;
   /** Full issue URL */
   url: string;
+  /** Parent issue number (if this is a sub-issue) */
+  parent_issue_number?: number | null;
 }
 
 /**

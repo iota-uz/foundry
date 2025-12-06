@@ -112,8 +112,6 @@ describe('cli', () => {
       const saved = {
         GITHUB_TOKEN: process.env['GITHUB_TOKEN'],
         GITHUB_REPOSITORY: process.env['GITHUB_REPOSITORY'],
-        GITHUB_REPOSITORY_OWNER: process.env['GITHUB_REPOSITORY_OWNER'],
-        GITHUB_REPOSITORY_NAME: process.env['GITHUB_REPOSITORY_NAME'],
       };
       return saved;
     };
@@ -146,8 +144,9 @@ describe('cli', () => {
       const saved = saveEnv();
       try {
         process.env['GITHUB_TOKEN'] = 'env_token';
-        process.env['GITHUB_REPOSITORY_OWNER'] = 'env_owner';
-        process.env['GITHUB_REPOSITORY_NAME'] = 'env_repo';
+        process.env['GITHUB_REPOSITORY'] = 'env_owner/env_repo';
+        delete process.env['GITHUB_REPOSITORY_OWNER'];
+        delete process.env['GITHUB_REPOSITORY_NAME'];
 
         const args = parseArgs([]);
         const config = buildConfig(args);
@@ -194,7 +193,6 @@ describe('cli', () => {
     it('should throw if owner is missing', () => {
       const saved = saveEnv();
       try {
-        delete process.env['GITHUB_REPOSITORY_OWNER'];
         delete process.env['GITHUB_REPOSITORY'];
 
         const args = parseArgs(['--token', 'token', '--repo', 'repo']);
@@ -208,7 +206,6 @@ describe('cli', () => {
     it('should throw if repo is missing', () => {
       const saved = saveEnv();
       try {
-        delete process.env['GITHUB_REPOSITORY_NAME'];
         delete process.env['GITHUB_REPOSITORY'];
 
         const args = parseArgs(['--token', 'token', '--owner', 'owner']);

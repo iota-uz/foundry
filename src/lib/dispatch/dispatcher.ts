@@ -59,12 +59,14 @@ export async function dispatch(config: DispatchConfig): Promise<DispatchResult> 
     }
   }
 
-  // Get ready and blocked issues
-  let readyIssues = dagBuilder.getReadyIssues();
+  // Get ready leaf issues (only leaves are dispatched), blocked, and parent issues
+  let readyIssues = dagBuilder.getReadyLeafIssues();
   const blockedIssues = dagBuilder.getBlockedIssues();
+  const parentIssues = dagBuilder.getParentIssues();
 
-  log(`Ready issues: ${readyIssues.length}`);
+  log(`Ready leaf issues: ${readyIssues.length}`);
   log(`Blocked issues: ${blockedIssues.length}`);
+  log(`Parent issues (not dispatched): ${parentIssues.length}`);
 
   // Apply MAX_CONCURRENT limit with priority sorting
   readyIssues = applyMaxConcurrent(readyIssues, config.maxConcurrent);
@@ -111,6 +113,7 @@ export function generateMatrix(
     priority_score: resolved.priorityScore,
     repository: `${config.owner}/${config.repo}`,
     url: resolved.issue.htmlUrl,
+    parent_issue_number: resolved.issue.parentIssueNumber ?? null,
   }));
 
   return { include };
@@ -129,7 +132,7 @@ export function formatResultSummary(result: DispatchResult): string {
     `Dry Run: ${result.dryRun}`,
     '',
     `Total Issues: ${result.totalIssues}`,
-    `Ready Issues: ${result.readyIssues.length}`,
+    `Ready Leaf Issues: ${result.readyIssues.length}`,
     `Blocked Issues: ${result.blockedIssues.length}`,
     '',
   ];
@@ -143,10 +146,11 @@ export function formatResultSummary(result: DispatchResult): string {
   }
 
   if (result.readyIssues.length > 0) {
-    lines.push('READY FOR EXECUTION:');
+    lines.push('READY FOR EXECUTION (leaf issues only):');
     for (const issue of result.readyIssues) {
       const id = createIssueId(issue.issue.owner, issue.issue.repo, issue.issue.number);
-      lines.push(`  [${issue.priority.toUpperCase()}] ${id}: ${issue.issue.title}`);
+      const parentInfo = issue.issue.parentIssueNumber ? ` (child of #${issue.issue.parentIssueNumber})` : '';
+      lines.push(`  [${issue.priority.toUpperCase()}] ${id}: ${issue.issue.title}${parentInfo}`);
     }
     lines.push('');
   }
@@ -156,7 +160,8 @@ export function formatResultSummary(result: DispatchResult): string {
     for (const issue of result.blockedIssues) {
       const id = createIssueId(issue.issue.owner, issue.issue.repo, issue.issue.number);
       const blockedBy = issue.blockedBy.map((d) => `${d.owner}/${d.repo}#${d.number}`).join(', ');
-      lines.push(`  ${id}: ${issue.issue.title}`);
+      const isParent = !issue.isLeaf ? ' [PARENT]' : '';
+      lines.push(`  ${id}${isParent}: ${issue.issue.title}`);
       lines.push(`    Blocked by: ${blockedBy}`);
     }
     lines.push('');
