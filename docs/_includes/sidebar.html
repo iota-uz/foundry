@@ -1,0 +1,94 @@
+<button class="sidebar-toggle" aria-label="Toggle navigation">
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <a href="{{ '/' | relative_url }}" class="sidebar-title">Foundry</a>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul class="nav-section">
+      <li class="nav-item {% if page.url == '/' %}active{% endif %}">
+        <a href="{{ '/' | relative_url }}">Home</a>
+      </li>
+    </ul>
+
+    <div class="nav-group">
+      <h3 class="nav-group-title">Specification</h3>
+      <ul class="nav-section">
+        <li class="nav-item {% if page.url contains '/specification/index' or page.url == '/specification/' %}active{% endif %}">
+          <a href="{{ '/specification/' | relative_url }}">Overview</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/specification/business' %}active{% endif %}">
+          <a href="{{ '/specification/business.html' | relative_url }}">Business</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/specification/technical' %}active{% endif %}">
+          <a href="{{ '/specification/technical.html' | relative_url }}">Technical</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/specification/api-schema' %}active{% endif %}">
+          <a href="{{ '/specification/api-schema.html' | relative_url }}">API Schema</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/specification/data-model' %}active{% endif %}">
+          <a href="{{ '/specification/data-model.html' | relative_url }}">Data Model</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/specification/ux' %}active{% endif %}">
+          <a href="{{ '/specification/ux.html' | relative_url }}">UX Design</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/specification/qa-flow' %}active{% endif %}">
+          <a href="{{ '/specification/qa-flow.html' | relative_url }}">Q&A Flow</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/specification/tools' %}active{% endif %}">
+          <a href="{{ '/specification/tools.html' | relative_url }}">AI Tools</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/specification/decisions' %}active{% endif %}">
+          <a href="{{ '/specification/decisions.html' | relative_url }}">Decisions</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="nav-group">
+      <h3 class="nav-group-title">Features</h3>
+      <ul class="nav-section">
+        <li class="nav-item {% if page.url contains '/features/features-setup' %}active{% endif %}">
+          <a href="{{ '/specification/features/features-setup.html' | relative_url }}">Setup</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/features/features-qa' %}active{% endif %}">
+          <a href="{{ '/specification/features/features-qa.html' | relative_url }}">Q&A</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/features/features-management' %}active{% endif %}">
+          <a href="{{ '/specification/features/features-management.html' | relative_url }}">Management</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/features/features-maintenance' %}active{% endif %}">
+          <a href="{{ '/specification/features/features-maintenance.html' | relative_url }}">Maintenance</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="nav-group">
+      <h3 class="nav-group-title">Research</h3>
+      <ul class="nav-section">
+        <li class="nav-item {% if page.url contains '/research/claude-agent-sdk' and page.url != '/specification/research/claude-agent-sdk-apis.html' %}active{% endif %}">
+          <a href="{{ '/specification/research/claude-agent-sdk.html' | relative_url }}">Claude Agent SDK</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/research/claude-agent-sdk-apis' %}active{% endif %}">
+          <a href="{{ '/specification/research/claude-agent-sdk-apis.html' | relative_url }}">SDK APIs</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/research/react-flow' %}active{% endif %}">
+          <a href="{{ '/specification/research/react-flow.html' | relative_url }}">React Flow</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/research/file-system-sync' %}active{% endif %}">
+          <a href="{{ '/specification/research/file-system-sync.html' | relative_url }}">File System Sync</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/research/reverse-engineering' %}active{% endif %}">
+          <a href="{{ '/specification/research/reverse-engineering.html' | relative_url }}">Reverse Engineering</a>
+        </li>
+        <li class="nav-item {% if page.url contains '/research/spec-driven-development' %}active{% endif %}">
+          <a href="{{ '/specification/research/spec-driven-development.html' | relative_url }}">Spec-Driven Dev</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</aside>
