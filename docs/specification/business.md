@@ -120,3 +120,55 @@ Foundry solves this by providing an AI-assisted specification builder that guide
 - Export to external formats
 - Code generation from specs
 - AI-assisted implementation planning
+
+## Features
+
+### Setup Phase
+
+Features used during project initialization and configuration.
+
+| ID | Feature | Description | Status |
+|----|---------|-------------|--------|
+| F6 | Project Constitution | Optional governing principles document that guides AI decision-making. Defines coding standards, security policies, UX patterns, and tech constraints. AI agents reference this for all artifact generation. | ✅ Implemented |
+| F12 | Agent Hooks | Event-driven automations triggered by file changes. Supports `onFeatureSave`, `onSchemaChange`, `onAPIChange`, `onComponentChange`, and `preCommit` events. | ✅ Implemented |
+| - | API Key Setup | Configuration flow for Anthropic API key. Checks environment variable first, prompts interactively if not found, stores in `~/.foundry/credentials`. | ✅ Implemented |
+
+### Q&A Phase
+
+Features that enhance the question/answer experience during CPO, Clarify, and CTO workflows.
+
+| ID | Feature | Description | Status |
+|----|---------|-------------|--------|
+| F7 | Automatic Clarify Phase | AI-driven ambiguity detection that runs after CPO phase completes. Detects vague language, missing edge cases, ambiguous flows, and feature conflicts. | ✅ Implemented |
+| F14 | Smart Question Batching | Groups 2-5 related questions with shared context, reducing mental overhead. Based on Miller's Law (7±2 cognitive limit). | ✅ Implemented |
+| F15 | Live Spec Preview Panel | Shows specs updating in real-time as answers are provided. Supports summary, diff view, and full spec modes. | ✅ Implemented |
+| F16 | AI Recommendation Badges | AI-suggested answers with confidence levels based on constitution preferences and project context. | ✅ Implemented |
+| F17 | Decision Journal + Undo | Browsable timeline of all decisions with full undo/redo support. | ✅ Implemented |
+| F18 | Impact Preview on Hover | Shows consequences of selecting an option before committing to an answer. | ✅ Implemented |
+| F19 | "Why This Question?" | Context for each question's purpose and how it contributes to the specification. | ✅ Implemented |
+| F20 | Keyboard Quick Responses | Rapid answering via keyboard shortcuts (e.g., press 1-4 for single choice options). | ✅ Implemented |
+
+### Management Phase
+
+Features for reviewing, refining, and validating generated specifications.
+
+| ID | Feature | Description | Status |
+|----|---------|-------------|--------|
+| F1 | Global Search | Text search across all spec content (features, entities, endpoints, components). Results grouped by type with text highlighting. | ✅ Implemented |
+| F2 | Validation Engine | Real-time validation of DBML schemas, OpenAPI/GraphQL specs with clear error reporting. | ✅ Implemented |
+| F3 | Artifact Export | Export generated artifacts in JSON/YAML formats for external tools. | ✅ Implemented |
+| F4 | Cross-References | Navigate relationships between artifacts - see which features use an entity, which components belong to a feature. | ✅ Implemented |
+| F5 | Batch Operations | Bulk edit, move, or delete multiple features, entities, or components at once. | ✅ Implemented |
+| F8 | Task Breakdown | Break implementation steps into manageable tasks with dependencies and complexity estimates. | ✅ Implemented |
+| F9 | Enhanced Analyzer | Deep analysis of specification consistency - constitution compliance, naming conventions, cross-artifact coherence. | ✅ Implemented |
+| F10 | Implementation Checklist | Auto-generated checklist from acceptance criteria with manual verification tracking. | ✅ Implemented |
+
+### Maintenance Phase
+
+Features for keeping specifications aligned with evolving codebase.
+
+| ID | Feature | Description | Status |
+|----|---------|-------------|--------|
+| F11 | Lessons Learned | AI-maintained feedback loop document that logs corrected errors and patterns. AI checks this before generating similar artifacts. Stored in `.foundry/lessons-learned.md`. | ✅ Implemented |
+| F13 | Actualize | Periodic analysis of implemented code vs specification. Identifies gaps, suggests updates, user approves before applying. Uses Opus for complex code analysis. | 🚧 In Progress |
+| - | Git Integration | Tight integration with Git: commit specs, branch management, pull/push, diff viewer, conflict resolution with guidance. | ✅ Implemented |

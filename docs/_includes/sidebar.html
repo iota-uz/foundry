@@ -68,37 +68,6 @@
       </ul>
     </div>
 
-    <!-- Features (collapsible) -->
-    {% assign features_active = false %}
-    {% if page.url contains '/features/' %}
-      {% assign features_active = true %}
-    {% endif %}
-    <div class="nav-group {% if features_active %}open{% endif %}">
-      <button class="nav-group-toggle" aria-expanded="{% if features_active %}true{% else %}false{% endif %}">
-        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z"/>
-        </svg>
-        <span>Features</span>
-        <svg class="nav-chevron" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-        </svg>
-      </button>
-      <ul class="nav-children">
-        <li class="nav-item {% if page.url contains '/features/features-setup' %}active{% endif %}">
-          <a href="{{ '/specification/features/features-setup.html' | relative_url }}" class="nav-link">Setup</a>
-        </li>
-        <li class="nav-item {% if page.url contains '/features/features-qa' %}active{% endif %}">
-          <a href="{{ '/specification/features/features-qa.html' | relative_url }}" class="nav-link">Q&A</a>
-        </li>
-        <li class="nav-item {% if page.url contains '/features/features-management' %}active{% endif %}">
-          <a href="{{ '/specification/features/features-management.html' | relative_url }}" class="nav-link">Management</a>
-        </li>
-        <li class="nav-item {% if page.url contains '/features/features-maintenance' %}active{% endif %}">
-          <a href="{{ '/specification/features/features-maintenance.html' | relative_url }}" class="nav-link">Maintenance</a>
-        </li>
-      </ul>
-    </div>
-
     <!-- Frameworks (collapsible) -->
     {% assign frameworks_active = false %}
     {% if page.url contains '/dispatch' or page.url contains '/graph' %}
@@ -118,8 +87,28 @@
         <li class="nav-item {% if page.url contains '/dispatch' %}active{% endif %}">
           <a href="{{ '/dispatch.html' | relative_url }}" class="nav-link">Issue Dispatcher</a>
         </li>
-        <li class="nav-item {% if page.url contains '/graph' %}active{% endif %}">
-          <a href="{{ '/graph.html' | relative_url }}" class="nav-link">Graph Engine</a>
+        <!-- Graph Engine (nested) -->
+        {% assign graph_active = false %}
+        {% if page.url contains '/graph' %}
+          {% assign graph_active = true %}
+        {% endif %}
+        <li class="nav-item">
+          <div class="nav-group nav-nested {% if graph_active %}open{% endif %}">
+            <button class="nav-group-toggle" aria-expanded="{% if graph_active %}true{% else %}false{% endif %}">
+              <span>Graph Engine</span>
+              <svg class="nav-chevron" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+            <ul class="nav-children">
+              <li class="nav-item {% if page.url == '/graph.html' or page.url == '/graph' %}active{% endif %}">
+                <a href="{{ '/graph.html' | relative_url }}" class="nav-link">Overview</a>
+              </li>
+              <li class="nav-item {% if page.url contains '/graph-custom-nodes' %}active{% endif %}">
+                <a href="{{ '/graph-custom-nodes.html' | relative_url }}" class="nav-link">Custom Nodes</a>
+              </li>
+            </ul>
+          </div>
         </li>
       </ul>
     </div>
