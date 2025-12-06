@@ -14,6 +14,10 @@ import type {
   UpdateStatusRequest,
   UpdateStatusResult,
   ProjectValidation,
+  FieldUpdate,
+  UpdateFieldsRequest,
+  UpdateFieldsResult,
+  FieldUpdateResult,
 } from './types';
 import { ProjectsError } from './types';
 
@@ -32,6 +36,8 @@ export class ProjectsClient {
   private statusField: ProjectField | null = null;
   /** Map of status name (lowercase) to option */
   private statusOptions: Map<string, FieldOption> = new Map();
+  /** Map of all fields by name (lowercase) */
+  private fieldsMap: Map<string, ProjectField> = new Map();
 
   constructor(config: ProjectsConfig) {
     this.config = config;
@@ -653,6 +659,272 @@ export class ProjectsClient {
    */
   isValidStatus(status: string): boolean {
     return this.statusOptions.has(status.toLowerCase());
+  }
+
+  /**
+   * Fetch all fields from the project and cache them
+   */
+  async fetchAllFields(): Promise<Map<string, ProjectField>> {
+    if (!this.project) {
+      throw new ProjectsError('Project not validated. Call validate() first.', 'VALIDATION_ERROR');
+    }
+
+    if (this.fieldsMap.size > 0) {
+      return this.fieldsMap;
+    }
+
+    const query = `
+      query($projectId: ID!) {
+        node(id: $projectId) {
+          ... on ProjectV2 {
+            fields(first: 50) {
+              nodes {
+                ... on ProjectV2SingleSelectField {
+                  id
+                  name
+                  dataType
+                  options {
+                    id
+                    name
+                    color
+                    description
+                  }
+                }
+                ... on ProjectV2Field {
+                  id
+                  name
+                  dataType
+                }
+                ... on ProjectV2IterationField {
+                  id
+                  name
+                  dataType
+                  configuration {
+                    iterations {
+                      id
+                      title
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    interface FieldsResponse {
+      node: {
+        fields: {
+          nodes: Array<{
+            id: string;
+            name: string;
+            dataType: string;
+            options?: FieldOption[];
+            configuration?: {
+              iterations?: Array<{ id: string; title: string }>;
+            };
+          }>;
+        };
+      };
+    }
+
+    const data = await this.graphql<FieldsResponse>(query, {
+      projectId: this.project.id,
+    });
+
+    this.fieldsMap.clear();
+    for (const field of data.node.fields.nodes) {
+      const projectField: ProjectField = {
+        id: field.id,
+        name: field.name,
+        dataType: field.dataType as ProjectField['dataType'],
+      };
+
+      if (field.options) {
+        projectField.options = field.options;
+      }
+
+      this.fieldsMap.set(field.name.toLowerCase(), projectField);
+      this.log(`  Field: "${field.name}" (${field.dataType})`);
+    }
+
+    return this.fieldsMap;
+  }
+
+  /**
+   * Update multiple fields on an issue in the project
+   */
+  async updateFields(request: UpdateFieldsRequest): Promise<UpdateFieldsResult> {
+    if (!this.project) {
+      throw new ProjectsError('Project not validated. Call validate() first.', 'VALIDATION_ERROR');
+    }
+
+    const { owner, repo, issueNumber, updates } = request;
+
+    this.log(`Updating ${updates.length} field(s) for ${owner}/${repo}#${issueNumber}`);
+
+    // Ensure fields are loaded
+    await this.fetchAllFields();
+
+    // Find or add issue to project
+    let item = await this.findProjectItem(owner, repo, issueNumber);
+    if (!item) {
+      this.log(`Issue not in project, adding it first...`);
+      item = await this.addIssueToProject(owner, repo, issueNumber);
+    }
+
+    const results: FieldUpdateResult[] = [];
+    let allSucceeded = true;
+
+    for (const update of updates) {
+      const result = await this.updateSingleField(item.id, update);
+      results.push(result);
+      if (!result.success) {
+        allSucceeded = false;
+      }
+    }
+
+    return {
+      success: allSucceeded,
+      item,
+      updatedFields: results,
+      ...(allSucceeded ? {} : { error: `${results.filter(r => !r.success).length} field update(s) failed` }),
+    };
+  }
+
+  /**
+   * Update a single field on a project item
+   */
+  private async updateSingleField(
+    itemId: string,
+    update: FieldUpdate
+  ): Promise<FieldUpdateResult> {
+    const field = this.fieldsMap.get(update.field.toLowerCase());
+    if (!field) {
+      const availableFields = Array.from(this.fieldsMap.keys()).join(', ');
+      return {
+        field: update.field,
+        success: false,
+        newValue: update.type === 'clear' ? '' : String('value' in update ? update.value : ''),
+        error: `Field "${update.field}" not found. Available: ${availableFields}`,
+      };
+    }
+
+    try {
+      let value: Record<string, unknown>;
+
+      switch (update.type) {
+        case 'single_select': {
+          const option = field.options?.find(
+            o => o.name.toLowerCase() === update.value.toLowerCase()
+          );
+          if (!option) {
+            const availableOptions = field.options?.map(o => o.name).join(', ') ?? 'none';
+            return {
+              field: update.field,
+              success: false,
+              newValue: update.value,
+              error: `Option "${update.value}" not found. Available: ${availableOptions}`,
+            };
+          }
+          value = { singleSelectOptionId: option.id };
+          break;
+        }
+
+        case 'text':
+          value = { text: update.value };
+          break;
+
+        case 'number':
+          value = { number: update.value };
+          break;
+
+        case 'date':
+          value = { date: update.value };
+          break;
+
+        case 'iteration': {
+          // For iteration, we'd need to look up the iteration ID
+          // This is simplified - in production you'd fetch iterations
+          return {
+            field: update.field,
+            success: false,
+            newValue: update.value,
+            error: 'Iteration field updates not yet supported',
+          };
+        }
+
+        case 'clear':
+          value = {};
+          break;
+
+        default: {
+          // TypeScript exhaustiveness - this should never be reached
+          const exhaustiveCheck: never = update;
+          return {
+            field: (exhaustiveCheck as FieldUpdate).field,
+            success: false,
+            newValue: '',
+            error: `Unknown update type: ${(exhaustiveCheck as FieldUpdate).type}`,
+          };
+        }
+      }
+
+      const mutation = `
+        mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: ProjectV2FieldValue!) {
+          updateProjectV2ItemFieldValue(input: {
+            projectId: $projectId
+            itemId: $itemId
+            fieldId: $fieldId
+            value: $value
+          }) {
+            projectV2Item {
+              id
+            }
+          }
+        }
+      `;
+
+      await this.graphql(mutation, {
+        projectId: this.project!.id,
+        itemId,
+        fieldId: field.id,
+        value,
+      });
+
+      const newValue = update.type === 'clear' ? '' : String('value' in update ? update.value : '');
+
+      this.log(`Successfully updated "${update.field}" to "${newValue}"`);
+
+      return {
+        field: update.field,
+        success: true,
+        newValue,
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      return {
+        field: update.field,
+        success: false,
+        newValue: update.type === 'clear' ? '' : String('value' in update ? update.value : ''),
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Get a field by name
+   */
+  getField(fieldName: string): ProjectField | undefined {
+    return this.fieldsMap.get(fieldName.toLowerCase());
+  }
+
+  /**
+   * Get all available field names
+   */
+  getAvailableFields(): string[] {
+    return Array.from(this.fieldsMap.values()).map(f => f.name);
   }
 }
 

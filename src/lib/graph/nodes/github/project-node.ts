@@ -1,8 +1,8 @@
 /**
  * @sys/graph - GitHubProjectNode Implementation
  *
- * Updates issue status in GitHub Projects V2 via GraphQL API.
- * Supports intermediate status transitions at any workflow step.
+ * Updates fields in GitHub Projects V2 via GraphQL API.
+ * Supports updating any field type: status, text, number, date.
  */
 
 import {
@@ -10,26 +10,25 @@ import {
   type BaseNodeConfig,
   type NodeExecutionResult,
   NodeExecutionError,
-} from './base';
-import type { WorkflowState, GraphContext, Transition } from '../types';
+} from '../base';
+import type { WorkflowState, GraphContext, Transition } from '../../types';
 import {
   ProjectsClient,
   type ProjectsConfig,
+  type FieldUpdate,
+  type FieldUpdateResult,
   ProjectsError,
-} from '../../github-projects';
+} from '../../../github-projects';
 
 /**
- * Result of a GitHub Project status update.
+ * Result of a GitHub Project field update.
  */
 export interface GitHubProjectResult {
   /** Whether the update succeeded */
   success: boolean;
 
-  /** The new status value */
-  newStatus: string;
-
-  /** Previous status (if available) */
-  previousStatus?: string;
+  /** Individual field update results */
+  updatedFields: FieldUpdateResult[];
 
   /** Issue number that was updated */
   issueNumber: number;
@@ -47,60 +46,53 @@ export interface GitHubProjectResult {
 /**
  * Configuration for GitHubProjectNode.
  *
- * All configuration is explicit - no automatic environment variable fallbacks.
- * If you need to use environment variables, pass them explicitly:
- *
- * @example
- * ```typescript
- * nodes.GitHubProjectNode({
- *   token: process.env.GITHUB_TOKEN!,
- *   projectOwner: process.env.GITHUB_PROJECT_OWNER!,
- *   projectNumber: Number(process.env.GITHUB_PROJECT_NUMBER),
- *   owner: process.env.GITHUB_REPOSITORY_OWNER!,
- *   repo: process.env.GITHUB_REPOSITORY_NAME!,
- *   status: 'In Progress',
- *   next: 'WORK',
- * })
- * ```
+ * Supports updating any field in the project, not just status.
  */
 export interface GitHubProjectNodeConfig<TContext extends Record<string, unknown>>
   extends BaseNodeConfig<TContext> {
   /**
    * GitHub personal access token with `project` scope.
-   * Required.
    */
   token: string;
 
   /**
    * Project owner (user or organization login).
-   * Required.
    */
   projectOwner: string;
 
   /**
    * Project number (visible in project URL).
-   * Required.
    */
   projectNumber: number;
 
   /**
    * Repository owner.
-   * Required.
    */
   owner: string;
 
   /**
    * Repository name.
-   * Required.
    */
   repo: string;
 
   /**
-   * Target status to set (must exactly match a project option).
-   * Case-insensitive matching.
-   * Required.
+   * Field updates to apply.
+   * Can be a single update or an array of updates.
+   *
+   * @example
+   * ```typescript
+   * // Single status update
+   * updates: { type: 'single_select', field: 'Status', value: 'Done' }
+   *
+   * // Multiple field updates
+   * updates: [
+   *   { type: 'single_select', field: 'Status', value: 'In Progress' },
+   *   { type: 'single_select', field: 'Priority', value: 'High' },
+   *   { type: 'text', field: 'Notes', value: 'Working on it' },
+   * ]
+   * ```
    */
-  status: string;
+  updates: FieldUpdate | FieldUpdate[];
 
   /**
    * Issue number to update.
@@ -110,7 +102,6 @@ export interface GitHubProjectNodeConfig<TContext extends Record<string, unknown
 
   /**
    * Key in workflow context to read issue number from.
-   * Used when `issueNumber` is not provided.
    * @default 'issueNumber'
    */
   issueNumberKey?: string;
@@ -135,33 +126,33 @@ export interface GitHubProjectNodeConfig<TContext extends Record<string, unknown
 }
 
 /**
- * GitHubProjectNode - Updates issue status in GitHub Projects.
- *
- * All configuration is explicit - pass values directly or use process.env.
+ * GitHubProjectNode - Updates fields in GitHub Projects.
  *
  * @example
  * ```typescript
- * // With explicit values
+ * // Update status
  * nodes.GitHubProjectNode({
- *   token: 'ghp_xxx',
+ *   token: process.env.GITHUB_TOKEN!,
  *   projectOwner: 'myorg',
  *   projectNumber: 1,
  *   owner: 'myorg',
  *   repo: 'myrepo',
- *   status: 'In Progress',
- *   next: 'WORK',
+ *   updates: { type: 'single_select', field: 'Status', value: 'Done' },
+ *   next: 'END',
  * })
  *
- * // With environment variables
+ * // Update multiple fields
  * nodes.GitHubProjectNode({
  *   token: process.env.GITHUB_TOKEN!,
- *   projectOwner: process.env.PROJECT_OWNER!,
- *   projectNumber: Number(process.env.PROJECT_NUMBER),
- *   owner: process.env.REPO_OWNER!,
- *   repo: process.env.REPO_NAME!,
- *   issueNumberKey: 'currentIssue', // read from context
- *   status: 'Done',
- *   next: 'END',
+ *   projectOwner: 'myorg',
+ *   projectNumber: 1,
+ *   owner: 'myorg',
+ *   repo: 'myrepo',
+ *   updates: [
+ *     { type: 'single_select', field: 'Status', value: 'In Progress' },
+ *     { type: 'text', field: 'Notes', value: 'Started work' },
+ *   ],
+ *   next: 'WORK',
  * })
  * ```
  */
@@ -182,7 +173,6 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
       verbose: config.verbose ?? false,
     });
 
-    // Validate required fields at construction time
     this.validateConfig();
   }
 
@@ -190,7 +180,7 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
    * Validates required configuration fields.
    */
   private validateConfig(): void {
-    const { token, projectOwner, projectNumber, owner, repo, status } = this.config;
+    const { token, projectOwner, projectNumber, owner, repo, updates } = this.config;
 
     const missing: string[] = [];
     if (!token) missing.push('token');
@@ -198,7 +188,7 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
     if (!projectNumber) missing.push('projectNumber');
     if (!owner) missing.push('owner');
     if (!repo) missing.push('repo');
-    if (!status) missing.push('status');
+    if (!updates) missing.push('updates');
 
     if (missing.length > 0) {
       throw new NodeExecutionError(
@@ -212,7 +202,7 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
   }
 
   /**
-   * Executes the status update.
+   * Executes the field updates.
    */
   async execute(
     state: WorkflowState<TContext>,
@@ -224,7 +214,7 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
       projectNumber,
       owner,
       repo,
-      status,
+      updates,
       throwOnError,
       resultKey,
       verbose,
@@ -234,9 +224,10 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
 
     try {
       const issueNumber = this.resolveIssueNumber(state);
+      const updateArray = Array.isArray(updates) ? updates : [updates];
 
       context.logger.info(
-        `[GitHubProjectNode] Updating ${owner}/${repo}#${issueNumber} to "${status}"`
+        `[GitHubProjectNode] Updating ${updateArray.length} field(s) on ${owner}/${repo}#${issueNumber}`
       );
 
       // Create project config
@@ -253,50 +244,47 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
       // Create and validate client
       const client = await this.getClient(projectConfig, context);
 
-      // Get current status if possible
-      let previousStatus: string | undefined;
-      try {
-        const current = await client.getIssueStatus(owner, repo, issueNumber);
-        previousStatus = current ?? undefined;
-        if (verbose) {
-          context.logger.info(`[GitHubProjectNode] Current status: ${previousStatus ?? 'none'}`);
-        }
-      } catch {
-        // Ignore - issue might not be in project yet
-      }
-
-      // Update status
-      const updateResult = await client.updateStatus({
+      // Update fields
+      const updateResult = await client.updateFields({
         owner,
         repo,
         issueNumber,
-        status,
+        updates: updateArray,
       });
 
       const duration = Date.now() - startTime;
 
       const result: GitHubProjectResult = {
         success: updateResult.success,
-        newStatus: updateResult.newStatus,
+        updatedFields: updateResult.updatedFields,
         issueNumber,
         repository: `${owner}/${repo}`,
         duration,
-        ...(previousStatus !== undefined && { previousStatus }),
-        ...(updateResult.error !== undefined && { error: updateResult.error }),
+        ...(updateResult.error && { error: updateResult.error }),
       };
 
       if (!updateResult.success && throwOnError) {
+        const failedFields = updateResult.updatedFields
+          .filter(f => !f.success)
+          .map(f => `${f.field}: ${f.error}`)
+          .join('; ');
+
         throw new NodeExecutionError(
-          `Failed to update project status: ${updateResult.error}`,
+          `Failed to update project fields: ${failedFields}`,
           `${owner}/${repo}#${issueNumber}`,
           this.nodeType,
           undefined,
-          { status, result }
+          { result }
         );
       }
 
+      const updatedFieldNames = result.updatedFields
+        .filter(f => f.success)
+        .map(f => f.field)
+        .join(', ');
+
       context.logger.info(
-        `[GitHubProjectNode] Updated to "${result.newStatus}" in ${duration}ms`
+        `[GitHubProjectNode] Updated fields: ${updatedFieldNames || 'none'} in ${duration}ms`
       );
 
       // Store result in context
@@ -311,8 +299,7 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
         },
         metadata: {
           duration,
-          previousStatus,
-          newStatus: result.newStatus,
+          updatedFields: result.updatedFields,
         },
       };
     } catch (error) {
@@ -327,7 +314,7 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
       if (err instanceof ProjectsError) {
         throw new NodeExecutionError(
           `GitHub Projects error: ${err.message}`,
-          status,
+          'projects',
           this.nodeType,
           err,
           { code: err.code, details: err.details }
@@ -335,8 +322,8 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
       }
 
       throw new NodeExecutionError(
-        `Status update failed: ${err.message}`,
-        status,
+        `Field update failed: ${err.message}`,
+        'update',
         this.nodeType,
         err,
         { duration }
@@ -348,12 +335,10 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
    * Resolves issue number from config or context.
    */
   private resolveIssueNumber(state: WorkflowState<TContext>): number {
-    // Direct config takes precedence
     if (this.config.issueNumber !== undefined) {
       return this.config.issueNumber;
     }
 
-    // Read from context
     const key = this.config.issueNumberKey ?? 'issueNumber';
     const contextValue = (state.context as Record<string, unknown>)[key];
 
@@ -405,18 +390,6 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
       }
     }
 
-    // Validate the target status exists
-    if (!client.isValidStatus(this.config.status)) {
-      const available = client.getAvailableStatuses().join(', ');
-      throw new NodeExecutionError(
-        `Status "${this.config.status}" not found in project. Available: ${available}`,
-        'validation',
-        this.nodeType,
-        undefined,
-        { requestedStatus: this.config.status, availableStatuses: available }
-      );
-    }
-
     this.client = client;
     return client;
   }
@@ -424,19 +397,6 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
 
 /**
  * Factory function to create a GitHubProjectNode definition.
- *
- * @example
- * ```typescript
- * nodes.GitHubProjectNode({
- *   token: process.env.GITHUB_TOKEN!,
- *   projectOwner: 'myorg',
- *   projectNumber: 1,
- *   owner: 'myorg',
- *   repo: 'myrepo',
- *   status: 'In Progress',
- *   next: 'WORK',
- * })
- * ```
  */
 export function createGitHubProjectNode<TContext extends Record<string, unknown>>(
   config: Omit<GitHubProjectNodeConfig<TContext>, 'next'> & {

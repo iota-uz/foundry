@@ -1,15 +1,15 @@
 /**
- * Tests for the stdlib nodes - AgentNode, CommandNode, ClaudeCodeNode
+ * Tests for the stdlib nodes - AgentNode, CommandNode, SlashCommandNode
  */
 
 import { describe, expect, it } from 'bun:test';
 import {
   AgentNodeRuntime,
   CommandNodeRuntime,
-  ClaudeCodeNodeRuntime,
+  SlashCommandNodeRuntime,
   createAgentNode,
   createCommandNode,
-  createClaudeCodeNode,
+  createSlashCommandNode,
   NodeExecutionError,
   isInlineToolDefinition,
 } from '../nodes';
@@ -134,19 +134,19 @@ describe('stdlib-nodes', () => {
     });
   });
 
-  describe('ClaudeCodeNodeRuntime', () => {
-    it('should create a claude-code node with correct nodeType', () => {
-      const node = new ClaudeCodeNodeRuntime({
+  describe('SlashCommandNodeRuntime', () => {
+    it('should create a slash-command node with correct nodeType', () => {
+      const node = new SlashCommandNodeRuntime({
         command: 'edit',
         args: 'Add error handling',
         next: 'TEST',
       });
 
-      expect(node.nodeType).toBe('claude-code');
+      expect(node.nodeType).toBe('slash-command');
     });
 
     it('should resolve static transitions', () => {
-      const node = new ClaudeCodeNodeRuntime({
+      const node = new SlashCommandNodeRuntime({
         command: 'test',
         args: 'src/*.test.ts',
         next: 'DEPLOY',
@@ -157,7 +157,7 @@ describe('stdlib-nodes', () => {
     });
 
     it('should resolve dynamic transitions', () => {
-      const node = new ClaudeCodeNodeRuntime<{ testsPassed: boolean }>({
+      const node = new SlashCommandNodeRuntime<{ testsPassed: boolean }>({
         command: 'test',
         args: 'all tests',
         next: (state) => (state.context.testsPassed ? 'SUBMIT' : 'FIX'),
@@ -168,9 +168,9 @@ describe('stdlib-nodes', () => {
     });
   });
 
-  describe('createClaudeCodeNode', () => {
-    it('should create claude-code node config', () => {
-      const config = createClaudeCodeNode({
+  describe('createSlashCommandNode', () => {
+    it('should create slash-command node config', () => {
+      const config = createSlashCommandNode({
         command: 'edit',
         args: 'Fix the bug in src/utils.ts',
         next: 'TEST',

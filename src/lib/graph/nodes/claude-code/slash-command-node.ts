@@ -13,12 +13,12 @@ import {
   type BaseNodeConfig,
   type NodeExecutionResult,
   NodeExecutionError,
-} from './base';
+} from '../base';
 import type {
   WorkflowState,
   GraphContext,
   Transition,
-} from '../types';
+} from '../../types';
 
 /**
  * Supported slash commands.
@@ -391,7 +391,7 @@ export class SlashCommandNodeRuntime<TContext extends Record<string, unknown>>
    * Builds the command prompt for the SDK.
    */
   private buildCommandPrompt(
-    command: SlashCommandCommand,
+    command: SlashCommand,
     args: string,
     additionalContext?: string
   ): string {

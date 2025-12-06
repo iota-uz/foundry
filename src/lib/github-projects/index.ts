@@ -18,6 +18,10 @@ export type {
   UpdateStatusResult,
   ProjectValidation,
   ProjectsErrorCode,
+  FieldUpdate,
+  UpdateFieldsRequest,
+  UpdateFieldsResult,
+  FieldUpdateResult,
 } from './types';
 
 export { ProjectsError } from './types';
