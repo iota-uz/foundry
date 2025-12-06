@@ -10,7 +10,7 @@ import type {
   WorkflowState,
   AgentNodeDefinition,
   CommandNodeDefinition,
-  ClaudeCodeNodeDefinition,
+  SlashCommandNodeDefinition,
   Transition,
   ToolReference,
 } from './types';
@@ -74,28 +74,28 @@ export function CommandNode<TContext extends Record<string, unknown> = Record<st
 }
 
 /**
- * Creates a ClaudeCodeNode definition.
- * ClaudeCodeNodes execute Claude Code slash commands (/edit, /test, etc.).
+ * Creates a SlashCommandNode definition.
+ * SlashCommandNodes execute Claude Code slash commands (/edit, /test, etc.).
  *
  * @example
  * ```typescript
- * nodes.ClaudeCodeNode({
+ * nodes.SlashCommandNode({
  *   command: 'edit',
  *   args: 'Add error handling to src/utils.ts',
  *   next: 'TEST'
  * })
  * ```
  */
-export function ClaudeCodeNode<TContext extends Record<string, unknown> = Record<string, unknown>>(config: {
+export function SlashCommandNode<TContext extends Record<string, unknown> = Record<string, unknown>>(config: {
   /** The slash command to run (without the leading /) */
   command: string;
   /** Arguments/instructions for the command */
   args: string;
   /** Transition to next node (static string or dynamic function) */
   next: Transition<TContext>;
-}): ClaudeCodeNodeDefinition<TContext> {
+}): SlashCommandNodeDefinition<TContext> {
   return {
-    type: 'claude-code',
+    type: 'slash-command',
     command: config.command,
     args: config.args,
     next: config.next,
@@ -109,7 +109,7 @@ export function ClaudeCodeNode<TContext extends Record<string, unknown> = Record
 export const nodes = {
   AgentNode,
   CommandNode,
-  ClaudeCodeNode,
+  SlashCommandNode,
 } as const;
 
 /**
@@ -190,13 +190,13 @@ export function defineWorkflow<TContext extends Record<string, unknown> = Record
       if (!commandNode.command || typeof commandNode.command !== 'string') {
         throw new Error(`CommandNode "${nodeName}" must have a string "command" property`);
       }
-    } else if (node.type === 'claude-code') {
-      const claudeCodeNode = node as ClaudeCodeNodeDefinition<TContext>;
-      if (!claudeCodeNode.command || typeof claudeCodeNode.command !== 'string') {
-        throw new Error(`ClaudeCodeNode "${nodeName}" must have a string "command" property`);
+    } else if (node.type === 'slash-command') {
+      const slashCommandNode = node as SlashCommandNodeDefinition<TContext>;
+      if (!slashCommandNode.command || typeof slashCommandNode.command !== 'string') {
+        throw new Error(`SlashCommandNode "${nodeName}" must have a string "command" property`);
       }
-      if (!claudeCodeNode.args || typeof claudeCodeNode.args !== 'string') {
-        throw new Error(`ClaudeCodeNode "${nodeName}" must have a string "args" property`);
+      if (!slashCommandNode.args || typeof slashCommandNode.args !== 'string') {
+        throw new Error(`SlashCommandNode "${nodeName}" must have a string "args" property`);
       }
     }
   }

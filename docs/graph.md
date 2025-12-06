@@ -38,8 +38,8 @@ The Graph Engine enables you to build **multi-step AI workflows** that:
 │  ┌─────────────┐    ┌─────────────────────────────────┐         │
 │  │ Persistence │    │         Node Types              │         │
 │  │ (.json)     │    │  ┌────────┐ ┌────────┐ ┌──────┐│         │
-│  └─────────────┘    │  │ Agent  │ │Command │ │Claude││         │
-│                     │  │  Node  │ │  Node  │ │ Code ││         │
+│  └─────────────┘    │  │ Agent  │ │Command │ │Slash ││         │
+│                     │  │  Node  │ │  Node  │ │ Cmd  ││         │
 │                     │  └────────┘ └────────┘ └──────┘│         │
 │                     └─────────────────────────────────┘         │
 └─────────────────────────────────────────────────────────────────┘
@@ -87,7 +87,7 @@ export default defineWorkflow({
       next: 'TEST'
     }),
 
-    COMMIT: nodes.ClaudeCodeNode({
+    COMMIT: nodes.SlashCommandNode({
       command: 'commit',
       args: 'Implement feature with passing tests',
       next: 'END'
@@ -155,12 +155,12 @@ nodes.CommandNode({
 - Exit code in context
 - Timeout support
 
-### ClaudeCodeNode
+### SlashCommandNode
 
 Invokes Claude Code slash commands.
 
 ```typescript
-nodes.ClaudeCodeNode({
+nodes.SlashCommandNode({
   command: 'edit',             // Claude Code command
   args: 'Add error handling',  // Command arguments
   next: 'END'
@@ -401,7 +401,7 @@ defineWorkflow({
       next: (state) => state.context.testsPassed ? 'COMMIT' : 'FIX'
     }),
 
-    COMMIT: nodes.ClaudeCodeNode({
+    COMMIT: nodes.SlashCommandNode({
       command: 'commit',
       args: 'Fix bug #123',
       next: 'END'
@@ -443,7 +443,7 @@ function defineWorkflow<TContext>(config: {
 const nodes = {
   AgentNode<T>(config: AgentNodeConfig<T>): AgentNodeDefinition<T>;
   CommandNode<T>(config: CommandNodeConfig<T>): CommandNodeDefinition<T>;
-  ClaudeCodeNode<T>(config: ClaudeCodeNodeConfig<T>): ClaudeCodeNodeDefinition<T>;
+  SlashCommandNode<T>(config: SlashCommandNodeConfig<T>): SlashCommandNodeDefinition<T>;
 };
 ```
 

@@ -1,7 +1,7 @@
 /**
- * @sys/graph - ClaudeCodeNode Implementation
+ * @sys/graph - SlashCommandNode Implementation
  *
- * Runs Claude Code slash commands (/edit, /test, etc.) with arguments.
+ * Runs slash commands (/edit, /test, etc.) with arguments.
  * Provides robust error handling and result propagation to state.
  */
 
@@ -21,9 +21,9 @@ import type {
 } from '../types';
 
 /**
- * Supported Claude Code slash commands.
+ * Supported slash commands.
  */
-export type ClaudeCodeCommand =
+export type SlashCommand =
   | 'edit'
   | 'test'
   | 'run'
@@ -36,11 +36,11 @@ export type ClaudeCodeCommand =
   | string; // Allow custom commands
 
 /**
- * Result of a Claude Code command execution.
+ * Result of a slash command execution.
  */
-export interface ClaudeCodeResult {
+export interface SlashCommandResult {
   /** The slash command that was executed */
-  command: ClaudeCodeCommand;
+  command: SlashCommand;
 
   /** Arguments passed to the command */
   args: string;
@@ -66,15 +66,15 @@ export interface ClaudeCodeResult {
 }
 
 /**
- * Configuration for ClaudeCodeNode.
+ * Configuration for SlashCommandNode.
  */
-export interface ClaudeCodeNodeConfig<TContext extends Record<string, unknown>>
+export interface SlashCommandNodeConfig<TContext extends Record<string, unknown>>
   extends BaseNodeConfig<TContext> {
   /**
    * The slash command to run (without the leading /).
    * Examples: 'edit', 'test', 'run', 'review'
    */
-  command: ClaudeCodeCommand;
+  command: SlashCommand;
 
   /**
    * Arguments/instructions for the command.
@@ -103,7 +103,7 @@ export interface ClaudeCodeNodeConfig<TContext extends Record<string, unknown>>
 
   /**
    * Key in context to store the command result.
-   * Default: 'lastClaudeCodeResult'
+   * Default: 'lastSlashCommandResult'
    */
   resultKey?: string;
 
@@ -119,10 +119,10 @@ export interface ClaudeCodeNodeConfig<TContext extends Record<string, unknown>>
 }
 
 /**
- * Options for running a Claude Code command.
+ * Options for running a slash command.
  */
-interface RunClaudeCodeOptions {
-  command: ClaudeCodeCommand;
+interface RunSlashCommandOptions {
+  command: SlashCommand;
   args: string;
   cwd?: string;
   timeout?: number;
@@ -132,9 +132,9 @@ interface RunClaudeCodeOptions {
 }
 
 /**
- * Result from running a Claude Code command.
+ * Result from running a slash command.
  */
-interface RunClaudeCodeResult {
+interface RunSlashCommandResult {
   success: boolean;
   output: string;
   error?: { message: string; code?: string; details?: Record<string, unknown> };
@@ -142,7 +142,7 @@ interface RunClaudeCodeResult {
 }
 
 /**
- * ClaudeCodeNode - Executes Claude Code slash commands.
+ * SlashCommandNode - Executes slash commands.
  *
  * Features:
  * - Supports common slash commands (/edit, /test, /run, etc.)
@@ -152,35 +152,35 @@ interface RunClaudeCodeResult {
  *
  * @example
  * ```typescript
- * const editNode = new ClaudeCodeNodeRuntime<MyContext>({
+ * const editNode = new SlashCommandNodeRuntime<MyContext>({
  *   command: 'edit',
  *   args: 'Add error handling to the processData function in src/utils.ts',
  *   next: 'TEST'
  * });
  *
- * const testNode = new ClaudeCodeNodeRuntime<MyContext>({
+ * const testNode = new SlashCommandNodeRuntime<MyContext>({
  *   command: 'test',
  *   args: 'src/utils.test.ts',
- *   next: (state) => state.context.lastClaudeCodeResult?.success ? 'SUBMIT' : 'FIX'
+ *   next: (state) => state.context.lastSlashCommandResult?.success ? 'SUBMIT' : 'FIX'
  * });
  * ```
  */
-export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
-  extends BaseNode<TContext, ClaudeCodeNodeConfig<TContext>> {
+export class SlashCommandNodeRuntime<TContext extends Record<string, unknown>>
+  extends BaseNode<TContext, SlashCommandNodeConfig<TContext>> {
 
-  public readonly nodeType = 'claude-code';
+  public readonly nodeType = 'slash-command';
 
-  constructor(config: ClaudeCodeNodeConfig<TContext>) {
+  constructor(config: SlashCommandNodeConfig<TContext>) {
     super({
       ...config,
       timeout: config.timeout ?? 600000,
       throwOnError: config.throwOnError ?? true,
-      resultKey: config.resultKey ?? 'lastClaudeCodeResult',
+      resultKey: config.resultKey ?? 'lastSlashCommandResult',
     });
   }
 
   /**
-   * Executes the Claude Code slash command.
+   * Executes the slash command.
    */
   async execute(
     state: WorkflowState<TContext>,
@@ -198,12 +198,12 @@ export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
     } = this.config;
 
     const fullCommand = `/${command} ${args}`;
-    context.logger.info(`[ClaudeCodeNode] Executing: ${fullCommand}`);
+    context.logger.info(`[SlashCommandNode] Executing: ${fullCommand}`);
 
     const startTime = Date.now();
 
     try {
-      const runOptions: RunClaudeCodeOptions = {
+      const runOptions: RunSlashCommandOptions = {
         command,
         args,
         context,
@@ -213,11 +213,11 @@ export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
       if (model !== undefined) runOptions.model = model;
       if (additionalContext !== undefined) runOptions.additionalContext = additionalContext;
 
-      const result = await this.runClaudeCodeCommand(runOptions);
+      const result = await this.runSlashCommandCommand(runOptions);
 
       const duration = Date.now() - startTime;
 
-      const claudeCodeResult: ClaudeCodeResult = {
+      const claudeCodeResult: SlashCommandResult = {
         command,
         args,
         success: result.success,
@@ -228,13 +228,13 @@ export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
       if (result.filesAffected !== undefined) claudeCodeResult.filesAffected = result.filesAffected;
 
       context.logger.info(
-        `[ClaudeCodeNode] ${result.success ? 'Succeeded' : 'Failed'} in ${duration}ms`
+        `[SlashCommandNode] ${result.success ? 'Succeeded' : 'Failed'} in ${duration}ms`
       );
 
       // Check for errors
       if (throwOnError && !result.success) {
         throw new NodeExecutionError(
-          `Claude Code command failed: ${result.error?.message || 'Unknown error'}`,
+          `Slash command failed: ${result.error?.message || 'Unknown error'}`,
           fullCommand,
           this.nodeType,
           undefined,
@@ -269,7 +269,7 @@ export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
 
       const duration = Date.now() - startTime;
       throw new NodeExecutionError(
-        `Claude Code command execution failed: ${err.message}`,
+        `Slash command execution failed: ${err.message}`,
         fullCommand,
         this.nodeType,
         err,
@@ -279,9 +279,9 @@ export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
   }
 
   /**
-   * Runs the Claude Code slash command using the SDK.
+   * Runs the Slash slash command using the SDK.
    */
-  private async runClaudeCodeCommand(options: RunClaudeCodeOptions): Promise<RunClaudeCodeResult> {
+  private async runSlashCommandCommand(options: RunSlashCommandOptions): Promise<RunSlashCommandResult> {
     const { command, args, cwd, timeout = 600000, model, additionalContext } = options;
 
     // Build the prompt as a slash command
@@ -329,7 +329,7 @@ export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
   private async executeQuery(
     prompt: string,
     sdkOptions: Options
-  ): Promise<RunClaudeCodeResult> {
+  ): Promise<RunSlashCommandResult> {
     const queryResult = query({
       prompt,
       options: sdkOptions,
@@ -377,7 +377,7 @@ export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
       }
     }
 
-    const result: RunClaudeCodeResult = {
+    const result: RunSlashCommandResult = {
       success,
       output,
     };
@@ -391,7 +391,7 @@ export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
    * Builds the command prompt for the SDK.
    */
   private buildCommandPrompt(
-    command: ClaudeCodeCommand,
+    command: SlashCommandCommand,
     args: string,
     additionalContext?: string
   ): string {
@@ -434,22 +434,22 @@ export class ClaudeCodeNodeRuntime<TContext extends Record<string, unknown>>
 }
 
 /**
- * Factory function to create a ClaudeCodeNode definition.
+ * Factory function to create a SlashCommandNode definition.
  * This is used in atomic.config.ts for declarative node definitions.
  *
  * @example
  * ```typescript
- * nodes.ClaudeCodeNode({
+ * nodes.SlashCommandNode({
  *   command: 'edit',
  *   args: 'Add validation to the user input',
  *   next: 'TEST'
  * })
  * ```
  */
-export function createClaudeCodeNode<TContext extends Record<string, unknown>>(
-  config: Omit<ClaudeCodeNodeConfig<TContext>, 'next'> & {
+export function createSlashCommandNode<TContext extends Record<string, unknown>>(
+  config: Omit<SlashCommandNodeConfig<TContext>, 'next'> & {
     next: Transition<TContext>;
   }
-): ClaudeCodeNodeConfig<TContext> {
+): SlashCommandNodeConfig<TContext> {
   return config;
 }

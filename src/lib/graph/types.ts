@@ -229,11 +229,11 @@ export interface CommandNodeDefinition<TContext extends Record<string, unknown> 
 }
 
 /**
- * ClaudeCodeNode definition - a node that runs Claude Code slash commands.
+ * SlashCommandNode definition - a node that runs Claude Code slash commands.
  */
-export interface ClaudeCodeNodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>>
+export interface SlashCommandNodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>>
   extends BaseNodeDefinition<TContext> {
-  type: 'claude-code';
+  type: 'slash-command';
 
   /** The slash command to run (without the leading /) */
   command: string;
@@ -248,7 +248,7 @@ export interface ClaudeCodeNodeDefinition<TContext extends Record<string, unknow
 export type NodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>> =
   | AgentNodeDefinition<TContext>
   | CommandNodeDefinition<TContext>
-  | ClaudeCodeNodeDefinition<TContext>;
+  | SlashCommandNodeDefinition<TContext>;
 
 /**
  * The main workflow configuration schema.

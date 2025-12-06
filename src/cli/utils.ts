@@ -15,7 +15,7 @@ import { resolveTransition } from '../lib/graph';
 import {
   AgentNodeRuntime,
   CommandNodeRuntime,
-  ClaudeCodeNodeRuntime,
+  SlashCommandNodeRuntime,
 } from '../lib/graph/nodes';
 
 /**
@@ -35,7 +35,7 @@ export function createGraphNode<TContext extends Record<string, unknown>>(
   validNodeNames: Set<string>
 ): GraphNode<WorkflowState<TContext>> {
   // Create the underlying node runtime implementation
-  let nodeRuntime: AgentNodeRuntime<TContext> | CommandNodeRuntime<TContext> | ClaudeCodeNodeRuntime<TContext>;
+  let nodeRuntime: AgentNodeRuntime<TContext> | CommandNodeRuntime<TContext> | SlashCommandNodeRuntime<TContext>;
 
   switch (definition.type) {
     case 'agent': {
@@ -54,8 +54,8 @@ export function createGraphNode<TContext extends Record<string, unknown>>(
       });
       break;
     }
-    case 'claude-code': {
-      nodeRuntime = new ClaudeCodeNodeRuntime<TContext>({
+    case 'slash-command': {
+      nodeRuntime = new SlashCommandNodeRuntime<TContext>({
         command: definition.command,
         args: definition.args,
         next: definition.next,
