@@ -4,6 +4,7 @@
  * Nodes for integrating with GitHub APIs:
  * - GitHubProjectNode: Update project fields (status, priority, etc.)
  * - GithubCommentsNode: Create and update issue/PR comments
+ * - GitHubPRVisualizerNode: Update PR body with workflow visualization
  */
 
 export {
@@ -20,3 +21,11 @@ export {
   type CommentResult,
   createGithubCommentsNode,
 } from './comments-node';
+
+export {
+  GitHubPRVisualizerNodeRuntime,
+  type GitHubPRVisualizerNodeConfig,
+  type PRVisualizerResult,
+  type WorkflowNodeMeta,
+  createGitHubPRVisualizerNode,
+} from './pr-visualizer-node';

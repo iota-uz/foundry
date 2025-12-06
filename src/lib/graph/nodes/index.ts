@@ -65,6 +65,14 @@ export {
   createGithubCommentsNode,
 } from './github/comments-node';
 
+export {
+  GitHubPRVisualizerNodeRuntime,
+  type GitHubPRVisualizerNodeConfig,
+  type PRVisualizerResult,
+  type WorkflowNodeMeta,
+  createGitHubPRVisualizerNode,
+} from './github/pr-visualizer-node';
+
 // Re-export as module namespace
 export * as github from './github';
 
