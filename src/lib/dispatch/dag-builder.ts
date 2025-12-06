@@ -112,12 +112,6 @@ export class DagBuilder {
     this.log('Fetching sub-issue relationships...');
     await this.client.enrichWithSubIssueData(issues);
 
-    // Build lookup map for quick access by issue number
-    const issuesByNumber = new Map<number, QueuedIssue>();
-    for (const issue of issues) {
-      issuesByNumber.set(issue.number, issue);
-    }
-
     // First pass: create nodes and parse dependencies
     for (const issue of issues) {
       const id = createIssueId(issue.owner, issue.repo, issue.number);

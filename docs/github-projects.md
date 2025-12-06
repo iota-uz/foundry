@@ -335,16 +335,29 @@ try {
 
 ## Graph Workflow Integration
 
-Use `GitHubProjectNode` to update status at any step in a graph workflow:
+Use `GitHubProjectNode` to update status at any step in a graph workflow.
+
+All configuration is explicit - use `process.env.*` if you need environment variables:
 
 ```typescript
 import { defineWorkflow, nodes } from '@/lib/graph';
+
+// Configuration shared across nodes
+const projectConfig = {
+  token: process.env.GITHUB_TOKEN!,
+  projectOwner: process.env.PROJECT_OWNER!,
+  projectNumber: Number(process.env.PROJECT_NUMBER),
+  owner: process.env.REPO_OWNER!,
+  repo: process.env.REPO_NAME!,
+};
 
 export default defineWorkflow({
   id: 'issue-processor',
   nodes: {
     // Mark issue as In Progress when workflow starts
     START: nodes.GitHubProjectNode({
+      ...projectConfig,
+      issueNumberKey: 'issueNumber', // read from context
       status: 'In Progress',
       next: 'PLAN',
     }),
@@ -368,12 +381,16 @@ export default defineWorkflow({
 
     // Move to In Review when ready for review
     REVIEW: nodes.GitHubProjectNode({
+      ...projectConfig,
+      issueNumberKey: 'issueNumber',
       status: 'In Review',
       next: 'DONE',
     }),
 
     // Mark as Done when complete
     DONE: nodes.GitHubProjectNode({
+      ...projectConfig,
+      issueNumberKey: 'issueNumber',
       status: 'Done',
       next: 'END',
     }),
@@ -385,14 +402,15 @@ export default defineWorkflow({
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
+| `token` | string | Yes | GitHub token with `project` scope |
+| `projectOwner` | string | Yes | Project owner (user or org) |
+| `projectNumber` | number | Yes | Project number (from URL) |
+| `owner` | string | Yes | Repository owner |
+| `repo` | string | Yes | Repository name |
 | `status` | string | Yes | Target status (must match project option) |
 | `next` | string \| function | Yes | Next node or transition function |
-| `projectOwner` | string | No | Project owner (env: `GITHUB_PROJECT_OWNER`) |
-| `projectNumber` | number | No | Project number (env: `GITHUB_PROJECT_NUMBER`) |
 | `issueNumber` | number | No | Static issue number to update |
-| `issueNumberKey` | string | No | Context key to read issue number from (default: `issueNumber`) |
-| `owner` | string | No | Repository owner (env: `GITHUB_REPOSITORY`) |
-| `repo` | string | No | Repository name (env: `GITHUB_REPOSITORY`) |
+| `issueNumberKey` | string | No | Context key to read issue number (default: `issueNumber`) |
 | `throwOnError` | boolean | No | Throw on update failure (default: true) |
 | `resultKey` | string | No | Context key to store result (default: `lastProjectResult`) |
 
@@ -402,13 +420,13 @@ The node resolves issue number from (in order):
 
 1. `issueNumber` config option (static)
 2. Workflow context via `issueNumberKey` (dynamic)
-3. `ISSUE_NUMBER` or `GITHUB_ISSUE_NUMBER` environment variable
 
 ```typescript
 // Issue number from context
 nodes.GitHubProjectNode({
-  status: 'Done',
+  ...projectConfig,
   issueNumberKey: 'currentIssue', // reads from state.context.currentIssue
+  status: 'Done',
   next: 'END',
 })
 ```

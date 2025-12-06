@@ -46,72 +46,90 @@ export interface GitHubProjectResult {
 
 /**
  * Configuration for GitHubProjectNode.
+ *
+ * All configuration is explicit - no automatic environment variable fallbacks.
+ * If you need to use environment variables, pass them explicitly:
+ *
+ * @example
+ * ```typescript
+ * nodes.GitHubProjectNode({
+ *   token: process.env.GITHUB_TOKEN!,
+ *   projectOwner: process.env.GITHUB_PROJECT_OWNER!,
+ *   projectNumber: Number(process.env.GITHUB_PROJECT_NUMBER),
+ *   owner: process.env.GITHUB_REPOSITORY_OWNER!,
+ *   repo: process.env.GITHUB_REPOSITORY_NAME!,
+ *   status: 'In Progress',
+ *   next: 'WORK',
+ * })
+ * ```
  */
 export interface GitHubProjectNodeConfig<TContext extends Record<string, unknown>>
   extends BaseNodeConfig<TContext> {
   /**
+   * GitHub personal access token with `project` scope.
+   * Required.
+   */
+  token: string;
+
+  /**
+   * Project owner (user or organization login).
+   * Required.
+   */
+  projectOwner: string;
+
+  /**
+   * Project number (visible in project URL).
+   * Required.
+   */
+  projectNumber: number;
+
+  /**
+   * Repository owner.
+   * Required.
+   */
+  owner: string;
+
+  /**
+   * Repository name.
+   * Required.
+   */
+  repo: string;
+
+  /**
    * Target status to set (must exactly match a project option).
    * Case-insensitive matching.
+   * Required.
    */
   status: string;
 
   /**
-   * GitHub token (defaults to GITHUB_TOKEN env var).
-   */
-  token?: string;
-
-  /**
-   * Project owner (user or organization).
-   * Defaults to GITHUB_PROJECT_OWNER or parsed from GITHUB_REPOSITORY.
-   */
-  projectOwner?: string;
-
-  /**
-   * Project number (visible in project URL).
-   * Defaults to GITHUB_PROJECT_NUMBER env var.
-   */
-  projectNumber?: number;
-
-  /**
-   * Static issue number to update.
-   * Mutually exclusive with issueNumberKey.
+   * Issue number to update.
+   * Either provide this directly or use `issueNumberKey` to read from context.
    */
   issueNumber?: number;
 
   /**
-   * Key in context to read issue number from.
-   * Allows dynamic issue resolution from workflow state.
-   * Defaults to 'issueNumber'.
+   * Key in workflow context to read issue number from.
+   * Used when `issueNumber` is not provided.
+   * @default 'issueNumber'
    */
   issueNumberKey?: string;
 
   /**
-   * Repository owner.
-   * Defaults to parsed from GITHUB_REPOSITORY.
-   */
-  owner?: string;
-
-  /**
-   * Repository name.
-   * Defaults to parsed from GITHUB_REPOSITORY.
-   */
-  repo?: string;
-
-  /**
    * Whether to throw on update failure.
-   * Default: true
+   * @default true
    */
   throwOnError?: boolean;
 
   /**
    * Key in context to store the result.
-   * Default: 'lastProjectResult'
+   * @default 'lastProjectResult'
    */
   resultKey?: string;
 
   /**
    * Enable verbose logging.
-   * Default: false
+   * @default false
    */
   verbose?: boolean;
 }
@@ -119,23 +137,32 @@ export interface GitHubProjectNodeConfig<TContext extends Record<string, unknown
 /**
  * GitHubProjectNode - Updates issue status in GitHub Projects.
  *
- * Features:
- * - Updates to any status at any workflow step
- * - Validates project and status options at startup
- * - Auto-adds issues to project if not present
- * - Stores results in workflow context
+ * All configuration is explicit - pass values directly or use process.env.
  *
  * @example
  * ```typescript
- * const startNode = new GitHubProjectNodeRuntime<MyContext>({
+ * // With explicit values
+ * nodes.GitHubProjectNode({
+ *   token: 'ghp_xxx',
+ *   projectOwner: 'myorg',
+ *   projectNumber: 1,
+ *   owner: 'myorg',
+ *   repo: 'myrepo',
  *   status: 'In Progress',
- *   next: 'WORK'
- * });
+ *   next: 'WORK',
+ * })
  *
- * const doneNode = new GitHubProjectNodeRuntime<MyContext>({
+ * // With environment variables
+ * nodes.GitHubProjectNode({
+ *   token: process.env.GITHUB_TOKEN!,
+ *   projectOwner: process.env.PROJECT_OWNER!,
+ *   projectNumber: Number(process.env.PROJECT_NUMBER),
+ *   owner: process.env.REPO_OWNER!,
+ *   repo: process.env.REPO_NAME!,
+ *   issueNumberKey: 'currentIssue', // read from context
  *   status: 'Done',
- *   next: 'END'
- * });
+ *   next: 'END',
+ * })
  * ```
  */
 export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
@@ -154,6 +181,34 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
       issueNumberKey: config.issueNumberKey ?? 'issueNumber',
       verbose: config.verbose ?? false,
     });
+
+    // Validate required fields at construction time
+    this.validateConfig();
+  }
+
+  /**
+   * Validates required configuration fields.
+   */
+  private validateConfig(): void {
+    const { token, projectOwner, projectNumber, owner, repo, status } = this.config;
+
+    const missing: string[] = [];
+    if (!token) missing.push('token');
+    if (!projectOwner) missing.push('projectOwner');
+    if (!projectNumber) missing.push('projectNumber');
+    if (!owner) missing.push('owner');
+    if (!repo) missing.push('repo');
+    if (!status) missing.push('status');
+
+    if (missing.length > 0) {
+      throw new NodeExecutionError(
+        `Missing required configuration: ${missing.join(', ')}`,
+        'config',
+        this.nodeType,
+        undefined,
+        { missing }
+      );
+    }
   }
 
   /**
@@ -164,6 +219,11 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
     context: GraphContext
   ): Promise<NodeExecutionResult<TContext>> {
     const {
+      token,
+      projectOwner,
+      projectNumber,
+      owner,
+      repo,
       status,
       throwOnError,
       resultKey,
@@ -173,13 +233,22 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
     const startTime = Date.now();
 
     try {
-      // Resolve configuration
-      const projectConfig = this.resolveProjectConfig();
-      const { owner, repo, issueNumber } = this.resolveIssueInfo(state);
+      const issueNumber = this.resolveIssueNumber(state);
 
       context.logger.info(
         `[GitHubProjectNode] Updating ${owner}/${repo}#${issueNumber} to "${status}"`
       );
+
+      // Create project config
+      const projectConfig: ProjectsConfig = {
+        token,
+        projectOwner,
+        projectNumber,
+      };
+
+      if (verbose) {
+        projectConfig.verbose = true;
+      }
 
       // Create and validate client
       const client = await this.getClient(projectConfig, context);
@@ -276,107 +345,34 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
   }
 
   /**
-   * Resolves project configuration from config or environment.
+   * Resolves issue number from config or context.
    */
-  private resolveProjectConfig(): ProjectsConfig {
-    const token = this.config.token ?? process.env['GITHUB_TOKEN'];
-    if (!token) {
-      throw new NodeExecutionError(
-        'GitHub token not configured. Set token in config or GITHUB_TOKEN env var.',
-        'config',
-        this.nodeType
-      );
+  private resolveIssueNumber(state: WorkflowState<TContext>): number {
+    // Direct config takes precedence
+    if (this.config.issueNumber !== undefined) {
+      return this.config.issueNumber;
     }
 
-    const projectOwner = this.config.projectOwner
-      ?? process.env['GITHUB_PROJECT_OWNER']
-      ?? this.parseRepoOwner();
+    // Read from context
+    const key = this.config.issueNumberKey ?? 'issueNumber';
+    const contextValue = (state.context as Record<string, unknown>)[key];
 
-    if (!projectOwner) {
-      throw new NodeExecutionError(
-        'Project owner not configured. Set projectOwner in config or GITHUB_PROJECT_OWNER env var.',
-        'config',
-        this.nodeType
-      );
+    if (typeof contextValue === 'number') {
+      return contextValue;
     }
 
-    const projectNumberStr = process.env['GITHUB_PROJECT_NUMBER'];
-    const projectNumber = this.config.projectNumber
-      ?? (projectNumberStr ? parseInt(projectNumberStr, 10) : undefined);
-
-    if (!projectNumber || isNaN(projectNumber)) {
-      throw new NodeExecutionError(
-        'Project number not configured. Set projectNumber in config or GITHUB_PROJECT_NUMBER env var.',
-        'config',
-        this.nodeType
-      );
-    }
-
-    const config: ProjectsConfig = {
-      token,
-      projectOwner,
-      projectNumber,
-    };
-
-    if (this.config.verbose !== undefined) {
-      config.verbose = this.config.verbose;
-    }
-
-    return config;
-  }
-
-  /**
-   * Resolves issue information from config, context, or environment.
-   */
-  private resolveIssueInfo(state: WorkflowState<TContext>): {
-    owner: string;
-    repo: string;
-    issueNumber: number;
-  } {
-    // Resolve owner and repo
-    const owner = this.config.owner ?? this.parseRepoOwner();
-    const repo = this.config.repo ?? this.parseRepoName();
-
-    if (!owner || !repo) {
-      throw new NodeExecutionError(
-        'Repository not configured. Set owner/repo in config or GITHUB_REPOSITORY env var.',
-        'config',
-        this.nodeType
-      );
-    }
-
-    // Resolve issue number
-    let issueNumber: number | undefined = this.config.issueNumber;
-
-    if (issueNumber === undefined) {
-      // Try to read from context
-      const key = this.config.issueNumberKey ?? 'issueNumber';
-      const contextValue = (state.context as Record<string, unknown>)[key];
-
-      if (typeof contextValue === 'number') {
-        issueNumber = contextValue;
-      } else if (typeof contextValue === 'string') {
-        issueNumber = parseInt(contextValue, 10);
+    if (typeof contextValue === 'string') {
+      const parsed = parseInt(contextValue, 10);
+      if (!isNaN(parsed)) {
+        return parsed;
       }
     }
 
-    if (issueNumber === undefined) {
-      // Try environment variable
-      const envValue = process.env['ISSUE_NUMBER'] ?? process.env['GITHUB_ISSUE_NUMBER'];
-      if (envValue) {
-        issueNumber = parseInt(envValue, 10);
-      }
-    }
-
-    if (issueNumber === undefined || isNaN(issueNumber)) {
-      throw new NodeExecutionError(
-        'Issue number not found. Set issueNumber in config, context, or ISSUE_NUMBER env var.',
-        'config',
-        this.nodeType
-      );
-    }
-
-    return { owner, repo, issueNumber };
+    throw new NodeExecutionError(
+      `Issue number not found. Provide 'issueNumber' in config or set '${key}' in workflow context.`,
+      'config',
+      this.nodeType
+    );
   }
 
   /**
@@ -424,42 +420,21 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
     this.client = client;
     return client;
   }
-
-  /**
-   * Parses repository owner from GITHUB_REPOSITORY.
-   */
-  private parseRepoOwner(): string | undefined {
-    const repo = process.env['GITHUB_REPOSITORY'];
-    if (!repo) return undefined;
-    const [owner] = repo.split('/');
-    return owner;
-  }
-
-  /**
-   * Parses repository name from GITHUB_REPOSITORY.
-   */
-  private parseRepoName(): string | undefined {
-    const repo = process.env['GITHUB_REPOSITORY'];
-    if (!repo) return undefined;
-    const parts = repo.split('/');
-    return parts[1];
-  }
 }
 
 /**
  * Factory function to create a GitHubProjectNode definition.
- * This is used in atomic.config.ts for declarative node definitions.
  *
  * @example
  * ```typescript
  * nodes.GitHubProjectNode({
+ *   token: process.env.GITHUB_TOKEN!,
+ *   projectOwner: 'myorg',
+ *   projectNumber: 1,
+ *   owner: 'myorg',
+ *   repo: 'myrepo',
  *   status: 'In Progress',
- *   next: 'WORK'
- * })
- *
- * nodes.GitHubProjectNode({
- *   status: 'Done',
- *   next: 'END'
+ *   next: 'WORK',
  * })
  * ```
  */

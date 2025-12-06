@@ -124,13 +124,19 @@ Multiple dependencies can be comma-separated on a single line.
 
 ## GitHub Sub-Issues Support
 
-The dispatcher natively supports GitHub's sub-issues feature, automatically fetching parent-child relationships from the GitHub API.
+> **Note**: GitHub sub-issues is an experimental feature. The REST API endpoints used
+> (`/issues/{number}/sub_issues` and `/issues/{number}/parent`) may not be available
+> in all GitHub instances or may change. The dispatcher gracefully handles API failures
+> by falling back to text-based dependency parsing.
+
+The dispatcher supports GitHub's sub-issues feature, automatically fetching parent-child relationships when available.
 
 ### How It Works
 
-1. **Automatic Detection**: The dispatcher fetches sub-issue relationships for all queued issues using GitHub's REST API
+1. **Automatic Detection**: The dispatcher attempts to fetch sub-issue relationships using GitHub's REST API
 2. **Implicit Dependencies**: Parent issues are automatically blocked by their sub-issues (children must close before parent becomes ready)
 3. **Leaf-Only Dispatch**: Only leaf issues (issues without sub-issues) are dispatched to workers
+4. **Graceful Fallback**: If sub-issues API is unavailable, falls back to text-based dependency declarations
 
 ### Example Hierarchy
 
@@ -156,9 +162,11 @@ In this example:
 
 ### Limitations
 
+- **Experimental API**: Sub-issues endpoints may not be available in all GitHub instances
 - **Same repo only**: Sub-issues are only fetched from the same repository
 - **One parent**: GitHub sub-issues support only one parent per issue
 - **API calls**: Each issue requires 2 additional API calls (sub-issues + parent)
+- **Rate limiting**: For 50 queued issues, this results in ~100 API calls. Consider using `--max-concurrent` to limit batch size
 
 ## Priority Labels
 
