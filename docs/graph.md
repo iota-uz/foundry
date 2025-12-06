@@ -161,9 +161,43 @@ Invokes Claude Code slash commands.
 
 ```typescript
 nodes.SlashCommandNode({
-  command: 'edit',             // Claude Code command
-  args: 'Add error handling',  // Command arguments
-  next: 'END'
+  command: 'edit',             // Claude Code command (without leading /)
+  args: 'Add error handling',  // Command arguments/instructions
+  next: 'END'                  // Static or dynamic transition
+})
+```
+
+**Configuration:**
+- `command` - The slash command to run (without the `/` prefix)
+- `args` - Arguments or instructions passed to the command
+- `next` - Transition to next node (string or function)
+
+**Result stored in context:**
+
+After execution, the result is stored in `state.context.lastSlashCommandResult`:
+
+```typescript
+interface SlashCommandResult {
+  success: boolean;      // Whether command completed successfully
+  output?: string;       // Command output (stdout)
+  error?: string;        // Error message if failed
+  exitCode?: number;     // Exit code from command
+}
+```
+
+**Dynamic transition example:**
+
+```typescript
+nodes.SlashCommandNode({
+  command: 'test',
+  args: 'Run all unit tests',
+  next: (state) => {
+    // Access result via state.context.lastSlashCommandResult
+    if (state.context.lastSlashCommandResult?.success) {
+      return 'DEPLOY';
+    }
+    return 'FIX_TESTS';
+  }
 })
 ```
 
