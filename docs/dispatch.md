@@ -61,8 +61,8 @@ foundry dispatch [options]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--owner <owner>` | Repository owner | `GITHUB_REPOSITORY_OWNER` env |
-| `--repo <repo>` | Repository name | `GITHUB_REPOSITORY_NAME` env |
+| `--owner <owner>` | Repository owner | Parsed from `GITHUB_REPOSITORY` |
+| `--repo <repo>` | Repository name | Parsed from `GITHUB_REPOSITORY` |
 | `--token <token>` | GitHub personal access token | `GITHUB_TOKEN` env |
 | `--label <label>` | Label to filter issues | `queue` |
 | `--max-concurrent <n>` | Maximum concurrent issues | unlimited |
@@ -75,9 +75,7 @@ foundry dispatch [options]
 | Variable | Description |
 |----------|-------------|
 | `GITHUB_TOKEN` | GitHub personal access token |
-| `GITHUB_REPOSITORY` | Repository in `owner/repo` format |
-| `GITHUB_REPOSITORY_OWNER` | Repository owner |
-| `GITHUB_REPOSITORY_NAME` | Repository name |
+| `GITHUB_REPOSITORY` | Repository in `owner/repo` format (auto-parsed) |
 | `GITHUB_API_URL` | GitHub API URL (for GitHub Enterprise) |
 
 ### Programmatic API
