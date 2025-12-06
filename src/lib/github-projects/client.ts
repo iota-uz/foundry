@@ -283,12 +283,17 @@ export class ProjectsClient {
       );
     }
 
-    return {
+    const field: ProjectField = {
       id: statusField.id,
       name: statusField.name,
       dataType: 'SINGLE_SELECT',
-      options: statusField.options,
     };
+
+    if (statusField.options !== undefined) {
+      field.options = statusField.options;
+    }
+
+    return field;
   }
 
   /**
@@ -398,20 +403,26 @@ export class ProjectsClient {
       return null;
     }
 
-    return {
+    const projectItem: ProjectItem = {
       id: item.id,
       content: {
         type: 'Issue',
-        number: item.content?.number,
         title: item.content?.title ?? '',
-        repository: item.content?.repository
-          ? {
-              owner: item.content.repository.owner.login,
-              name: item.content.repository.name,
-            }
-          : undefined,
       },
     };
+
+    if (item.content?.number !== undefined) {
+      projectItem.content.number = item.content.number;
+    }
+
+    if (item.content?.repository) {
+      projectItem.content.repository = {
+        owner: item.content.repository.owner.login,
+        name: item.content.repository.name,
+      };
+    }
+
+    return projectItem;
   }
 
   /**

@@ -11,9 +11,11 @@
  * export default defineWorkflow({
  *   id: 'my-workflow',
  *   nodes: {
+ *     START: nodes.GitHubProjectNode({ status: 'In Progress', next: 'PLAN' }),
  *     PLAN: nodes.AgentNode({ role: 'planner', system: '...', next: 'BUILD' }),
  *     BUILD: nodes.CommandNode({ command: 'npm run build', next: 'TEST' }),
- *     TEST: nodes.SlashCommandNode({ command: 'test', args: 'all tests', next: 'END' }),
+ *     TEST: nodes.SlashCommandNode({ command: 'test', args: 'all tests', next: 'DONE' }),
+ *     DONE: nodes.GitHubProjectNode({ status: 'Done', next: 'END' }),
  *   }
  * });
  * ```
@@ -52,6 +54,14 @@ export {
   type SlashCommandResult,
   createSlashCommandNode,
 } from './slash-command-node';
+
+// GitHubProjectNode
+export {
+  GitHubProjectNodeRuntime,
+  type GitHubProjectNodeConfig,
+  type GitHubProjectResult,
+  createGitHubProjectNode,
+} from './github-project-node';
 
 // Re-export types from parent module for convenience
 export type {

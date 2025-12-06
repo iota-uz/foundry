@@ -333,6 +333,86 @@ try {
 }
 ```
 
+## Graph Workflow Integration
+
+Use `GitHubProjectNode` to update status at any step in a graph workflow:
+
+```typescript
+import { defineWorkflow, nodes } from '@/lib/graph';
+
+export default defineWorkflow({
+  id: 'issue-processor',
+  nodes: {
+    // Mark issue as In Progress when workflow starts
+    START: nodes.GitHubProjectNode({
+      status: 'In Progress',
+      next: 'PLAN',
+    }),
+
+    PLAN: nodes.AgentNode({
+      role: 'planner',
+      system: 'Create implementation plan...',
+      next: 'BUILD',
+    }),
+
+    BUILD: nodes.CommandNode({
+      command: 'bun run build',
+      next: 'TEST',
+    }),
+
+    TEST: nodes.SlashCommandNode({
+      command: 'test',
+      args: 'run all tests',
+      next: 'REVIEW',
+    }),
+
+    // Move to In Review when ready for review
+    REVIEW: nodes.GitHubProjectNode({
+      status: 'In Review',
+      next: 'DONE',
+    }),
+
+    // Mark as Done when complete
+    DONE: nodes.GitHubProjectNode({
+      status: 'Done',
+      next: 'END',
+    }),
+  },
+});
+```
+
+### GitHubProjectNode Configuration
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `status` | string | Yes | Target status (must match project option) |
+| `next` | string \| function | Yes | Next node or transition function |
+| `projectOwner` | string | No | Project owner (env: `GITHUB_PROJECT_OWNER`) |
+| `projectNumber` | number | No | Project number (env: `GITHUB_PROJECT_NUMBER`) |
+| `issueNumber` | number | No | Static issue number to update |
+| `issueNumberKey` | string | No | Context key to read issue number from (default: `issueNumber`) |
+| `owner` | string | No | Repository owner (env: `GITHUB_REPOSITORY`) |
+| `repo` | string | No | Repository name (env: `GITHUB_REPOSITORY`) |
+| `throwOnError` | boolean | No | Throw on update failure (default: true) |
+| `resultKey` | string | No | Context key to store result (default: `lastProjectResult`) |
+
+### Dynamic Issue Resolution
+
+The node resolves issue number from (in order):
+
+1. `issueNumber` config option (static)
+2. Workflow context via `issueNumberKey` (dynamic)
+3. `ISSUE_NUMBER` or `GITHUB_ISSUE_NUMBER` environment variable
+
+```typescript
+// Issue number from context
+nodes.GitHubProjectNode({
+  status: 'Done',
+  issueNumberKey: 'currentIssue', // reads from state.context.currentIssue
+  next: 'END',
+})
+```
+
 ## Limitations
 
 - **GitHub Projects V2 only** - Classic projects are not supported
