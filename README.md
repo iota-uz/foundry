@@ -2,6 +2,8 @@
 
 CLI-based technical specification constructor that launches a local web interface for iteratively building and refining software requirements through AI-driven Q&A.
 
+**[Documentation](https://iota-uz.github.io/foundry/)** · **[Getting Started](#getting-started)** · **[Architecture](#architecture)**
+
 ## Overview
 
 Foundry transforms vague product ideas into detailed technical specifications including database schemas, API definitions, UI mockups, and component galleries. It uses a workflow-based three-phase process (CPO → Clarify → CTO) to guide users through comprehensive specification building with AI assistance.
@@ -19,25 +21,41 @@ Foundry transforms vague product ideas into detailed technical specifications in
 
 ### Prerequisites
 
-- Bun >= 1.0.0
+- [Bun](https://bun.sh/) >= 1.0.0
+- [Anthropic API key](https://console.anthropic.com/)
 
 ### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/iota-uz/foundry.git
+cd foundry
+
 # Install dependencies
 bun install
 
-# Set up environment variables (copy example file)
+# Set up environment variables
 cp .env.example .env.local
-# Edit .env.local and add your Anthropic API key
 ```
+
+Edit `.env.local` and add your Anthropic API key:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### Quick Start
+
+```bash
+# Start the development server
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to start building specifications.
 
 ### Development
 
 ```bash
-# Start development server
-bun dev
-
 # Run type checking
 bun typecheck
 
@@ -46,9 +64,10 @@ bun lint
 
 # Format code
 bun format
-```
 
-Visit `http://localhost:3000` to see the application.
+# Run tests
+bun test
+```
 
 ### Production
 
