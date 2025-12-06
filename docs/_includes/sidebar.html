@@ -10,95 +10,153 @@
   </div>
 
   <nav class="sidebar-nav">
-    <ul class="nav-section">
+    <!-- Home (no children) -->
+    <ul class="nav-list">
       <li class="nav-item {% if page.url == '/' %}active{% endif %}">
-        <a href="{{ '/' | relative_url }}">Home</a>
+        <a href="{{ '/' | relative_url }}" class="nav-link">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+          </svg>
+          <span>Home</span>
+        </a>
       </li>
     </ul>
 
-    <div class="nav-group">
-      <h3 class="nav-group-title">Specification</h3>
-      <ul class="nav-section">
+    <!-- Specification (collapsible) -->
+    {% assign spec_active = false %}
+    {% if page.url contains '/specification/' %}
+      {% assign spec_active = true %}
+    {% endif %}
+    <div class="nav-group {% if spec_active %}open{% endif %}">
+      <button class="nav-group-toggle" aria-expanded="{% if spec_active %}true{% else %}false{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+        </svg>
+        <span>Specification</span>
+        <svg class="nav-chevron" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+      <ul class="nav-children">
         <li class="nav-item {% if page.url contains '/specification/index' or page.url == '/specification/' %}active{% endif %}">
-          <a href="{{ '/specification/' | relative_url }}">Overview</a>
+          <a href="{{ '/specification/' | relative_url }}" class="nav-link">Overview</a>
         </li>
         <li class="nav-item {% if page.url contains '/specification/business' %}active{% endif %}">
-          <a href="{{ '/specification/business.html' | relative_url }}">Business</a>
+          <a href="{{ '/specification/business.html' | relative_url }}" class="nav-link">Business</a>
         </li>
         <li class="nav-item {% if page.url contains '/specification/technical' %}active{% endif %}">
-          <a href="{{ '/specification/technical.html' | relative_url }}">Technical</a>
+          <a href="{{ '/specification/technical.html' | relative_url }}" class="nav-link">Technical</a>
         </li>
         <li class="nav-item {% if page.url contains '/specification/api-schema' %}active{% endif %}">
-          <a href="{{ '/specification/api-schema.html' | relative_url }}">API Schema</a>
+          <a href="{{ '/specification/api-schema.html' | relative_url }}" class="nav-link">API Schema</a>
         </li>
         <li class="nav-item {% if page.url contains '/specification/data-model' %}active{% endif %}">
-          <a href="{{ '/specification/data-model.html' | relative_url }}">Data Model</a>
+          <a href="{{ '/specification/data-model.html' | relative_url }}" class="nav-link">Data Model</a>
         </li>
         <li class="nav-item {% if page.url contains '/specification/ux' %}active{% endif %}">
-          <a href="{{ '/specification/ux.html' | relative_url }}">UX Design</a>
+          <a href="{{ '/specification/ux.html' | relative_url }}" class="nav-link">UX Design</a>
         </li>
         <li class="nav-item {% if page.url contains '/specification/qa-flow' %}active{% endif %}">
-          <a href="{{ '/specification/qa-flow.html' | relative_url }}">Q&A Flow</a>
+          <a href="{{ '/specification/qa-flow.html' | relative_url }}" class="nav-link">Q&A Flow</a>
         </li>
         <li class="nav-item {% if page.url contains '/specification/tools' %}active{% endif %}">
-          <a href="{{ '/specification/tools.html' | relative_url }}">AI Tools</a>
+          <a href="{{ '/specification/tools.html' | relative_url }}" class="nav-link">AI Tools</a>
         </li>
         <li class="nav-item {% if page.url contains '/specification/decisions' %}active{% endif %}">
-          <a href="{{ '/specification/decisions.html' | relative_url }}">Decisions</a>
+          <a href="{{ '/specification/decisions.html' | relative_url }}" class="nav-link">Decisions</a>
         </li>
       </ul>
     </div>
 
-    <div class="nav-group">
-      <h3 class="nav-group-title">Features</h3>
-      <ul class="nav-section">
+    <!-- Features (collapsible) -->
+    {% assign features_active = false %}
+    {% if page.url contains '/features/' %}
+      {% assign features_active = true %}
+    {% endif %}
+    <div class="nav-group {% if features_active %}open{% endif %}">
+      <button class="nav-group-toggle" aria-expanded="{% if features_active %}true{% else %}false{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z"/>
+        </svg>
+        <span>Features</span>
+        <svg class="nav-chevron" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+      <ul class="nav-children">
         <li class="nav-item {% if page.url contains '/features/features-setup' %}active{% endif %}">
-          <a href="{{ '/specification/features/features-setup.html' | relative_url }}">Setup</a>
+          <a href="{{ '/specification/features/features-setup.html' | relative_url }}" class="nav-link">Setup</a>
         </li>
         <li class="nav-item {% if page.url contains '/features/features-qa' %}active{% endif %}">
-          <a href="{{ '/specification/features/features-qa.html' | relative_url }}">Q&A</a>
+          <a href="{{ '/specification/features/features-qa.html' | relative_url }}" class="nav-link">Q&A</a>
         </li>
         <li class="nav-item {% if page.url contains '/features/features-management' %}active{% endif %}">
-          <a href="{{ '/specification/features/features-management.html' | relative_url }}">Management</a>
+          <a href="{{ '/specification/features/features-management.html' | relative_url }}" class="nav-link">Management</a>
         </li>
         <li class="nav-item {% if page.url contains '/features/features-maintenance' %}active{% endif %}">
-          <a href="{{ '/specification/features/features-maintenance.html' | relative_url }}">Maintenance</a>
+          <a href="{{ '/specification/features/features-maintenance.html' | relative_url }}" class="nav-link">Maintenance</a>
         </li>
       </ul>
     </div>
 
-    <div class="nav-group">
-      <h3 class="nav-group-title">Frameworks</h3>
-      <ul class="nav-section">
+    <!-- Frameworks (collapsible) -->
+    {% assign frameworks_active = false %}
+    {% if page.url contains '/dispatch' or page.url contains '/graph' %}
+      {% assign frameworks_active = true %}
+    {% endif %}
+    <div class="nav-group {% if frameworks_active %}open{% endif %}">
+      <button class="nav-group-toggle" aria-expanded="{% if frameworks_active %}true{% else %}false{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        <span>Frameworks</span>
+        <svg class="nav-chevron" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+      <ul class="nav-children">
         <li class="nav-item {% if page.url contains '/dispatch' %}active{% endif %}">
-          <a href="{{ '/dispatch.html' | relative_url }}">Issue Dispatcher</a>
+          <a href="{{ '/dispatch.html' | relative_url }}" class="nav-link">Issue Dispatcher</a>
         </li>
         <li class="nav-item {% if page.url contains '/graph' %}active{% endif %}">
-          <a href="{{ '/graph.html' | relative_url }}">Graph Engine</a>
+          <a href="{{ '/graph.html' | relative_url }}" class="nav-link">Graph Engine</a>
         </li>
       </ul>
     </div>
 
-    <div class="nav-group">
-      <h3 class="nav-group-title">Research</h3>
-      <ul class="nav-section">
-        <li class="nav-item {% if page.url contains '/research/claude-agent-sdk' and page.url != '/specification/research/claude-agent-sdk-apis.html' %}active{% endif %}">
-          <a href="{{ '/specification/research/claude-agent-sdk.html' | relative_url }}">Claude Agent SDK</a>
+    <!-- Research (collapsible) -->
+    {% assign research_active = false %}
+    {% if page.url contains '/research/' %}
+      {% assign research_active = true %}
+    {% endif %}
+    <div class="nav-group {% if research_active %}open{% endif %}">
+      <button class="nav-group-toggle" aria-expanded="{% if research_active %}true{% else %}false{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
+        </svg>
+        <span>Research</span>
+        <svg class="nav-chevron" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+      <ul class="nav-children">
+        <li class="nav-item {% if page.url contains '/research/claude-agent-sdk.html' %}active{% endif %}">
+          <a href="{{ '/specification/research/claude-agent-sdk.html' | relative_url }}" class="nav-link">Claude Agent SDK</a>
         </li>
         <li class="nav-item {% if page.url contains '/research/claude-agent-sdk-apis' %}active{% endif %}">
-          <a href="{{ '/specification/research/claude-agent-sdk-apis.html' | relative_url }}">SDK APIs</a>
+          <a href="{{ '/specification/research/claude-agent-sdk-apis.html' | relative_url }}" class="nav-link">SDK APIs</a>
         </li>
         <li class="nav-item {% if page.url contains '/research/react-flow' %}active{% endif %}">
-          <a href="{{ '/specification/research/react-flow.html' | relative_url }}">React Flow</a>
+          <a href="{{ '/specification/research/react-flow.html' | relative_url }}" class="nav-link">React Flow</a>
         </li>
         <li class="nav-item {% if page.url contains '/research/file-system-sync' %}active{% endif %}">
-          <a href="{{ '/specification/research/file-system-sync.html' | relative_url }}">File System Sync</a>
+          <a href="{{ '/specification/research/file-system-sync.html' | relative_url }}" class="nav-link">File System Sync</a>
         </li>
         <li class="nav-item {% if page.url contains '/research/reverse-engineering' %}active{% endif %}">
-          <a href="{{ '/specification/research/reverse-engineering.html' | relative_url }}">Reverse Engineering</a>
+          <a href="{{ '/specification/research/reverse-engineering.html' | relative_url }}" class="nav-link">Reverse Engineering</a>
         </li>
         <li class="nav-item {% if page.url contains '/research/spec-driven-development' %}active{% endif %}">
-          <a href="{{ '/specification/research/spec-driven-development.html' | relative_url }}">Spec-Driven Dev</a>
+          <a href="{{ '/specification/research/spec-driven-development.html' | relative_url }}" class="nav-link">Spec-Driven Dev</a>
         </li>
       </ul>
     </div>

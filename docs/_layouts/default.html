@@ -55,14 +55,40 @@
     </div>
 
     <script>
-      // Toggle sidebar on mobile
       document.addEventListener('DOMContentLoaded', function() {
+        // Toggle sidebar on mobile
         var toggle = document.querySelector('.sidebar-toggle');
         var sidebar = document.querySelector('.sidebar');
         if (toggle && sidebar) {
           toggle.addEventListener('click', function() {
             sidebar.classList.toggle('open');
           });
+        }
+
+        // Collapsible navigation groups
+        var toggleButtons = document.querySelectorAll('.nav-group-toggle');
+        toggleButtons.forEach(function(button) {
+          button.addEventListener('click', function() {
+            var group = this.closest('.nav-group');
+            var isOpen = group.classList.contains('open');
+
+            // Toggle the clicked group
+            group.classList.toggle('open');
+            this.setAttribute('aria-expanded', !isOpen);
+          });
+        });
+
+        // Ensure active section is visible on page load
+        var activeItem = document.querySelector('.nav-children .nav-item.active');
+        if (activeItem) {
+          var parentGroup = activeItem.closest('.nav-group');
+          if (parentGroup && !parentGroup.classList.contains('open')) {
+            parentGroup.classList.add('open');
+            var toggleBtn = parentGroup.querySelector('.nav-group-toggle');
+            if (toggleBtn) {
+              toggleBtn.setAttribute('aria-expanded', 'true');
+            }
+          }
         }
       });
     </script>
