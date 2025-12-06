@@ -22,11 +22,11 @@ SDD is a methodology where specifications are created before code using AI, with
 
 ### Implementation Levels
 
-| Level | Description | Code Editable? | Maturity |
-|-------|-------------|----------------|----------|
-| **Spec-first** | Spec precedes AI development | Yes | Proven |
-| **Spec-anchored** | Spec persists for evolution | Yes | Emerging |
-| **Spec-as-source** | Spec is primary artifact | No | Experimental |
+| Level              | Description                  | Code Editable? | Maturity     |
+| ------------------ | ---------------------------- | -------------- | ------------ |
+| **Spec-first**     | Spec precedes AI development | Yes            | Proven       |
+| **Spec-anchored**  | Spec persists for evolution  | Yes            | Emerging     |
+| **Spec-as-source** | Spec is primary artifact     | No             | Experimental |
 
 **Recommendation for Foundry:** Aim for **spec-anchored** - maintain specs alongside artifacts for long-term evolution.
 
@@ -36,19 +36,21 @@ SDD is a methodology where specifications are created before code using AI, with
 
 ### GitHub Spec-Kit
 
-| Aspect | Details |
-|--------|---------|
-| **Approach** | CLI + slash commands |
-| **Distribution** | npm/uv package |
+| Aspect            | Details                                     |
+| ----------------- | ------------------------------------------- |
+| **Approach**      | CLI + slash commands                        |
+| **Distribution**  | npm/uv package                              |
 | **Agent Support** | 15+ (Claude, Copilot, Gemini, Cursor, etc.) |
-| **File Format** | Markdown |
+| **File Format**   | Markdown                                    |
 
 **Workflow:**
+
 ```
 Constitution → Specify → Clarify → Plan → Tasks → Implement
 ```
 
 **Key Commands:**
+
 - `/speckit.constitution` - Governing principles
 - `/speckit.specify` - Requirements
 - `/speckit.plan` - Technical design
@@ -58,50 +60,56 @@ Constitution → Specify → Clarify → Plan → Tasks → Implement
 - `/speckit.checklist` - Quality gates
 
 **Strengths:**
+
 - Agent-agnostic (works with any AI)
 - Constitution document for consistency
 - Branch-per-specification workflow
 - Open source
 
 **Weaknesses:**
+
 - Verbose documentation output
 - Tedious review process
 - Better for large features than small fixes
 
 ### AWS Kiro
 
-| Aspect | Details |
-|--------|---------|
-| **Approach** | Full IDE (Code OSS base) |
-| **Distribution** | Standalone application |
-| **Agent Support** | Built-in Claude |
-| **File Format** | Markdown (EARS syntax) |
+| Aspect            | Details                  |
+| ----------------- | ------------------------ |
+| **Approach**      | Full IDE (Code OSS base) |
+| **Distribution**  | Standalone application   |
+| **Agent Support** | Built-in Claude          |
+| **File Format**   | Markdown (EARS syntax)   |
 
 **Workflow:**
+
 ```
 Requirements → Design → Tasks
 ```
 
 **Key Features:**
+
 - **Agent Hooks**: on-save, pre-commit automations
 - **EARS Syntax**: WHEN/THEN testable requirements
 - **Checkpointing**: Save/resume progress
 - **CLI Mode**: Terminal-based agent
 
 **Unique:**
+
 - Not AWS-specific (any cloud/stack)
 - Event-driven automations
 - Property-based testing for specs
 
 ### Tessl Framework
 
-| Aspect | Details |
-|--------|---------|
-| **Approach** | CLI + workspace config |
-| **Status** | Private beta |
+| Aspect          | Details                     |
+| --------------- | --------------------------- |
+| **Approach**    | CLI + workspace config      |
+| **Status**      | Private beta                |
 | **File Format** | Natural language with @tags |
 
 **Key Features:**
+
 - `@generate` tags for code points
 - `@test` tags for test specs
 - Bidirectional spec-code sync
@@ -111,18 +119,20 @@ Requirements → Design → Tasks
 
 ### JetBrains Junie
 
-| Aspect | Details |
-|--------|---------|
-| **Approach** | IDE plugin |
+| Aspect          | Details            |
+| --------------- | ------------------ |
+| **Approach**    | IDE plugin         |
 | **Integration** | JetBrains products |
-| **File Format** | Markdown |
+| **File Format** | Markdown           |
 
 **Workflow:**
+
 ```
 requirements.md → plan.md → tasks.md
 ```
 
 **Key Features:**
+
 - "Think More" mode for deeper reasoning
 - Tight IDE integration
 - Small, scoped patches
@@ -136,6 +146,7 @@ requirements.md → plan.md → tasks.md
 **What:** Immutable principles guiding all AI decisions.
 
 **Value for Foundry:**
+
 - Reduces inconsistency across generated artifacts
 - Enforces coding standards without repeated prompting
 - User-defined rules respected by all agents
@@ -155,6 +166,7 @@ requirements.md → plan.md → tasks.md
 | Conditional | IF [condition] THEN the system SHALL [action] |
 
 **Value for Foundry:**
+
 - Makes acceptance criteria testable
 - Clear, unambiguous language
 - Can auto-generate test cases
@@ -166,12 +178,14 @@ requirements.md → plan.md → tasks.md
 **What:** Event-driven automations triggered by file changes.
 
 **Events:**
+
 - `onSave` - File saved
 - `onCreate` - File created
 - `onDelete` - File deleted
 - `preCommit` - Before git commit
 
 **Value for Foundry:**
+
 - Automates validation on save
 - Updates checklists automatically
 - Runs analyzer before commit
@@ -191,6 +205,7 @@ requirements.md → plan.md → tasks.md
 **What:** Explicit phase to surface and resolve ambiguities before technical design.
 
 **Value for Foundry:**
+
 - Catches vague language early
 - Reduces CTO phase rework
 - Forces clarity on edge cases
@@ -206,6 +221,7 @@ requirements.md → plan.md → tasks.md
 Despite large context windows, AI agents frequently miss instructions or over-interpret directives.
 
 **Mitigation:**
+
 - Verify outputs at each phase
 - Use hooks for automated validation
 - Keep critical rules prominent
@@ -215,6 +231,7 @@ Despite large context windows, AI agents frequently miss instructions or over-in
 Spec-kit creates extensive markdown that's tedious to review.
 
 **Mitigation:**
+
 - Use structured YAML (not pure markdown)
 - Auto-collapse details in UI
 - Focus on what's different
@@ -224,6 +241,7 @@ Spec-kit creates extensive markdown that's tedious to review.
 Elaborate processes for small bugs create overhead.
 
 **Mitigation:**
+
 - Scale process to problem size
 - Quick mode for minor changes
 - Full SDD for large features
@@ -233,6 +251,7 @@ Elaborate processes for small bugs create overhead.
 Same spec can produce different code each time.
 
 **Mitigation:**
+
 - Avoid "spec-as-source" promises
 - Use spec-anchored approach
 - Allow human code edits
@@ -244,6 +263,7 @@ Historical MDD promised code from specs but proved inflexible.
 **Risk:** Combining MDD constraints with LLM non-determinism.
 
 **Mitigation:**
+
 - Keep specs as guidance, not strict source
 - Human oversight remains essential
 - Iterative refinement over one-shot generation
@@ -254,32 +274,32 @@ Historical MDD promised code from specs but proved inflexible.
 
 ### Adopt
 
-| Feature | Source | Rationale |
-|---------|--------|-----------|
-| Constitution | Spec-Kit | Reduces inconsistency |
-| Clarify Phase | Spec-Kit | Catches ambiguities early |
-| Agent Hooks | Kiro | Automates validation |
-| Lessons Learned | Red Hat Guide | Feedback loop |
-| Task Breakdown | All tools | Trackable progress |
-| Implementation Checklist | Spec-Kit | Quality gates |
+| Feature                  | Source        | Rationale                 |
+| ------------------------ | ------------- | ------------------------- |
+| Constitution             | Spec-Kit      | Reduces inconsistency     |
+| Clarify Phase            | Spec-Kit      | Catches ambiguities early |
+| Agent Hooks              | Kiro          | Automates validation      |
+| Lessons Learned          | Red Hat Guide | Feedback loop             |
+| Task Breakdown           | All tools     | Trackable progress        |
+| Implementation Checklist | Spec-Kit      | Quality gates             |
 
 ### Adapt
 
-| Concept | Original | Foundry Approach |
-|---------|----------|------------------|
-| Phase workflow | 5+ phases | 3 phases (CPO → Clarify → CTO) |
-| Task UI | Separate view | Feature-integrated |
-| File format | Markdown | YAML (structured) |
-| Validation | Manual command | Automatic on-change |
+| Concept        | Original       | Foundry Approach               |
+| -------------- | -------------- | ------------------------------ |
+| Phase workflow | 5+ phases      | 3 phases (CPO → Clarify → CTO) |
+| Task UI        | Separate view  | Feature-integrated             |
+| File format    | Markdown       | YAML (structured)              |
+| Validation     | Manual command | Automatic on-change            |
 
 ### Skip
 
-| Feature | Reason |
-|---------|--------|
-| Multi-agent support | Stay focused on Claude quality |
-| Spec-as-source | LLM non-determinism makes this unreliable |
-| Branch-per-spec | Overkill for local tool |
-| Markdown specs | YAML better for structured data |
+| Feature             | Reason                                    |
+| ------------------- | ----------------------------------------- |
+| Multi-agent support | Stay focused on Claude quality            |
+| Spec-as-source      | LLM non-determinism makes this unreliable |
+| Branch-per-spec     | Overkill for local tool                   |
+| Markdown specs      | YAML better for structured data           |
 
 ---
 

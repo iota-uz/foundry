@@ -2,7 +2,7 @@
 layout: default
 title: Issue Dispatcher
 nav_order: 30
-description: "DAG-based GitHub Issue queue for automated software development pipelines"
+description: 'DAG-based GitHub Issue queue for automated software development pipelines'
 ---
 
 # GitHub Issue DAG Dispatcher
@@ -59,22 +59,22 @@ foundry dispatch [options]
 
 #### Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--owner <owner>` | Repository owner | Parsed from `GITHUB_REPOSITORY` |
-| `--repo <repo>` | Repository name | Parsed from `GITHUB_REPOSITORY` |
-| `--token <token>` | GitHub personal access token | `GITHUB_TOKEN` env |
-| `--label <label>` | Label to filter issues | `queue` |
-| `--max-concurrent <n>` | Maximum concurrent issues | unlimited |
-| `--output, -o <file>` | Output file for matrix JSON | stdout |
-| `--dry-run` | Run without side effects | false |
-| `--verbose, -v` | Enable verbose logging | false |
+| Option                 | Description                  | Default                         |
+| ---------------------- | ---------------------------- | ------------------------------- |
+| `--owner <owner>`      | Repository owner             | Parsed from `GITHUB_REPOSITORY` |
+| `--repo <repo>`        | Repository name              | Parsed from `GITHUB_REPOSITORY` |
+| `--token <token>`      | GitHub personal access token | `GITHUB_TOKEN` env              |
+| `--label <label>`      | Label to filter issues       | `queue`                         |
+| `--max-concurrent <n>` | Maximum concurrent issues    | unlimited                       |
+| `--output, -o <file>`  | Output file for matrix JSON  | stdout                          |
+| `--dry-run`            | Run without side effects     | false                           |
+| `--verbose, -v`        | Enable verbose logging       | false                           |
 
 #### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `GITHUB_TOKEN` | GitHub personal access token |
+| Variable            | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| `GITHUB_TOKEN`      | GitHub personal access token                    |
 | `GITHUB_REPOSITORY` | Repository in `owner/repo` format (auto-parsed) |
 
 ### Programmatic API
@@ -104,6 +104,7 @@ Issues can declare dependencies in their body using several formats:
 
 ```markdown
 # Explicit dependency declarations
+
 Depends on #123
 Depends on owner/repo#123
 Blocked by #456
@@ -125,13 +126,13 @@ Multiple dependencies can be comma-separated on a single line.
 
 Issues are prioritized based on labels:
 
-| Label | Priority Score |
-|-------|---------------|
-| `priority:critical` | 0 (highest) |
-| `priority:high` | 1 |
-| `priority:medium` | 2 |
-| `priority:low` | 3 |
-| (none) | 4 (lowest) |
+| Label               | Priority Score |
+| ------------------- | -------------- |
+| `priority:critical` | 0 (highest)    |
+| `priority:high`     | 1              |
+| `priority:medium`   | 2              |
+| `priority:low`      | 3              |
+| (none)              | 4 (lowest)     |
 
 Issues with the same priority are sorted by creation date (FIFO).
 
@@ -148,12 +149,13 @@ Each issue is assigned a status:
 ### Example Workflow
 
 {% raw %}
+
 ```yaml
 name: Issue Dispatcher
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes
+    - cron: '*/15 * * * *' # Every 15 minutes
   workflow_dispatch:
 
 jobs:
@@ -201,6 +203,7 @@ jobs:
           echo "Title: ${{ matrix.title }}"
           echo "Priority: ${{ matrix.priority }}"
 ```
+
 {% endraw %}
 
 ### Matrix Output Format
@@ -225,26 +228,26 @@ jobs:
 ```typescript
 // Configuration
 interface DispatchConfig {
-  token: string;           // GitHub PAT
-  owner: string;           // Repo owner
-  repo: string;            // Repo name
-  queueLabel?: string;     // Filter by label (default: 'queue')
-  maxConcurrent?: number;  // Limit parallel jobs
+  token: string; // GitHub PAT
+  owner: string; // Repo owner
+  repo: string; // Repo name
+  queueLabel?: string; // Filter by label (default: 'queue')
+  maxConcurrent?: number; // Limit parallel jobs
   verbose?: boolean;
 }
 
 // Issue dependency references
 interface DependencyRef {
-  owner: string;    // Can span repos
+  owner: string; // Can span repos
   repo: string;
   number: number;
 }
 
 // DAG Node representation
 interface DagNode {
-  id: string;           // "owner/repo#number"
+  id: string; // "owner/repo#number"
   issue: ResolvedIssue;
-  dependsOn: string[];  // Forward edges
+  dependsOn: string[]; // Forward edges
   dependedBy: string[]; // Reverse edges
 }
 
@@ -270,6 +273,7 @@ Issues involved in cycles are still processed - they're not automatically blocke
 ### Missing Dependencies
 
 If a dependency reference points to a non-existent issue:
+
 - Cross-repo dependencies: The dispatcher attempts to fetch the issue. If it fails, the dependency is considered blocking (conservative approach).
 - Same-repo dependencies not in queue: Similar behavior - if not found, assumed blocking.
 
@@ -280,21 +284,22 @@ Issues that have been closed but still have the queue label are filtered out dur
 ### Rate Limiting
 
 The GitHub client handles rate limiting gracefully:
+
 - Throws a `GITHUB_RATE_LIMIT` error with reset time information
 - Implements pagination to minimize API calls
 
 ## Error Codes
 
-| Code | Description |
-|------|-------------|
+| Code                | Description                           |
+| ------------------- | ------------------------------------- |
 | `GITHUB_AUTH_ERROR` | Authentication failed (invalid token) |
-| `GITHUB_RATE_LIMIT` | GitHub API rate limit exceeded |
-| `GITHUB_NOT_FOUND` | Resource not found (404) |
-| `GITHUB_API_ERROR` | General GitHub API error |
-| `PARSE_ERROR` | Failed to parse issue body |
-| `INVALID_CONFIG` | Invalid configuration |
-| `CYCLE_DETECTED` | Circular dependency warning |
-| `IO_ERROR` | File system error |
+| `GITHUB_RATE_LIMIT` | GitHub API rate limit exceeded        |
+| `GITHUB_NOT_FOUND`  | Resource not found (404)              |
+| `GITHUB_API_ERROR`  | General GitHub API error              |
+| `PARSE_ERROR`       | Failed to parse issue body            |
+| `INVALID_CONFIG`    | Invalid configuration                 |
+| `CYCLE_DETECTED`    | Circular dependency warning           |
+| `IO_ERROR`          | File system error                     |
 
 ## Testing
 
@@ -305,6 +310,7 @@ bun test src/lib/dispatch/__tests__
 ```
 
 Test coverage includes:
+
 - Dependency parsing (various formats)
 - DAG building and cycle detection
 - Priority sorting

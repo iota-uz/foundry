@@ -52,6 +52,7 @@ sequenceDiagram
 ### Projects
 
 #### List Projects
+
 ```
 GET /api/projects
 Response:
@@ -70,6 +71,7 @@ Response:
 ```
 
 #### Get Project
+
 ```
 GET /api/projects/:id
 Response:
@@ -89,6 +91,7 @@ Response:
 ```
 
 #### Create Project
+
 ```
 POST /api/projects
 Body:
@@ -107,6 +110,7 @@ Status: 201
 ### Modules
 
 #### List Modules
+
 ```
 GET /api/projects/:projectId/modules
 Response:
@@ -124,6 +128,7 @@ Response:
 ```
 
 #### Create Module
+
 ```
 POST /api/projects/:projectId/modules
 Body:
@@ -138,6 +143,7 @@ Status: 201
 ### Features
 
 #### List Features
+
 ```
 GET /api/modules/:moduleId/features
 Response:
@@ -155,6 +161,7 @@ Response:
 ```
 
 #### Get Feature Details
+
 ```
 GET /api/features/:id
 Response:
@@ -174,6 +181,7 @@ Response:
 ```
 
 #### Create Feature
+
 ```
 POST /api/modules/:moduleId/features
 Body:
@@ -188,6 +196,7 @@ Status: 201
 ### Workflows
 
 #### Start Workflow
+
 ```
 POST /api/workflows/start
 Body:
@@ -207,6 +216,7 @@ Status: 201
 ```
 
 #### Pause Workflow
+
 ```
 POST /api/workflows/:sessionId/pause
 Response:
@@ -218,6 +228,7 @@ Response:
 ```
 
 #### Resume Workflow
+
 ```
 POST /api/workflows/:sessionId/resume
 Response:
@@ -229,6 +240,7 @@ Response:
 ```
 
 #### Get Workflow State
+
 ```
 GET /api/workflows/:sessionId
 Response:
@@ -243,6 +255,7 @@ Response:
 ```
 
 #### Retry Failed Step
+
 ```
 POST /api/workflows/:sessionId/retry/:stepId
 Response:
@@ -254,6 +267,7 @@ Response:
 ```
 
 #### Submit Answer to Question
+
 ```
 POST /api/workflows/:sessionId/answer
 Body:
@@ -270,6 +284,7 @@ Response:
 ```
 
 ### Workflow Stream (SSE)
+
 ```
 GET /api/workflows/:sessionId/stream
 
@@ -293,6 +308,7 @@ Response (Server-Sent Events):
 ### Constitution
 
 #### Get Constitution
+
 ```
 GET /api/constitution
 Response:
@@ -303,6 +319,7 @@ Status: 404 if not defined
 ```
 
 #### Create/Update Constitution
+
 ```
 POST /api/constitution
 Body:
@@ -324,6 +341,7 @@ Status: 201 or 200
 ### Analysis
 
 #### Run Analyzer
+
 ```
 POST /api/analyze/run
 Body:
@@ -353,6 +371,7 @@ Response:
 ### Git Operations
 
 #### Get Git Status
+
 ```
 GET /api/git/status
 Response:
@@ -369,6 +388,7 @@ Response:
 ```
 
 #### Commit Changes
+
 ```
 POST /api/git/commit
 Body:
@@ -386,6 +406,7 @@ Status: 201
 ```
 
 #### Create Branch
+
 ```
 POST /api/git/branch
 Body:
@@ -402,6 +423,7 @@ Status: 201
 ```
 
 #### Push/Pull
+
 ```
 POST /api/git/pull
 Response: { "status": "success", "pulled": 3 }
@@ -413,6 +435,7 @@ Response: { "status": "success", "pushed": 2 }
 ### Error Responses
 
 #### Common Error Format
+
 ```json
 {
   "error": "Feature not found",
@@ -424,6 +447,7 @@ Response: { "status": "success", "pushed": 2 }
 ```
 
 #### HTTP Status Codes
+
 - 200 OK - Successful GET/POST/PATCH
 - 201 Created - Resource created
 - 204 No Content - Successful DELETE
@@ -437,6 +461,7 @@ Response: { "status": "success", "pushed": 2 }
 **Note:** Not implemented in v1.0. Using Server-Sent Events (SSE) for workflow streaming instead.
 
 For future enhancements, WebSocket could be used for:
+
 - Real-time bidirectional communication
 - Live collaboration (multi-user scenarios)
 - Low-latency question updates
