@@ -16,7 +16,7 @@
  * ```
  */
 
-import { defineWorkflow, nodes, type ClaudeCodeResult, type CommandResult } from './src/lib/graph';
+import { defineWorkflow, nodes, type SlashCommandResult, type CommandResult } from './src/lib/graph';
 import { z } from 'zod';
 
 /**
@@ -59,8 +59,8 @@ interface FeatureContext extends Record<string, unknown> {
   /** Result from last command execution */
   lastCommandResult?: CommandResult;
 
-  /** Result from last Claude Code command */
-  lastClaudeCodeResult?: ClaudeCodeResult;
+  /** Result from last slash command */
+  lastSlashCommandResult?: SlashCommandResult;
 }
 
 /**
@@ -171,15 +171,15 @@ Follow best practices:
     }),
 
     // =========================================================================
-    // Phase 2.5: Automated Testing (using ClaudeCodeNode)
+    // Phase 2.5: Automated Testing (using SlashCommandNode)
     // =========================================================================
-    TEST: nodes.ClaudeCodeNode({
+    TEST: nodes.SlashCommandNode({
       command: 'test',
       args: 'Run all tests and report any failures',
 
       // Dynamic transition - go to QA if tests pass, back to FIX_CODE if they fail
       next: (state) => {
-        if (state.context.lastClaudeCodeResult?.success) {
+        if (state.context.lastSlashCommandResult?.success) {
           return 'QA';
         }
         return 'FIX_CODE';
@@ -187,9 +187,9 @@ Follow best practices:
     }),
 
     // =========================================================================
-    // Phase 2.6: Fix code issues found by tests (using ClaudeCodeNode)
+    // Phase 2.6: Fix code issues found by tests (using SlashCommandNode)
     // =========================================================================
-    FIX_CODE: nodes.ClaudeCodeNode({
+    FIX_CODE: nodes.SlashCommandNode({
       command: 'edit',
       args: 'Fix the failing tests based on the test output. Make minimal changes to resolve the issues.',
 

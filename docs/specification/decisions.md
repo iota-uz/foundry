@@ -22,6 +22,7 @@ This document records key architectural and design decisions made during specifi
 **Decision:** Next.js (App Router)
 
 **Rationale:**
+
 - Server components reduce client-side JavaScript
 - Built-in API routes simplify architecture (no separate backend)
 - File-based routing matches our page structure well
@@ -38,6 +39,7 @@ This document records key architectural and design decisions made during specifi
 **Decision:** Zustand only
 
 **Rationale:**
+
 - Single source of truth simplifies mental model
 - Minimal boilerplate for a tool of this scope
 - Works well with React Server Components
@@ -53,6 +55,7 @@ This document records key architectural and design decisions made during specifi
 **Decision:** Server-Sent Events (SSE)
 
 **Rationale:**
+
 - AI pushes questions, client responds via HTTP POST - matches our flow
 - Simpler than WebSocket for our use case
 - Built-in reconnection handling
@@ -68,6 +71,7 @@ This document records key architectural and design decisions made during specifi
 **Decision:** React Flow for all diagram types
 
 **Rationale:**
+
 - Consistent interaction patterns across all visualizations
 - Full control over node/edge rendering
 - Interactive features (zoom, pan, select, highlight)
@@ -83,6 +87,7 @@ This document records key architectural and design decisions made during specifi
 **Decision:** Hybrid - Files for specs, SQLite for operational data
 
 **Rationale:**
+
 - Spec files (YAML, DBML, etc.) are human-readable and Git-friendly
 - SQLite for conversation history enables full-text search
 - SQLite for undo stack enables complex queries
@@ -107,6 +112,7 @@ See D24 for workflow-based replacement decision.
 **Decision:** Separate modes with distinct entry points
 
 **Rationale:**
+
 - User intent is clear from the start
 - New spec: empty project → Q&A → artifacts
 - Reverse engineer: existing code → analysis → artifacts
@@ -121,6 +127,7 @@ See D24 for workflow-based replacement decision.
 **Decision:** Sequential - CPO must complete before CTO
 
 **Rationale:**
+
 - Technical decisions depend on business requirements
 - Ensures complete product thinking before implementation
 - Clear mental model for users
@@ -135,6 +142,7 @@ See D24 for workflow-based replacement decision.
 **Decision:** Environment variable first, then first-run prompt
 
 **Rationale:**
+
 - Environment variable (`ANTHROPIC_API_KEY`) is checked first
 - If not found, prompt user interactively
 - Store prompted key in `~/.foundry/credentials`
@@ -154,6 +162,7 @@ After designing the agent-based architecture (D6), identified challenges with pr
 **Decision:** Workflow-based architecture for all sequential tasks
 
 **Rationale:**
+
 - **Maximum Predictability**: Every step explicitly defined, no hallucinated tool calls
 - **Cost Control**: LLM calls bounded and predictable
 - **Better Testing**: Unit test individual steps, mock LLM responses
@@ -171,12 +180,12 @@ After designing the agent-based architecture (D6), identified challenges with pr
 
 **Thresholds Decided:**
 
-| Node Count | Behavior | Rationale |
-|------------|----------|-----------|
-| < 50 nodes | Full render | Fast enough for direct rendering |
-| 50-150 nodes | Suggest collapse | Show warning badge, optional collapse |
-| 150+ nodes | Enforce hierarchical collapse by module | Prevents performance degradation |
-| 300+ nodes | Enable virtualization | Only render visible viewport |
+| Node Count   | Behavior                                | Rationale                             |
+| ------------ | --------------------------------------- | ------------------------------------- |
+| < 50 nodes   | Full render                             | Fast enough for direct rendering      |
+| 50-150 nodes | Suggest collapse                        | Show warning badge, optional collapse |
+| 150+ nodes   | Enforce hierarchical collapse by module | Prevents performance degradation      |
+| 300+ nodes   | Enable virtualization                   | Only render visible viewport          |
 
 ---
 
@@ -188,6 +197,7 @@ After designing the agent-based architecture (D6), identified challenges with pr
 **Decision:** Semantic versioning with automated migration
 
 **Version Strategy:**
+
 - All artifact files include `version` field (e.g., `version: "1.0"`)
 - Schema version in `.foundry/schema-version.yaml`
 - Breaking changes increment major version
@@ -195,12 +205,12 @@ After designing the agent-based architecture (D6), identified challenges with pr
 
 **Migration Approach:**
 
-| Scenario | Strategy |
-|----------|----------|
+| Scenario               | Strategy                                   |
+| ---------------------- | ------------------------------------------ |
 | Minor version mismatch | Auto-add new optional fields with defaults |
-| Major version mismatch | Run migration workflow, user confirms |
-| No version field | Assume v1.0, prompt upgrade |
-| Future version | Block open, suggest Foundry update |
+| Major version mismatch | Run migration workflow, user confirms      |
+| No version field       | Assume v1.0, prompt upgrade                |
+| Future version         | Block open, suggest Foundry update         |
 
 ---
 

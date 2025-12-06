@@ -13,7 +13,7 @@
  *   nodes: {
  *     PLAN: nodes.AgentNode({ role: 'planner', system: '...', next: 'BUILD' }),
  *     BUILD: nodes.CommandNode({ command: 'npm run build', next: 'TEST' }),
- *     TEST: nodes.ClaudeCodeNode({ command: 'test', args: 'all tests', next: 'END' }),
+ *     TEST: nodes.SlashCommandNode({ command: 'test', args: 'all tests', next: 'END' }),
  *   }
  * });
  * ```
@@ -44,14 +44,14 @@ export {
   createCommandNode,
 } from './command-node';
 
-// ClaudeCodeNode
+// SlashCommandNode
 export {
-  ClaudeCodeNodeRuntime,
-  type ClaudeCodeNodeConfig,
-  type ClaudeCodeCommand,
-  type ClaudeCodeResult,
-  createClaudeCodeNode,
-} from './claude-code-node';
+  SlashCommandNodeRuntime,
+  type SlashCommandNodeConfig,
+  type SlashCommand,
+  type SlashCommandResult,
+  createSlashCommandNode,
+} from './slash-command-node';
 
 // Re-export types from parent module for convenience
 export type {

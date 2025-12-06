@@ -21,12 +21,14 @@ Foundry's reverse engineering mode analyzes existing codebases to extract specif
 **Approach:** Claude Agent SDK powers all code analysis. No language-specific parsers.
 
 **Advantages:**
+
 - Works with any programming language
 - Understands custom patterns and abstractions
 - No maintenance burden for parser updates
 - Can interpret comments, naming conventions, documentation
 
 **Trade-offs:**
+
 - Less precise than AST parsing for known languages
 - Depends on AI model capabilities
 - May need user clarification for ambiguous patterns
@@ -36,6 +38,7 @@ Foundry's reverse engineering mode analyzes existing codebases to extract specif
 **Approach:** Treat all code as text that Claude interprets.
 
 **What Claude Analyzes:**
+
 - Source code files (any extension)
 - Configuration files (yaml, json, toml, etc.)
 - SQL files and migrations
@@ -49,6 +52,7 @@ Foundry's reverse engineering mode analyzes existing codebases to extract specif
 **Goal:** Understand project structure and technology stack.
 
 **AI Instructions:**
+
 ```
 Analyze the project directory structure and identify:
 1. Programming language(s) used
@@ -66,31 +70,32 @@ Look for:
 ```
 
 **Output:**
+
 ```yaml
 discovery:
   languages:
-    - name: "TypeScript"
+    - name: 'TypeScript'
       confidence: high
-      indicators: ["tsconfig.json", ".ts files"]
-    - name: "SQL"
+      indicators: ['tsconfig.json', '.ts files']
+    - name: 'SQL'
       confidence: medium
-      indicators: ["migrations/ directory"]
+      indicators: ['migrations/ directory']
 
   frameworks:
-    - name: "Next.js"
+    - name: 'Next.js'
       confidence: high
-      indicators: ["next.config.js", "app/ directory"]
+      indicators: ['next.config.js', 'app/ directory']
 
   database:
-    - name: "PostgreSQL"
+    - name: 'PostgreSQL'
       confidence: medium
-      indicators: ["prisma schema", "pg connection string"]
+      indicators: ['prisma schema', 'pg connection string']
 
   structure:
-    source: "src/"
-    components: "src/components/"
-    api: "src/app/api/"
-    migrations: "prisma/migrations/"
+    source: 'src/'
+    components: 'src/components/'
+    api: 'src/app/api/'
+    migrations: 'prisma/migrations/'
 ```
 
 ### Phase 2: Schema Extraction
@@ -98,6 +103,7 @@ discovery:
 **Goal:** Extract database schema and generate DBML.
 
 **AI Instructions:**
+
 ```
 Find and analyze database schema definitions:
 
@@ -127,6 +133,7 @@ Generate DBML output format.
 ```
 
 **Confidence Indicators:**
+
 - **High:** Explicit schema definition (Prisma, SQL DDL)
 - **Medium:** ORM decorators/annotations
 - **Low:** Inferred from code usage
@@ -136,6 +143,7 @@ Generate DBML output format.
 **Goal:** Extract API endpoints and generate OpenAPI spec.
 
 **AI Instructions:**
+
 ```
 Find and analyze API endpoint definitions:
 
@@ -162,6 +170,7 @@ Generate GraphQL SDL for GraphQL.
 ```
 
 **Pattern Recognition:**
+
 - File-based routing (Next.js, SvelteKit, etc.)
 - Explicit route registration (Express, Chi, Flask, etc.)
 - Decorator-based routing (NestJS, FastAPI, etc.)
@@ -172,6 +181,7 @@ Generate GraphQL SDL for GraphQL.
 **Goal:** Extract UI component inventory.
 
 **AI Instructions:**
+
 ```
 Find and analyze UI components:
 
@@ -202,6 +212,7 @@ Output component inventory with:
 **Goal:** Extract and categorize dependencies.
 
 **AI Instructions:**
+
 ```
 Find and analyze project dependencies:
 
@@ -229,6 +240,7 @@ Find and analyze project dependencies:
 **Goal:** Generate data flow and architecture diagrams.
 
 **AI Instructions:**
+
 ```
 Based on all extracted information, synthesize:
 
@@ -257,7 +269,7 @@ interface ProgressEvent {
   phase: 'discovery' | 'schema' | 'api' | 'components' | 'dependencies' | 'architecture';
   status: 'started' | 'progress' | 'completed' | 'error';
   message: string;
-  artifact?: ExtractedArtifact;  // Partial result
+  artifact?: ExtractedArtifact; // Partial result
   confidence?: 'high' | 'medium' | 'low';
 }
 ```
@@ -265,6 +277,7 @@ interface ProgressEvent {
 ### User Feedback Loop
 
 **During Analysis:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Analyzing Codebase                                          │
@@ -299,15 +312,16 @@ interface ProgressEvent {
 
 ### Confidence Levels
 
-| Level | Meaning | UI Indicator |
-|-------|---------|--------------|
-| High | Explicit definition found | ✓ Green |
-| Medium | Inferred from patterns | ⚠ Yellow |
-| Low | Best guess, needs review | ? Orange |
+| Level  | Meaning                   | UI Indicator |
+| ------ | ------------------------- | ------------ |
+| High   | Explicit definition found | ✓ Green      |
+| Medium | Inferred from patterns    | ⚠ Yellow    |
+| Low    | Best guess, needs review  | ? Orange     |
 
 ### Verification Workflow
 
 Each extracted artifact includes:
+
 - Source file and line reference
 - Confidence level
 - "Verify" button to review source
@@ -324,7 +338,7 @@ entity:
       confidence: high
     - name: metadata
       type: jsonb
-      confidence: medium  # Inferred from usage
+      confidence: medium # Inferred from usage
       needs_review: true
 ```
 
@@ -335,11 +349,13 @@ entity:
 **Question:** How large of files can Claude effectively analyze?
 
 **Considerations:**
+
 - Context window limits
 - Processing time
 - Cost per analysis
 
 **Recommendation:**
+
 - Chunk large files (>500 lines)
 - Prioritize key sections (schema definitions, route handlers)
 - Summarize less critical files
@@ -349,6 +365,7 @@ entity:
 **Question:** How to handle non-text files?
 
 **Approach:**
+
 - Skip binary files
 - Note their existence in dependency analysis
 - Flag if they appear to be relevant (e.g., SQLite database files)
@@ -358,6 +375,7 @@ entity:
 **Question:** When should AI ask vs guess?
 
 **Recommendation:**
+
 - Ask when confidence is "low" and decision affects many artifacts
 - Guess when confidence is "medium" and impact is limited
 - Always mark guesses as "needs review"
@@ -367,11 +385,13 @@ entity:
 **Question:** RE mode may require many AI calls. How to manage?
 
 **Options:**
+
 1. Fixed budget per analysis (warn when approaching)
 2. Tiered analysis (quick scan vs deep analysis)
 3. Caching of common pattern recognition
 
 **Recommendation:** Tiered analysis
+
 - Quick scan: Structure discovery, high-confidence extractions only
 - Deep analysis: Full extraction with all phases
 
@@ -380,6 +400,7 @@ entity:
 ### 1. Discovery First, Always
 
 **Rationale:**
+
 - Gives AI context for subsequent phases
 - Sets user expectations
 - Identifies potential issues early
@@ -387,6 +408,7 @@ entity:
 ### 2. Stream Partial Results
 
 **Rationale:**
+
 - User sees progress immediately
 - Can course-correct if AI misunderstands
 - Better UX than waiting for completion
@@ -394,6 +416,7 @@ entity:
 ### 3. Confidence Everywhere
 
 **Rationale:**
+
 - User knows what to trust
 - Focuses verification effort
 - Honest about AI limitations
@@ -401,6 +424,7 @@ entity:
 ### 4. Source Links Required
 
 **Rationale:**
+
 - Every artifact traces to source
 - Enables verification
 - Builds trust in extraction
@@ -408,6 +432,7 @@ entity:
 ### 5. Allow Corrections
 
 **Rationale:**
+
 - AI will make mistakes
 - User can fix without re-running
 - Corrections improve final spec
@@ -422,14 +447,14 @@ const codeAnalysisTool = {
     targetPath: { type: 'string', description: 'Path to analyze' },
     phase: {
       type: 'string',
-      enum: ['discovery', 'schema', 'api', 'components', 'dependencies', 'architecture', 'all']
+      enum: ['discovery', 'schema', 'api', 'components', 'dependencies', 'architecture', 'all'],
     },
     depth: {
       type: 'string',
       enum: ['quick', 'thorough'],
-      default: 'thorough'
-    }
-  }
+      default: 'thorough',
+    },
+  },
 };
 ```
 

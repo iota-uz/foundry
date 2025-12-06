@@ -30,36 +30,42 @@ For the complete detailed technical content including comprehensive function sig
 ## Research Areas Covered
 
 ### 1. Session Management
+
 - Starting and resuming sessions
 - Permission mode handling
 - Conversation state persistence
 - Checkpoint management
 
 ### 2. MCP Integration
+
 - Creating MCP servers with the SDK
 - Tool definition with Zod schemas
 - Server configuration (stdio, SSE, HTTP)
 - Tool usage and permissions
 
 ### 3. Custom Tools
+
 - Defining type-safe tools
 - Handler implementation patterns
 - Input validation
 - Output formatting
 
 ### 4. Error Handling
+
 - Permission denials
 - Tool execution errors
 - Retry strategies
 - Graceful degradation
 
 ### 5. Streaming & Async
+
 - Streaming user input
 - Async generator patterns
 - Progress callbacks
 - Real-time feedback
 
 ### 6. Performance Optimization
+
 - Context window management
 - Token usage tracking
 - Batch operations
@@ -68,30 +74,35 @@ For the complete detailed technical content including comprehensive function sig
 ## Foundry-Specific Recommendations
 
 ### 1. Use Sonnet as Default Model
+
 - Balanced performance/cost
 - Strong code understanding
 - Suitable for most tasks
 - Fast iteration
 
 ### 2. Implement Proper Session Handling
+
 - Resume sessions for multi-turn workflows
 - Use checkpoints for workflow phases
 - Save session state to SQLite
 - Enable recovery on crashes
 
 ### 3. MCP for Extension Points
+
 - Custom tools for Foundry-specific operations
 - Validation hooks on artifact save
 - Git integration points
 - File system access controls
 
 ### 4. Streaming for Large Operations
+
 - Stream code generation
 - Progressive artifact building
 - Real-time UI feedback
 - User interruption capability
 
 ### 5. Permission Model
+
 - Default permissions for local file access
 - Explicit approval for external services
 - Configuration file for common patterns
@@ -107,21 +118,25 @@ For the complete detailed technical content including comprehensive function sig
 ## Integration Points with Foundry
 
 ### Question Generation
+
 - Use Sonnet for initial Q&A workflow generation
 - Stream questions as they're formulated
 - Store responses in SQLite for audit trail
 
 ### Artifact Generation
+
 - Schema, API, and component generators trigger after Q&A
 - Use Opus for complex schema analysis (reverse engineering)
 - Stream partial results for progressive UI updates
 
 ### Analysis & Validation
+
 - Consistency analyzer uses Sonnet
 - Lessons learned feedback to model
 - Constitution context for all generations
 
 ### Reverse Engineering
+
 - AI-driven codebase analysis (no parsers)
 - Language-agnostic interpretation
 - Confidence levels for each extraction
@@ -129,27 +144,30 @@ For the complete detailed technical content including comprehensive function sig
 
 ## Performance Targets
 
-| Operation | Target Time | Model |
-|-----------|------------|-------|
-| Q&A batch (5-7 questions) | 3-5 seconds | Sonnet |
-| Schema generation (10 tables) | 2-3 seconds | Sonnet |
-| API generation (20 endpoints) | 3-5 seconds | Sonnet |
-| Code analysis (reverse engineering) | 10-30 seconds | Opus |
-| Consistency check (100 artifacts) | 5-10 seconds | Sonnet |
+| Operation                           | Target Time   | Model  |
+| ----------------------------------- | ------------- | ------ |
+| Q&A batch (5-7 questions)           | 3-5 seconds   | Sonnet |
+| Schema generation (10 tables)       | 2-3 seconds   | Sonnet |
+| API generation (20 endpoints)       | 3-5 seconds   | Sonnet |
+| Code analysis (reverse engineering) | 10-30 seconds | Opus   |
+| Consistency check (100 artifacts)   | 5-10 seconds  | Sonnet |
 
 ## Testing Strategy
 
 ### Unit Tests
+
 - Tool definition validation
 - Permission checking
 - Session management
 
 ### Integration Tests
+
 - MCP server lifecycle
 - Tool execution with real handlers
 - Error recovery
 
 ### E2E Tests
+
 - Full workflow scenarios
 - Multi-turn conversations
 - State persistence and recovery
@@ -165,6 +183,7 @@ For the complete detailed technical content including comprehensive function sig
 ## Migration Path
 
 If Claude API changes or new models become available:
+
 1. Model selection is abstracted to configuration
 2. Tool definitions are independent of model
 3. Session format is version-controlled

@@ -68,7 +68,7 @@ export type {
   NodeDefinition,
   AgentNodeDefinition,
   CommandNodeDefinition,
-  ClaudeCodeNodeDefinition,
+  SlashCommandNodeDefinition,
   BaseNodeDefinition,
   Transition,
   StaticTransition,
@@ -120,7 +120,7 @@ export {
   nodes,
   AgentNode,
   CommandNode,
-  ClaudeCodeNode,
+  SlashCommandNode,
   createInitialState,
 } from './define-workflow';
 export type {
@@ -137,11 +137,11 @@ export {
   // Runtime classes
   AgentNodeRuntime,
   CommandNodeRuntime,
-  ClaudeCodeNodeRuntime,
+  SlashCommandNodeRuntime,
   // Factory functions
   createAgentNode,
   createCommandNode,
-  createClaudeCodeNode,
+  createSlashCommandNode,
 } from './nodes';
 export type {
   // Base types
@@ -153,8 +153,8 @@ export type {
   // CommandNode types
   CommandNodeConfig,
   CommandResult,
-  // ClaudeCodeNode types
-  ClaudeCodeNodeConfig,
-  ClaudeCodeCommand,
-  ClaudeCodeResult,
+  // SlashCommandNode types
+  SlashCommandNodeConfig,
+  SlashCommand,
+  SlashCommandResult,
 } from './nodes';
