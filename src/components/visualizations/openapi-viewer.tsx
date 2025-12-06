@@ -4,10 +4,15 @@
 
 'use client';
 
-import React, { useRef } from 'react';
-// TODO: F4 - Add tabbed view with embedded Scalar docs
-// NOTE: @scalar/api-reference import removed due to Next.js 15 incompatibility
-// Use @scalar/nextjs-api-reference or @scalar/api-reference-react instead when implementing
+import React, { useRef, useState } from 'react';
+
+// NOTE: Scalar integration notes for future implementation:
+// - @scalar/api-reference has Next.js 15 compatibility issues
+// - Use @scalar/nextjs-api-reference or @scalar/api-reference-react when implementing
+// - Tabs should show: Overview, Endpoints, Schemas, Security
+// Example integration:
+// import { ApiReferenceReact } from '@scalar/api-reference-react';
+// <ApiReferenceReact configuration={{ spec: { content: spec } }} />
 
 interface OpenAPIViewerProps {
   spec: Record<string, unknown>;
@@ -17,6 +22,9 @@ interface OpenAPIViewerProps {
 
 export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'endpoints' | 'schemas'>(
+    'overview'
+  );
 
   if (error) {
     return (
@@ -39,48 +47,135 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
 
   const info = spec.info as Record<string, unknown> | undefined;
   const paths = spec.paths as Record<string, unknown> | undefined;
+  const schemas =
+    ((spec.components as Record<string, unknown>)?.schemas as Record<string, unknown>) ||
+    {};
+
+  const tabs = [
+    { id: 'overview' as const, label: 'Overview' },
+    { id: 'endpoints' as const, label: 'Endpoints' },
+    { id: 'schemas' as const, label: 'Schemas' },
+  ];
 
   return (
     <div
       ref={containerRef}
-      className="w-full h-full"
+      className="w-full h-full flex flex-col"
       style={{
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <div className="w-full h-full bg-bg-secondary text-text-primary p-6">
-        <h2 className="text-2xl font-bold mb-4">API Reference</h2>
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">{(info?.title as string) || 'API'}</h3>
-            <p className="text-text-secondary mb-4">{info?.description as string}</p>
-          </div>
+      {/* Tabs */}
+      <div className="border-b border-border-default bg-bg-secondary">
+        <div className="flex gap-1 px-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-accent-primary text-accent-primary'
+                  : 'border-transparent text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {paths && (
+      {/* Tab Content */}
+      <div className="flex-1 overflow-auto bg-bg-secondary text-text-primary p-6">
+        {activeTab === 'overview' && (
+          <div className="space-y-4">
             <div>
-              <h4 className="font-semibold mb-3">Endpoints</h4>
-              <div className="space-y-2">
-                {Object.entries(paths).map(([path, methods]) => (
-                  <div key={path} className="pl-4 border-l border-border-default">
-                    <p className="font-mono text-sm text-accent-primary">{path}</p>
-                    {typeof methods === 'object' && methods !== null &&
+              <h2 className="text-2xl font-bold mb-2">
+                {(info?.title as string) || 'API'}
+              </h2>
+              <p className="text-text-secondary mb-4">
+                {(info?.description as string) || 'No description available'}
+              </p>
+              {info?.version ? (
+                <div className="inline-block px-3 py-1 rounded bg-bg-tertiary text-text-secondary text-sm">
+                  Version: {String(info.version)}
+                </div>
+              ) : null}
+            </div>
+            <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4 mt-6">
+              <p className="text-sm text-blue-300">
+                Full interactive API documentation with Scalar will be available when
+                @scalar/nextjs-api-reference is configured.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'endpoints' && paths && (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold mb-4">API Endpoints</h3>
+            <div className="space-y-3">
+              {Object.entries(paths).map(([path, methods]) => (
+                <div
+                  key={path}
+                  className="border border-border-default rounded-lg p-4 bg-bg-tertiary"
+                >
+                  <p className="font-mono text-sm text-accent-primary mb-2">{path}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {typeof methods === 'object' &&
+                      methods !== null &&
                       Object.keys(methods)
-                        .filter((m) => ['get', 'post', 'put', 'delete', 'patch'].includes(m))
-                        .map((method) => (
-                          <p key={`${path}-${method}`} className="text-xs text-text-secondary">
-                            {method.toUpperCase()}
-                          </p>
-                        ))}
+                        .filter((m) =>
+                          ['get', 'post', 'put', 'delete', 'patch'].includes(m)
+                        )
+                        .map((method) => {
+                          const methodColors = {
+                            get: 'bg-blue-600 text-white',
+                            post: 'bg-green-600 text-white',
+                            put: 'bg-amber-600 text-white',
+                            delete: 'bg-red-600 text-white',
+                            patch: 'bg-purple-600 text-white',
+                          };
+                          return (
+                            <span
+                              key={`${path}-${method}`}
+                              className={`px-2 py-1 rounded text-xs font-semibold uppercase ${
+                                methodColors[method as keyof typeof methodColors]
+                              }`}
+                            >
+                              {method}
+                            </span>
+                          );
+                        })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'schemas' && (
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold mb-4">Data Schemas</h3>
+            {Object.keys(schemas).length === 0 ? (
+              <p className="text-text-secondary">No schemas defined</p>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(schemas).map(([name, schema]) => (
+                  <div
+                    key={name}
+                    className="border border-border-default rounded-lg p-4 bg-bg-tertiary"
+                  >
+                    <h4 className="font-mono text-sm text-accent-primary mb-2">{name}</h4>
+                    <pre className="text-xs text-text-secondary overflow-auto">
+                      {JSON.stringify(schema, null, 2)}
+                    </pre>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-        <p className="text-text-secondary text-sm mt-6">
-          Full API reference component requires Scalar library configuration
-        </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -41,9 +41,6 @@ export function DiffViewer({
 }: DiffViewerProps) {
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
 
-  // TODO: F4 - Add expand/collapse for large diffs
-  // @ts-expect-error - Preserved for future feature
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const toggleFileExpansion = (filePath: string) => {
     const newExpanded = new Set(expandedFiles);
     if (newExpanded.has(filePath)) {
@@ -54,17 +51,14 @@ export function DiffViewer({
     setExpandedFiles(newExpanded);
   };
 
-  // TODO: F4 - Color-coded file badges
-  // @ts-expect-error - Preserved for future feature
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getChangeTypeColor = (changeType: DiffEntry['changeType']) => {
     switch (changeType) {
       case 'added':
-        return 'text-green-400 bg-green-900/20';
+        return 'text-green-400 bg-green-900/20 border-green-700';
       case 'modified':
-        return 'text-blue-400 bg-blue-900/20';
+        return 'text-blue-400 bg-blue-900/20 border-blue-700';
       case 'deleted':
-        return 'text-red-400 bg-red-900/20';
+        return 'text-red-400 bg-red-900/20 border-red-700';
     }
   };
 
@@ -93,39 +87,67 @@ export function DiffViewer({
         </div>
 
         <div className="p-2 space-y-1">
-          {diffs.map((diff) => (
-            <button
-              key={diff.filePath}
-              onClick={() => onSelectFile?.(diff.filePath)}
-              className={`
-                w-full text-left px-3 py-2 rounded text-sm
-                transition-colors
-                ${
-                  selectedFile === diff.filePath
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-700'
-                }
-              `}
-              aria-label={`Select file ${diff.filePath}`}
-            >
-              <div className="flex items-center gap-2">
-                <span
+          {diffs.map((diff) => {
+            const isExpanded = expandedFiles.has(diff.filePath);
+            return (
+              <div key={diff.filePath}>
+                <button
+                  onClick={() => {
+                    onSelectFile?.(diff.filePath);
+                    if (!isExpanded && diff.diff.length > 20) {
+                      toggleFileExpansion(diff.filePath);
+                    }
+                  }}
                   className={`
-                    inline-block w-1.5 h-1.5 rounded-full flex-shrink-0
+                    w-full text-left px-3 py-2 rounded text-sm
+                    transition-colors
                     ${
-                      diff.changeType === 'added'
-                        ? 'bg-green-500'
-                        : diff.changeType === 'modified'
-                        ? 'bg-blue-500'
-                        : 'bg-red-500'
+                      selectedFile === diff.filePath
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-700'
                     }
                   `}
-                />
-                <span className="truncate font-mono text-xs">{diff.filePath}</span>
+                  aria-label={`Select file ${diff.filePath}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`
+                        inline-block w-1.5 h-1.5 rounded-full flex-shrink-0
+                        ${
+                          diff.changeType === 'added'
+                            ? 'bg-green-500'
+                            : diff.changeType === 'modified'
+                            ? 'bg-blue-500'
+                            : 'bg-red-500'
+                        }
+                      `}
+                    />
+                    <span className="truncate font-mono text-xs">{diff.filePath}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border capitalize ${getChangeTypeColor(
+                        diff.changeType
+                      )}`}
+                    >
+                      {diff.changeType}
+                    </span>
+                    {diff.diff.length > 20 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFileExpansion(diff.filePath);
+                        }}
+                        className="text-xs text-gray-400 hover:text-gray-200"
+                      >
+                        {isExpanded ? 'Collapse' : `${diff.diff.length} lines`}
+                      </button>
+                    )}
+                  </div>
+                </button>
               </div>
-              <div className="text-xs text-gray-400 mt-1 capitalize">{diff.changeType}</div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 

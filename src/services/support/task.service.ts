@@ -38,11 +38,23 @@ export class TaskService implements ITaskService {
 
   /**
    * Get feature file path
+   *
+   * TODO: Replace with proper feature service/registry when implemented
+   * The feature service should provide:
+   * - getFeaturePath(featureId: string): string
+   * - getFeaturesByModule(moduleId: string): Feature[]
+   * - getFeature(featureId: string): Feature
+   * - searchFeatures(query: string): Feature[]
+   *
+   * This would centralize all feature file operations and provide
+   * better error handling and caching.
+   *
+   * For now, we use a simple path lookup based on feature ID.
+   * This assumes features are stored as: .foundry/features/{module-slug}/{feature-slug}.yaml
    */
   private getFeaturePath(featureId: string): string {
-    // Feature files are stored as: .foundry/features/{module-slug}/{feature-slug}.yaml
-    // For now, we'll search for the feature file
-    // TODO: This should use a feature service or registry
+    // Current implementation: direct file path lookup
+    // This works for now but should be replaced with a proper service
     return path.join(
       getFoundryDir(this.projectPath),
       'features',

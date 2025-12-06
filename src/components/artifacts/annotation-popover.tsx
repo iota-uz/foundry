@@ -7,10 +7,7 @@
  * Shows existing annotations as badges with click-to-view.
  */
 
-import { useState, useRef } from 'react';
-// @ts-expect-error - Preserved for future feature
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useEffect } from 'react'; // TODO: F5 - WebSocket subscription for real-time updates
+import { useState, useRef, useEffect } from 'react';
 import { Popover, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import {
@@ -40,12 +37,8 @@ interface AnnotationPopoverProps {
 }
 
 export function AnnotationPopover({
-  // @ts-expect-error - Preserved for future feature
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  artifactType, // TODO: F5 - Filter annotations by artifact type
-  // @ts-expect-error - Preserved for future feature
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  artifactId, // TODO: F5 - Load annotations from API
+  artifactType,
+  artifactId,
   lineNumber,
   annotations = [],
   onAddAnnotation,
@@ -57,6 +50,23 @@ export function AnnotationPopover({
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // TODO: WebSocket real-time updates
+  // When implemented, subscribe to annotation updates for this artifact
+  // Example: useEffect(() => {
+  //   const ws = new WebSocket(`ws://localhost:3000/annotations/${artifactType}/${artifactId}`);
+  //   ws.onmessage = (event) => {
+  //     const update = JSON.parse(event.data);
+  //     // Update annotations state with new/updated annotation
+  //   };
+  //   return () => ws.close();
+  // }, [artifactType, artifactId]);
+
+  // Load annotations from API on mount
+  useEffect(() => {
+    // TODO: Implement API call to load annotations
+    // Example: fetchAnnotations(artifactType, artifactId).then(setAnnotations);
+  }, [artifactType, artifactId]);
 
   const unresolvedCount = annotations.filter((a) => !a.resolved).length;
 
@@ -103,11 +113,7 @@ export function AnnotationPopover({
 
   return (
     <Popover className="relative inline-block">
-      {(
-        // @ts-expect-error - Preserved for future feature
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        { open } // TODO: F5 - Use for auto-close on blur
-      ) => (
+      {() => (
         <>
           <Popover.Button
             className={`

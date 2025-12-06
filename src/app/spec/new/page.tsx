@@ -14,6 +14,7 @@ export default function NewSpecPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [projectPath, setProjectPath] = useState('./projects');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,10 +24,6 @@ export default function NewSpecPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Implement proper path selection (file picker or config)
-      // For now, use a default placeholder path - the API will handle path resolution
-      const projectPath = './projects';
-
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
@@ -107,6 +104,25 @@ export default function NewSpecPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Project Path */}
+            <div>
+              <label htmlFor="project-path" className="block text-sm font-medium text-gray-300 mb-2">
+                Project Path
+              </label>
+              <input
+                id="project-path"
+                type="text"
+                value={projectPath}
+                onChange={(e) => setProjectPath(e.target.value)}
+                placeholder="./projects or /absolute/path/to/project"
+                required
+                className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Path where the .foundry directory will be created (relative or absolute)
+              </p>
+            </div>
+
             {/* Project Name */}
             <div>
               <label htmlFor="project-name" className="block text-sm font-medium text-gray-300 mb-2">

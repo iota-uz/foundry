@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { EmptyState } from '@/components/shared';
+import { NewFeatureDialog } from '@/components/dialogs/new-feature-dialog';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 import type { Feature, Module } from '@/types';
 
@@ -20,6 +21,7 @@ export function FeatureList({
   isLoading,
 }: FeatureListProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'in_progress' | 'completed'>('all');
+  const [isNewFeatureDialogOpen, setIsNewFeatureDialogOpen] = useState(false);
 
   const filteredFeatures = features.filter((f) => {
     if (moduleId && f.moduleId !== moduleId) return false;
@@ -42,27 +44,31 @@ export function FeatureList({
 
   if (filteredFeatures.length === 0) {
     return (
-      <EmptyState
-        icon={<SparklesIcon className="h-16 w-16" />}
-        title="No Features"
-        description={
-          statusFilter === 'all'
-            ? 'Create your first feature to get started'
-            : `No ${statusFilter} features found`
-        }
-        action={{
-          label: '+ New Feature',
-          onClick: () => {
-            // TODO: Open new feature dialog
-            console.log('Create feature');
-          },
-        }}
-      />
+      <>
+        <EmptyState
+          icon={<SparklesIcon className="h-16 w-16" />}
+          title="No Features"
+          description={
+            statusFilter === 'all'
+              ? 'Create your first feature to get started'
+              : `No ${statusFilter} features found`
+          }
+          action={{
+            label: '+ New Feature',
+            onClick: () => setIsNewFeatureDialogOpen(true),
+          }}
+        />
+        <NewFeatureDialog
+          isOpen={isNewFeatureDialogOpen}
+          onClose={() => setIsNewFeatureDialogOpen(false)}
+        />
+      </>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <>
+      <div className="space-y-4">
       {/* Filter */}
       <div className="flex gap-2 mb-4">
         {(['all', 'draft', 'in_progress', 'completed'] as const).map((filter) => (
@@ -88,7 +94,14 @@ export function FeatureList({
           <FeatureListItem key={feature.id} feature={feature} modules={modules} />
         ))}
       </div>
-    </div>
+      </div>
+
+      {/* New Feature Dialog */}
+      <NewFeatureDialog
+        isOpen={isNewFeatureDialogOpen}
+        onClose={() => setIsNewFeatureDialogOpen(false)}
+      />
+    </>
   );
 }
 
