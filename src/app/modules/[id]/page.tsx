@@ -5,6 +5,7 @@ import { useProjectStore } from '@/store';
 import { Breadcrumbs } from '@/components/layout';
 import { Button, SkeletonCard, EmptyState } from '@/components/shared';
 import { FeatureList } from '@/components/features';
+import { NewFeatureDialog } from '@/components/dialogs/new-feature-dialog';
 import { PlusIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import type { Module } from '@/types';
 
@@ -17,6 +18,7 @@ export default function ModulePage(props: ModulePageProps) {
   const { modules, features, loading } = useProjectStore();
   const [module, setModule] = useState<Module | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isNewFeatureDialogOpen, setIsNewFeatureDialogOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -91,10 +93,7 @@ export default function ModulePage(props: ModulePageProps) {
               <p className="text-text-secondary max-w-2xl">{module.description}</p>
             </div>
             <Button
-              onClick={() => {
-                // TODO: Open new feature dialog for this module
-                console.log('New feature in module', module.id);
-              }}
+              onClick={() => setIsNewFeatureDialogOpen(true)}
               icon={<PlusIcon className="h-4 w-4" />}
             >
               New Feature
@@ -139,6 +138,13 @@ export default function ModulePage(props: ModulePageProps) {
           <FeatureList features={features} modules={modules} moduleId={module.id} />
         </section>
       </div>
+
+      {/* New Feature Dialog */}
+      <NewFeatureDialog
+        isOpen={isNewFeatureDialogOpen}
+        onClose={() => setIsNewFeatureDialogOpen(false)}
+        moduleSlug={module.slug}
+      />
     </div>
   );
 }
