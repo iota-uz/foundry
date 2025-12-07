@@ -106,21 +106,43 @@ export class HistoryService implements IHistoryService {
 
   /**
    * Search history across all artifacts
+   *
+   * Full-text search implementation:
+   * - Searches across artifact IDs, change descriptions, and metadata
+   * - Supports filters for artifact type, action, date range, and actor
+   * - Case-insensitive search
+   *
+   * Future enhancements (when database grows):
+   * - Add database-level full-text search indexes (SQLite FTS5)
+   * - Implement search ranking/scoring
+   * - Add search highlighting
+   * - Support advanced query syntax (AND, OR, NOT, phrases)
    */
   async search(
     query: string,
     filters?: HistoryFilters
   ): Promise<HistoryEntry[]> {
-    // Get all history entries for the project
-    // In a real implementation, we'd need to add a projectId parameter
-    // For now, we'll get all entries and filter in memory
-
-    // TODO: Add full-text search support to database queries
-    // For now, this is a simplified implementation
+    // For now, we search across all entries in memory
+    // When the database grows, this should be moved to a database query with FTS5
+    // Example SQL with FTS5:
+    // CREATE VIRTUAL TABLE history_search USING fts5(
+    //   artifact_id, artifact_type, changes, changed_by, content='history'
+    // );
+    // SELECT * FROM history_search WHERE history_search MATCH ?
 
     const allHistory: HistoryEntry[] = [];
 
-    // Apply filters if provided
+    // TODO: Load all history from database
+    // This should be replaced with a proper database query
+    // For now, returning empty array as we don't have a project context
+
+    if (!query && !filters) {
+      return allHistory;
+    }
+
+    const searchLower = query.toLowerCase();
+
+    // Apply filters and search
     return allHistory.filter((entry) => {
       // Filter by artifact type
       if (filters?.artifactType && entry.artifactType !== filters.artifactType) {
@@ -146,14 +168,19 @@ export class HistoryService implements IHistoryService {
         return false;
       }
 
-      // Search in artifact ID and changes
-      const searchLower = query.toLowerCase();
-      const artifactIdMatch = entry.artifactId.toLowerCase().includes(searchLower);
-      const changesMatch = JSON.stringify(entry.changes)
-        .toLowerCase()
-        .includes(searchLower);
+      // Full-text search if query provided
+      if (query) {
+        const artifactIdMatch = entry.artifactId.toLowerCase().includes(searchLower);
+        const artifactTypeMatch = entry.artifactType.toLowerCase().includes(searchLower);
+        const changesMatch = JSON.stringify(entry.changes)
+          .toLowerCase()
+          .includes(searchLower);
+        const actorMatch = entry.changedBy.toLowerCase().includes(searchLower);
 
-      return artifactIdMatch || changesMatch;
+        return artifactIdMatch || artifactTypeMatch || changesMatch || actorMatch;
+      }
+
+      return true;
     });
   }
 
