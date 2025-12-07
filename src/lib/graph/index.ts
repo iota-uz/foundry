@@ -9,49 +9,56 @@
  * - SDK Abstraction: Wraps Claude Agent SDK with automatic tool execution
  * - Type Safety: Full TypeScript generics for custom state types
  *
+ * ## New API (v2) - Recommended
+ *
+ * The new API provides compile-time type safety for transitions:
+ *
  * @example
  * ```typescript
- * import { GraphEngine, BaseState, GraphNode } from '@sys/graph';
+ * import { defineNodes, defineWorkflow, StdlibTool, AgentModel } from '@sys/graph';
  *
- * interface MyState extends BaseState {
+ * interface MyContext extends Record<string, unknown> {
  *   counter: number;
  * }
  *
- * const nodes: Record<string, GraphNode<MyState>> = {
- *   start: {
- *     name: 'start',
- *     async execute(state, context) {
- *       // Use the agent to perform AI operations
- *       // The result contains the response and updated conversation history
- *       const { response } = await context.agent.runStep(
- *         state,
- *         'Increment the counter',
- *         []
- *       );
- *       context.logger.info('AI response:', response);
- *       return { counter: state.counter + 1 };
- *     },
- *     next(state) {
- *       return state.counter >= 5 ? 'END' : 'start';
- *     },
- *   },
- * };
+ * const schema = defineNodes<MyContext>()(['INCREMENT', 'CHECK', 'DONE'] as const);
  *
- * const engine = new GraphEngine({
- *   stateDir: './.graph-state',
- *   nodes,
- *   apiKey: process.env.ANTHROPIC_API_KEY!,
+ * export default defineWorkflow({
+ *   id: 'counter-workflow',
+ *   schema,
+ *   initialContext: { counter: 0 },
+ *   nodes: [
+ *     schema.eval('INCREMENT', {
+ *       update: (state) => ({ counter: state.context.counter + 1 }),
+ *       then: 'CHECK'
+ *     }),
+ *     schema.eval('CHECK', {
+ *       update: (state) => state.context,
+ *       then: (state) => state.context.counter >= 5 ? 'DONE' : 'INCREMENT'
+ *     }),
+ *     schema.command('DONE', {
+ *       command: 'echo "Finished!"',
+ *       then: 'END'
+ *     })
+ *   ]
  * });
+ * ```
  *
- * const finalState = await engine.run('my-workflow', {
- *   currentNode: 'start',
- *   status: 'pending',
- *   updatedAt: new Date().toISOString(),
- *   conversationHistory: [],
- *   counter: 0,
+ * ## Legacy API (v1) - Deprecated
+ *
+ * The old map-based API is still supported for backward compatibility:
+ *
+ * @example
+ * ```typescript
+ * import { defineWorkflow, nodes } from '@sys/graph';
+ *
+ * export default defineWorkflow({
+ *   id: 'my-workflow',
+ *   nodes: {
+ *     START: nodes.AgentNode({ ... }),
+ *     END: nodes.CommandNode({ ... })
+ *   }
  * });
- *
- * console.log('Final counter:', finalState.counter);
  * ```
  */
 
@@ -80,8 +87,8 @@ export type {
   EvalNodeDefinition,
   DynamicAgentNodeDefinition,
   DynamicCommandNodeDefinition,
-  AgentModel,
-  Dynamic,
+  AgentModel as LegacyAgentModel,
+  Dynamic as LegacyDynamic,
   // Message types
   Message,
   StoredMessage,
@@ -178,3 +185,80 @@ export type {
   DynamicCommandNodeConfig,
   DynamicCommandResult,
 } from './nodes';
+
+// ============================================================================
+// New API (v2) - Type-Safe Schema-Based Workflow Definition
+// ============================================================================
+
+// Enums
+export {
+  NodeType,
+  StdlibTool,
+  WorkflowStatus,
+  AgentModel,
+  MODEL_IDS,
+  END_NODE,
+} from './enums';
+export type { EndNode } from './enums';
+
+// Schema-based workflow definition
+export {
+  defineNodes,
+  defineWorkflow as defineWorkflowV2,
+  createInitialWorkflowState,
+  resolveDynamic,
+} from './schema';
+export type {
+  // Core types
+  WorkflowState as WorkflowStateV2,
+  WorkflowConfig as WorkflowConfigV2,
+  NodeSchema,
+  // Transitions
+  StaticTransition as StaticTransitionV2,
+  DynamicTransition as DynamicTransitionV2,
+  Transition as TransitionV2,
+  Dynamic,
+  // Tools
+  InlineTool,
+  ToolReference as ToolReferenceV2,
+  // Node definitions
+  NodeDef,
+  BaseNodeDef,
+  AgentNodeDef,
+  CommandNodeDef,
+  SlashCommandNodeDef,
+  EvalNodeDef,
+  DynamicAgentNodeDef,
+  DynamicCommandNodeDef,
+  // Node configs
+  AgentNodeConfig as AgentNodeConfigV2,
+  CommandNodeConfig as CommandNodeConfigV2,
+  SlashCommandNodeConfig as SlashCommandNodeConfigV2,
+  EvalNodeConfig as EvalNodeConfigV2,
+  DynamicAgentNodeConfig as DynamicAgentNodeConfigV2,
+  DynamicCommandNodeConfig as DynamicCommandNodeConfigV2,
+} from './schema';
+
+// Validation
+export {
+  validateWorkflow,
+  validateNode,
+  validateRuntimeTransition as validateRuntimeTransitionV2,
+  validateState,
+  validateSemantics,
+  validateComplete,
+  // Zod schemas
+  NodeTypeSchema,
+  StdlibToolSchema,
+  AgentModelSchema,
+  WorkflowStatusSchema,
+  InlineToolSchema,
+  ToolReferenceSchema,
+  WorkflowStateSchema,
+  createNodeSchema,
+  createWorkflowSchema,
+} from './validation';
+export type {
+  ValidationResult,
+  ValidationError,
+} from './validation';

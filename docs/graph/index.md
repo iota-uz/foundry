@@ -23,52 +23,71 @@ The Graph Engine enables **multi-step AI workflows** that:
 ## Installation
 
 ```typescript
+// v2 API (Recommended) - Type-safe schema-based
+import { defineNodes, defineWorkflow, StdlibTool, AgentModel } from '@sys/graph';
+
+// v1 API (Legacy) - Map-based
 import { defineWorkflow, nodes, GraphEngine } from '@sys/graph';
 ```
 
-## Quick Start
+## Quick Start (v2 API)
+
+The v2 API provides **compile-time type safety** for transitions. TypeScript validates that all `then` values point to valid nodes.
 
 ### 1. Define a Workflow
 
 ```typescript
-import { defineWorkflow, nodes } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool, AgentModel } from '@sys/graph';
+
+interface MyContext extends Record<string, unknown> {
+  allTasksDone: boolean;
+  testsPassed: boolean;
+}
+
+// Define schema with all node names
+const schema = defineNodes<MyContext>()([
+  'PLAN', 'IMPLEMENT', 'TEST', 'FIX', 'COMMIT'
+] as const);
 
 export default defineWorkflow({
   id: 'feature-development',
+  schema,
+  initialContext: { allTasksDone: false, testsPassed: false },
 
-  nodes: {
-    PLAN: nodes.AgentNode({
+  nodes: [
+    // First node is the entry point
+    schema.agent('PLAN', {
       role: 'architect',
-      system: 'Analyze the request and output a JSON plan.',
-      tools: ['list_files', 'read_file'],
-      next: 'IMPLEMENT',
+      prompt: 'Analyze the request and output a JSON plan.',
+      capabilities: [StdlibTool.ListFiles, StdlibTool.ReadFile],
+      then: 'IMPLEMENT',  // TypeScript validates this!
     }),
 
-    IMPLEMENT: nodes.AgentNode({
+    schema.agent('IMPLEMENT', {
       role: 'builder',
-      system: 'Implement the planned tasks.',
-      tools: ['write_file', 'read_file', 'bash'],
-      next: (state) => (state.context.allTasksDone ? 'TEST' : 'IMPLEMENT'),
+      prompt: 'Implement the planned tasks.',
+      capabilities: [StdlibTool.WriteFile, StdlibTool.ReadFile, StdlibTool.Bash],
+      then: (state) => state.context.allTasksDone ? 'TEST' : 'IMPLEMENT',
     }),
 
-    TEST: nodes.CommandNode({
+    schema.command('TEST', {
       command: 'bun test',
-      next: (state) => (state.context.lastCommandResult?.exitCode === 0 ? 'COMMIT' : 'FIX'),
+      then: (state) => state.context.testsPassed ? 'COMMIT' : 'FIX',
     }),
 
-    FIX: nodes.AgentNode({
+    schema.agent('FIX', {
       role: 'debugger',
-      system: 'Fix the failing tests.',
-      tools: ['read_file', 'write_file'],
-      next: 'TEST',
+      prompt: 'Fix the failing tests.',
+      capabilities: [StdlibTool.ReadFile, StdlibTool.WriteFile],
+      then: 'TEST',
     }),
 
-    COMMIT: nodes.SlashCommandNode({
+    schema.slashCommand('COMMIT', {
       command: 'commit',
       args: 'Implement feature with passing tests',
-      next: 'END',
+      then: 'END',
     }),
-  },
+  ],
 });
 ```
 
@@ -118,7 +137,8 @@ Low-level building blocks for dynamic, composable workflows:
 | [State](state) | State management and persistence |
 | [Transitions](transitions) | Routing between nodes |
 | [Custom Nodes](custom-nodes) | Creating your own nodes |
-| [API Reference](api) | Complete API documentation |
+| [API v2 (Recommended)](api-v2) | Type-safe schema-based API |
+| [API v1 (Legacy)](api) | Original map-based API |
 | [Examples](examples) | Full workflow examples |
 
 ## Comparison with Dispatch
