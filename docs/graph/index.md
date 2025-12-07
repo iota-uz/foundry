@@ -98,12 +98,23 @@ console.log('Final state:', result.status);
 | [SlashCommandNode](nodes#slashcommandnode) | Claude Code operations | `/commit`, `/test`, `/edit` |
 | [GitHubProjectNode](nodes#githubprojectnode) | Project status updates | GitHub Projects V2 API |
 
+### Primitive Nodes
+
+Low-level building blocks for dynamic, composable workflows:
+
+| Node Type | Purpose | Key Features |
+|-----------|---------|--------------|
+| [EvalNode](primitives#evalnode) | Context transformation | No LLM, pure functions |
+| [DynamicAgentNode](primitives#dynamicagentnode) | Runtime AI config | Dynamic model/prompt |
+| [DynamicCommandNode](primitives#dynamiccommandnode) | Runtime shell config | Dynamic command/env |
+
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
 | [Architecture](architecture) | Core concepts and design |
 | [Nodes](nodes) | Built-in node types |
+| [Primitives](primitives) | Dynamic, composable building blocks |
 | [State](state) | State management and persistence |
 | [Transitions](transitions) | Routing between nodes |
 | [Custom Nodes](custom-nodes) | Creating your own nodes |

@@ -129,6 +129,36 @@ export {
 export * as general from './general';
 
 // ============================================================================
+// Primitive Nodes (Dynamic/Composable)
+// ============================================================================
+
+export {
+  EvalNodeRuntime,
+  type EvalNodeConfig,
+  type EvalResult,
+  createEvalNode,
+} from './primitives/eval-node';
+
+export {
+  DynamicAgentNodeRuntime,
+  type DynamicAgentNodeConfig,
+  type DynamicAgentResult,
+  type AgentModel,
+  type Dynamic,
+  createDynamicAgentNode,
+} from './primitives/dynamic-agent-node';
+
+export {
+  DynamicCommandNodeRuntime,
+  type DynamicCommandNodeConfig,
+  type DynamicCommandResult,
+  createDynamicCommandNode,
+} from './primitives/dynamic-command-node';
+
+// Re-export as module namespace
+export * as primitives from './primitives';
+
+// ============================================================================
 // Re-export types from parent module for convenience
 // ============================================================================
 

@@ -148,16 +148,11 @@ const MODEL_MAP: Record<LLMModel, string> = {
   opus: 'claude-opus-4-20250514',
 };
 
-/**
- * Maps reasoning effort to thinking budget tokens.
- * Reserved for future use when SDK supports extended thinking.
- */
-const _REASONING_BUDGET: Record<ReasoningEffort, number> = {
-  low: 1024,
-  medium: 4096,
-  high: 16384,
-};
-void _REASONING_BUDGET; // Reserved for future extended thinking support
+// TODO: Implement extended thinking support when SDK adds this capability
+// Reasoning effort will map to thinking budget tokens:
+// - low: 1024 tokens
+// - medium: 4096 tokens
+// - high: 16384 tokens
 
 /**
  * LLMNode - Structured LLM invocation with JSON I/O.
@@ -224,8 +219,7 @@ export class LLMNodeRuntime<
     const startTime = Date.now();
     const modelId = MODEL_MAP[model];
 
-    // Reserved for future extended thinking support
-    void reasoningEffort;
+    // TODO: Use reasoningEffort when SDK supports extended thinking
 
     try {
       // Validate input if schema provided
@@ -340,7 +334,7 @@ export class LLMNodeRuntime<
       // Store result in context
       const contextUpdate = {
         ...state.context,
-        [resultKey!]: result,
+        [resultKey as string]: result,
       } as TContext;
 
       return {
@@ -393,17 +387,3 @@ export class LLMNodeRuntime<
   }
 }
 
-/**
- * Factory function to create an LLMNode definition.
- */
-export function createLLMNode<
-  TContext extends Record<string, unknown>,
-  TInput = unknown,
-  TOutput = unknown,
->(
-  config: Omit<LLMNodeConfig<TContext, TInput, TOutput>, 'next'> & {
-    next: Transition<TContext>;
-  }
-): LLMNodeConfig<TContext, TInput, TOutput> {
-  return config;
-}
