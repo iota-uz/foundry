@@ -16,9 +16,17 @@ import React, { useRef, useState } from 'react';
 
 interface OpenAPIViewerProps {
   spec: Record<string, unknown>;
-  loading?: boolean;
   error?: string | undefined;
 }
+
+// HTTP method colors for consistent styling
+const METHOD_COLORS = {
+  get: 'bg-blue-600 text-white',
+  post: 'bg-green-600 text-white',
+  put: 'bg-amber-600 text-white',
+  delete: 'bg-red-600 text-white',
+  patch: 'bg-purple-600 text-white',
+} as const;
 
 export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,18 +69,40 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
     <div
       ref={containerRef}
       className="w-full h-full flex flex-col"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-      }}
     >
       {/* Tabs */}
-      <div className="border-b border-border-default bg-bg-secondary">
+      <div className="border-b border-border-default bg-bg-secondary" role="tablist" aria-label="API documentation sections">
         <div className="flex gap-1 px-6">
           {tabs.map((tab) => (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`tabpanel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
               onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(e) => {
+                const currentIndex = tabs.findIndex(t => t.id === tab.id);
+                if (e.key === 'ArrowRight') {
+                  const nextIndex = (currentIndex + 1) % tabs.length;
+                  const nextTab = tabs[nextIndex];
+                  if (nextTab) setActiveTab(nextTab.id);
+                  e.preventDefault();
+                } else if (e.key === 'ArrowLeft') {
+                  const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                  const prevTab = tabs[prevIndex];
+                  if (prevTab) setActiveTab(prevTab.id);
+                  e.preventDefault();
+                } else if (e.key === 'Home') {
+                  const firstTab = tabs[0];
+                  if (firstTab) setActiveTab(firstTab.id);
+                  e.preventDefault();
+                } else if (e.key === 'End') {
+                  const lastTab = tabs[tabs.length - 1];
+                  if (lastTab) setActiveTab(lastTab.id);
+                  e.preventDefault();
+                }
+              }}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? 'border-accent-primary text-accent-primary'
@@ -86,7 +116,12 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-auto bg-bg-secondary text-text-primary p-6">
+      <div
+        role="tabpanel"
+        id={`tabpanel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
+        className="flex-1 overflow-auto bg-bg-secondary text-text-primary p-6"
+      >
         {activeTab === 'overview' && (
           <div className="space-y-4">
             <div>
@@ -128,25 +163,16 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
                         .filter((m) =>
                           ['get', 'post', 'put', 'delete', 'patch'].includes(m)
                         )
-                        .map((method) => {
-                          const methodColors = {
-                            get: 'bg-blue-600 text-white',
-                            post: 'bg-green-600 text-white',
-                            put: 'bg-amber-600 text-white',
-                            delete: 'bg-red-600 text-white',
-                            patch: 'bg-purple-600 text-white',
-                          };
-                          return (
-                            <span
-                              key={`${path}-${method}`}
-                              className={`px-2 py-1 rounded text-xs font-semibold uppercase ${
-                                methodColors[method as keyof typeof methodColors]
-                              }`}
-                            >
-                              {method}
-                            </span>
-                          );
-                        })}
+                        .map((method) => (
+                          <span
+                            key={`${path}-${method}`}
+                            className={`px-2 py-1 rounded text-xs font-semibold uppercase ${
+                              METHOD_COLORS[method as keyof typeof METHOD_COLORS]
+                            }`}
+                          >
+                            {method}
+                          </span>
+                        ))}
                   </div>
                 </div>
               ))}
@@ -161,17 +187,26 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
               <p className="text-text-secondary">No schemas defined</p>
             ) : (
               <div className="space-y-3">
-                {Object.entries(schemas).map(([name, schema]) => (
-                  <div
-                    key={name}
-                    className="border border-border-default rounded-lg p-4 bg-bg-tertiary"
-                  >
-                    <h4 className="font-mono text-sm text-accent-primary mb-2">{name}</h4>
-                    <pre className="text-xs text-text-secondary overflow-auto">
-                      {JSON.stringify(schema, null, 2)}
-                    </pre>
-                  </div>
-                ))}
+                {Object.entries(schemas).map(([name, schema]) => {
+                  let schemaText: string;
+                  try {
+                    schemaText = JSON.stringify(schema, null, 2);
+                  } catch (error) {
+                    schemaText = `Error serializing schema: ${error instanceof Error ? error.message : 'Unknown error'}`;
+                  }
+
+                  return (
+                    <div
+                      key={name}
+                      className="border border-border-default rounded-lg p-4 bg-bg-tertiary"
+                    >
+                      <h4 className="font-mono text-sm text-accent-primary mb-2">{name}</h4>
+                      <pre className="text-xs text-text-secondary overflow-auto">
+                        {schemaText}
+                      </pre>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

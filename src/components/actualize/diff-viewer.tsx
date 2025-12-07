@@ -6,8 +6,6 @@
  * Shows spec vs code differences in a side-by-side or unified view.
  */
 
-import { useState } from 'react';
-
 export interface DiffEntry {
   filePath: string;
   changeType: 'added' | 'modified' | 'deleted';
@@ -39,17 +37,22 @@ export function DiffViewer({
   viewMode = 'split',
   onToggleViewMode,
 }: DiffViewerProps) {
-  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
-
-  const toggleFileExpansion = (filePath: string) => {
-    const newExpanded = new Set(expandedFiles);
-    if (newExpanded.has(filePath)) {
-      newExpanded.delete(filePath);
-    } else {
-      newExpanded.add(filePath);
-    }
-    setExpandedFiles(newExpanded);
-  };
+  // TODO: Implement file expand/collapse UI for large diffs
+  // Future implementation could:
+  // 1. Add state to track expanded files: const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set())
+  // 2. Add a collapse/expand button in the diff content area or file list
+  // 3. Show only first N lines when collapsed
+  // 4. Animate the expansion/collapse transition
+  // 5. Persist expansion state in local storage
+  // Example implementation:
+  //   const toggleFileExpansion = (filePath: string) => {
+  //     setExpandedFiles(prev => {
+  //       const next = new Set(prev);
+  //       if (next.has(filePath)) next.delete(filePath);
+  //       else next.add(filePath);
+  //       return next;
+  //     });
+  //   };
 
   const getChangeTypeColor = (changeType: DiffEntry['changeType']) => {
     switch (changeType) {
@@ -87,16 +90,11 @@ export function DiffViewer({
         </div>
 
         <div className="p-2 space-y-1">
-          {diffs.map((diff) => {
-            const isExpanded = expandedFiles.has(diff.filePath);
-            return (
+          {diffs.map((diff) => (
               <div key={diff.filePath}>
                 <button
                   onClick={() => {
                     onSelectFile?.(diff.filePath);
-                    if (!isExpanded && diff.diff.length > 20) {
-                      toggleFileExpansion(diff.filePath);
-                    }
                   }}
                   className={`
                     w-full text-left px-3 py-2 rounded text-sm
@@ -121,6 +119,7 @@ export function DiffViewer({
                             : 'bg-red-500'
                         }
                       `}
+                      aria-hidden="true"
                     />
                     <span className="truncate font-mono text-xs">{diff.filePath}</span>
                   </div>
@@ -133,21 +132,17 @@ export function DiffViewer({
                       {diff.changeType}
                     </span>
                     {diff.diff.length > 20 && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFileExpansion(diff.filePath);
-                        }}
-                        className="text-xs text-gray-400 hover:text-gray-200"
+                      <span
+                        className="text-xs text-gray-400"
+                        aria-label={`${diff.diff.length} lines changed`}
                       >
-                        {isExpanded ? 'Collapse' : `${diff.diff.length} lines`}
-                      </button>
+                        {diff.diff.length} lines
+                      </span>
                     )}
                   </div>
                 </button>
               </div>
-            );
-          })}
+            ))}
         </div>
       </div>
 
