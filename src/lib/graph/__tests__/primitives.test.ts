@@ -4,7 +4,7 @@
  * Tests for EvalNode, DynamicAgentNode, and DynamicCommandNode primitives.
  */
 
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect, mock } from 'bun:test';
 
 import {
   EvalNodeRuntime,
@@ -54,7 +54,18 @@ describe('EvalNode', () => {
     });
 
     it('should track updated keys', async () => {
-      const node = new EvalNodeRuntime<{ a: number; b: string }>({
+      interface TestContext {
+        a: number;
+        b: string;
+        lastEvalResult?: {
+          success: boolean;
+          updatedKeys: string[];
+          duration: number;
+        };
+        [key: string]: unknown;
+      }
+
+      const node = new EvalNodeRuntime<TestContext>({
         fn: () => ({
           a: 10,
           b: 'updated',
@@ -62,7 +73,7 @@ describe('EvalNode', () => {
         next: 'NEXT',
       });
 
-      const state = createState({ a: 1, b: 'original' });
+      const state = createState<TestContext>({ a: 1, b: 'original' });
       const context = createMockContext();
 
       const result = await node.execute(state, context);
@@ -123,6 +134,7 @@ describe('EvalNode', () => {
         items: string[];
         currentIndex: number;
         current: string | null;
+        [key: string]: unknown;
       }
 
       const node = new EvalNodeRuntime<LoopContext>({
@@ -193,6 +205,7 @@ describe('DynamicAgentNode', () => {
     it('should have dynamic model function', () => {
       interface TaskContext {
         currentTask: { model: 'haiku' | 'sonnet' | 'opus'; prompt: string };
+        [key: string]: unknown;
       }
 
       const modelFn = (state: WorkflowState<TaskContext>) =>
@@ -256,6 +269,7 @@ describe('DynamicCommandNode', () => {
     it('should have dynamic command function', () => {
       interface CmdContext {
         currentTask: { command: string };
+        [key: string]: unknown;
       }
 
       const node = new DynamicCommandNodeRuntime<CmdContext>({
@@ -289,12 +303,24 @@ describe('DynamicCommandNode', () => {
 
   describe('execution', () => {
     it('should execute static command successfully', async () => {
-      const node = new DynamicCommandNodeRuntime({
+      interface CmdResultContext {
+        lastDynamicCommandResult?: {
+          success: boolean;
+          stdout: string;
+          exitCode: number;
+          command: string;
+          stderr: string;
+          duration: number;
+        };
+        [key: string]: unknown;
+      }
+
+      const node = new DynamicCommandNodeRuntime<CmdResultContext>({
         command: 'echo "hello world"',
         next: 'NEXT',
       });
 
-      const state = createState({});
+      const state = createState<CmdResultContext>({});
       const context = createMockContext();
 
       const result = await node.execute(state, context);
@@ -313,6 +339,15 @@ describe('DynamicCommandNode', () => {
     it('should execute dynamic command from state', async () => {
       interface CmdContext {
         message: string;
+        lastDynamicCommandResult?: {
+          success: boolean;
+          stdout: string;
+          exitCode: number;
+          command: string;
+          stderr: string;
+          duration: number;
+        };
+        [key: string]: unknown;
       }
 
       const node = new DynamicCommandNodeRuntime<CmdContext>({
@@ -331,12 +366,24 @@ describe('DynamicCommandNode', () => {
     });
 
     it('should capture command in result', async () => {
-      const node = new DynamicCommandNodeRuntime({
+      interface CmdResultContext {
+        lastDynamicCommandResult?: {
+          success: boolean;
+          stdout: string;
+          exitCode: number;
+          command: string;
+          stderr: string;
+          duration: number;
+        };
+        [key: string]: unknown;
+      }
+
+      const node = new DynamicCommandNodeRuntime<CmdResultContext>({
         command: 'echo test',
         next: 'NEXT',
       });
 
-      const state = createState({});
+      const state = createState<CmdResultContext>({});
       const context = createMockContext();
 
       const result = await node.execute(state, context);

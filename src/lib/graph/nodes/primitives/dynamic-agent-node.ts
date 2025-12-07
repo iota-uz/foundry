@@ -17,7 +17,6 @@ import {
 import type {
   WorkflowState,
   GraphContext,
-  Transition,
   ToolReference,
   Dynamic,
   AgentModel,
@@ -149,7 +148,7 @@ export interface DynamicAgentNodeConfig<TContext extends Record<string, unknown>
 const MODEL_MAP: Record<AgentModel, string> = {
   haiku: 'claude-3-5-haiku-20241022',
   sonnet: 'claude-sonnet-4-20250514',
-  opus: 'claude-opus-4-20250514',
+  opus: 'claude-opus-4-1-20250805', // TODO: Update model versions when newer Claude models are released
 };
 
 
@@ -206,9 +205,11 @@ export class DynamicAgentNodeRuntime<TContext extends Record<string, unknown>>
       ? resolveDynamic(this.config.system, state)
       : 'You are a helpful AI assistant. Complete the task described in the user message.';
     const tools = this.config.tools ? resolveDynamic(this.config.tools, state) : [];
-    const maxTurns = this.config.maxTurns
+    // TODO: Implement multi-turn agent loops using maxTurns parameter (see line 252)
+    const _maxTurns = this.config.maxTurns
       ? resolveDynamic(this.config.maxTurns, state)
       : 10;
+    void _maxTurns; // Suppress unused warning until multi-turn is implemented
     const temperature = this.config.temperature
       ? resolveDynamic(this.config.temperature, state)
       : 0;

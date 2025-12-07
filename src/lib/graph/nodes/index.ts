@@ -106,7 +106,6 @@ export {
   CommandNodeRuntime,
   type CommandNodeConfig,
   type CommandResult,
-  createCommandNode,
 } from './general/command-node';
 
 export {
@@ -122,7 +121,6 @@ export {
   type LLMResult,
   type LLMModel,
   type ReasoningEffort,
-  createLLMNode,
 } from './general/llm-node';
 
 // Re-export as module namespace
@@ -136,24 +134,22 @@ export {
   EvalNodeRuntime,
   type EvalNodeConfig,
   type EvalResult,
-  createEvalNode,
 } from './primitives/eval-node';
 
 export {
   DynamicAgentNodeRuntime,
   type DynamicAgentNodeConfig,
   type DynamicAgentResult,
-  type AgentModel,
-  type Dynamic,
-  createDynamicAgentNode,
 } from './primitives/dynamic-agent-node';
 
 export {
   DynamicCommandNodeRuntime,
   type DynamicCommandNodeConfig,
   type DynamicCommandResult,
-  createDynamicCommandNode,
 } from './primitives/dynamic-command-node';
+
+// Re-export types that are used across primitive nodes
+export type { AgentModel, Dynamic } from '../types';
 
 // Re-export as module namespace
 export * as primitives from './primitives';

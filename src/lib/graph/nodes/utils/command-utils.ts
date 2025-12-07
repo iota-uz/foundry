@@ -40,8 +40,10 @@ export async function executeCommand(
   });
 
   // Create timeout promise
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
+    timeoutId = setTimeout(() => {
       proc.kill();
       reject(new Error(`Command timed out after ${timeout}ms`));
     }, timeout);
@@ -54,6 +56,9 @@ export async function executeCommand(
       timeoutPromise,
     ]);
 
+    // Clear timeout on success
+    if (timeoutId) clearTimeout(timeoutId);
+
     // Read outputs
     const stdout = await new Response(proc.stdout).text();
     const stderr = await new Response(proc.stderr).text();
@@ -65,6 +70,9 @@ export async function executeCommand(
       success: result === 0,
     };
   } catch (error) {
+    // Clear timeout on error
+    if (timeoutId) clearTimeout(timeoutId);
+
     // Ensure process is killed on error
     try {
       proc.kill();

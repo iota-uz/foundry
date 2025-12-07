@@ -15,7 +15,7 @@ import {
   type NodeExecutionResult,
   NodeExecutionError,
 } from '../base';
-import type { WorkflowState, GraphContext, Transition } from '../../types';
+import type { WorkflowState, GraphContext } from '../../types';
 
 /**
  * Model selection for LLMNode.
@@ -210,7 +210,7 @@ export class LLMNodeRuntime<
       outputSchema,
       temperature,
       maxTokens,
-      reasoningEffort,
+      reasoningEffort: _reasoningEffort,
       apiKey,
       throwOnError,
       resultKey,
@@ -219,7 +219,7 @@ export class LLMNodeRuntime<
     const startTime = Date.now();
     const modelId = MODEL_MAP[model];
 
-    // TODO: Use reasoningEffort when SDK supports extended thinking
+    // TODO: Use _reasoningEffort when SDK supports extended thinking
 
     try {
       // Validate input if schema provided

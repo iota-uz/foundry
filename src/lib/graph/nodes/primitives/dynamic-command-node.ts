@@ -14,7 +14,6 @@ import {
 import type {
   WorkflowState,
   GraphContext,
-  Transition,
   Dynamic,
 } from '../../types';
 import { executeCommand } from '../utils/command-utils';
@@ -151,7 +150,11 @@ export class DynamicCommandNodeRuntime<TContext extends Record<string, unknown>>
     const startTime = Date.now();
 
     try {
-      const result = await executeCommand(command, { cwd, env, timeout });
+      const result = await executeCommand(command, {
+        ...(cwd !== undefined && { cwd }),
+        ...(env !== undefined && { env }),
+        timeout,
+      });
       const duration = Date.now() - startTime;
 
       const commandResult: DynamicCommandResult = {

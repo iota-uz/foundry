@@ -15,7 +15,6 @@ import {
 import type {
   WorkflowState,
   GraphContext,
-  Transition,
 } from '../../types';
 
 /**

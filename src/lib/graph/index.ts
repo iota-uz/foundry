@@ -154,11 +154,7 @@ export {
   DynamicCommandNodeRuntime,
   // Factory functions
   createAgentNode,
-  createCommandNode,
   createSlashCommandNode,
-  createEvalNode,
-  createDynamicAgentNode,
-  createDynamicCommandNode,
 } from './nodes';
 export type {
   // Base types

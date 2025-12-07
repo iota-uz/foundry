@@ -11,7 +11,6 @@ export {
   CommandNodeRuntime,
   type CommandNodeConfig,
   type CommandResult,
-  createCommandNode,
 } from './command-node';
 
 export {
@@ -27,5 +26,4 @@ export {
   type LLMResult,
   type LLMModel,
   type ReasoningEffort,
-  createLLMNode,
 } from './llm-node';

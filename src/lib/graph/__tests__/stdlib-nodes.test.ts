@@ -8,7 +8,6 @@ import {
   CommandNodeRuntime,
   SlashCommandNodeRuntime,
   createAgentNode,
-  createCommandNode,
   createSlashCommandNode,
   NodeExecutionError,
   isInlineToolDefinition,
@@ -119,18 +118,6 @@ describe('stdlib-nodes', () => {
 
       expect(node.resolveNext(createMockState({ success: true }))).toBe('DEPLOY');
       expect(node.resolveNext(createMockState({ success: false }))).toBe('FIX');
-    });
-  });
-
-  describe('createCommandNode', () => {
-    it('should create command node config', () => {
-      const config = createCommandNode({
-        command: 'gh pr create --fill',
-        next: 'END',
-      });
-
-      expect(config.command).toBe('gh pr create --fill');
-      expect(config.next).toBe('END');
     });
   });
 

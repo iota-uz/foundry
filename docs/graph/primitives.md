@@ -284,6 +284,14 @@ interface Context {
   results: TaskResult[];
 }
 
+// Define the output schema for the planner
+const TaskPlanSchema = z.object({
+  tasks: z.array(z.object({
+    prompt: z.string(),
+    model: z.enum(['haiku', 'sonnet', 'opus']),
+  })),
+});
+
 export default defineWorkflow<Context>({
   id: 'task-iterator',
 
