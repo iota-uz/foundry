@@ -276,6 +276,103 @@ export interface GitHubProjectNodeDefinition<TContext extends Record<string, unk
   issueNumberKey?: string;
 }
 
+// ============================================================================
+// Primitive Node Types (Dynamic/Composable)
+// ============================================================================
+
+/**
+ * Model selection for DynamicAgentNode.
+ */
+export type AgentModel = 'haiku' | 'sonnet' | 'opus';
+
+/**
+ * Dynamic value: static or computed from state at runtime.
+ *
+ * @example
+ * ```typescript
+ * // Static value
+ * model: 'sonnet'
+ *
+ * // Dynamic value from state
+ * model: (state) => state.context.currentTask.model
+ * ```
+ */
+export type Dynamic<T, TContext extends Record<string, unknown>> =
+  | T
+  | ((state: WorkflowState<TContext>) => T);
+
+/**
+ * EvalNode definition - pure context transformation without LLM calls.
+ *
+ * Use for loop control, index management, array operations, and
+ * conditional value assignment.
+ */
+export interface EvalNodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>>
+  extends BaseNodeDefinition<TContext> {
+  type: 'eval';
+
+  /**
+   * Pure function that transforms context.
+   * Receives current state, returns partial context to merge.
+   */
+  fn: (state: WorkflowState<TContext>) => Partial<TContext>;
+}
+
+/**
+ * DynamicAgentNode definition - AI agent with runtime configuration.
+ *
+ * Unlike static AgentNode, all configuration can be resolved dynamically
+ * from workflow state at execution time.
+ */
+export interface DynamicAgentNodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>>
+  extends BaseNodeDefinition<TContext> {
+  type: 'dynamic-agent';
+
+  /** Model to use (static or dynamic) */
+  model: Dynamic<AgentModel, TContext>;
+
+  /** Prompt for the agent (static or dynamic) */
+  prompt: Dynamic<string, TContext>;
+
+  /** Optional system prompt (static or dynamic) */
+  system?: Dynamic<string, TContext>;
+
+  /** Tools available to the agent (static or dynamic) */
+  tools?: Dynamic<ToolReference[], TContext>;
+
+  /** Maximum turns for the agent loop (static or dynamic) */
+  maxTurns?: Dynamic<number, TContext>;
+
+  /** Temperature for generation (static or dynamic) */
+  temperature?: Dynamic<number, TContext>;
+
+  /** Maximum tokens to generate (static or dynamic) */
+  maxTokens?: Dynamic<number, TContext>;
+}
+
+/**
+ * DynamicCommandNode definition - shell command with runtime configuration.
+ *
+ * Unlike static CommandNode, all configuration can be resolved dynamically
+ * from workflow state at execution time.
+ */
+export interface DynamicCommandNodeDefinition<TContext extends Record<string, unknown> = Record<string, unknown>>
+  extends BaseNodeDefinition<TContext> {
+  type: 'dynamic-command';
+
+  /** Shell command to execute (static or dynamic) */
+  command: Dynamic<string, TContext>;
+
+  /** Working directory (static or dynamic) */
+  cwd?: Dynamic<string, TContext>;
+
+  /** Environment variables (static or dynamic) */
+  env?: Dynamic<Record<string, string>, TContext>;
+
+  /** Timeout in milliseconds (static or dynamic) */
+  timeout?: Dynamic<number, TContext>;
+}
+
 /**
  * Union type of all supported node definitions.
  */
@@ -283,7 +380,10 @@ export type NodeDefinition<TContext extends Record<string, unknown> = Record<str
   | AgentNodeDefinition<TContext>
   | CommandNodeDefinition<TContext>
   | SlashCommandNodeDefinition<TContext>
-  | GitHubProjectNodeDefinition<TContext>;
+  | GitHubProjectNodeDefinition<TContext>
+  | EvalNodeDefinition<TContext>
+  | DynamicAgentNodeDefinition<TContext>
+  | DynamicCommandNodeDefinition<TContext>;
 
 /**
  * The main workflow configuration schema.

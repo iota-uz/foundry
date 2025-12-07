@@ -104,8 +104,29 @@
               <li class="nav-item {% if page.url == '/graph/' or page.url == '/graph/index.html' %}active{% endif %}">
                 <a href="{{ '/graph/' | relative_url }}" class="nav-link">Overview</a>
               </li>
+              <li class="nav-item {% if page.url contains '/graph/architecture' %}active{% endif %}">
+                <a href="{{ '/graph/architecture.html' | relative_url }}" class="nav-link">Architecture</a>
+              </li>
+              <li class="nav-item {% if page.url contains '/graph/nodes' and page.url != '/graph/custom-nodes' %}active{% endif %}">
+                <a href="{{ '/graph/nodes.html' | relative_url }}" class="nav-link">Node Types</a>
+              </li>
+              <li class="nav-item {% if page.url contains '/graph/primitives' %}active{% endif %}">
+                <a href="{{ '/graph/primitives.html' | relative_url }}" class="nav-link">Primitives</a>
+              </li>
+              <li class="nav-item {% if page.url contains '/graph/state' %}active{% endif %}">
+                <a href="{{ '/graph/state.html' | relative_url }}" class="nav-link">State</a>
+              </li>
+              <li class="nav-item {% if page.url contains '/graph/transitions' %}active{% endif %}">
+                <a href="{{ '/graph/transitions.html' | relative_url }}" class="nav-link">Transitions</a>
+              </li>
               <li class="nav-item {% if page.url contains '/graph/custom-nodes' %}active{% endif %}">
                 <a href="{{ '/graph/custom-nodes.html' | relative_url }}" class="nav-link">Custom Nodes</a>
+              </li>
+              <li class="nav-item {% if page.url contains '/graph/api' %}active{% endif %}">
+                <a href="{{ '/graph/api.html' | relative_url }}" class="nav-link">API Reference</a>
+              </li>
+              <li class="nav-item {% if page.url contains '/graph/examples' %}active{% endif %}">
+                <a href="{{ '/graph/examples.html' | relative_url }}" class="nav-link">Examples</a>
               </li>
             </ul>
           </div>

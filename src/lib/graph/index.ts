@@ -76,6 +76,12 @@ export type {
   ToolReference,
   InlineToolDefinition,
   LoadedConfig,
+  // Primitive node types
+  EvalNodeDefinition,
+  DynamicAgentNodeDefinition,
+  DynamicCommandNodeDefinition,
+  AgentModel,
+  Dynamic,
   // Message types
   Message,
   StoredMessage,
@@ -121,6 +127,10 @@ export {
   AgentNode,
   CommandNode,
   SlashCommandNode,
+  // Primitive node factories
+  EvalNode,
+  DynamicAgentNode,
+  DynamicCommandNode,
   createInitialState,
 } from './define-workflow';
 export type {
@@ -138,9 +148,12 @@ export {
   AgentNodeRuntime,
   CommandNodeRuntime,
   SlashCommandNodeRuntime,
+  // Primitive runtime classes
+  EvalNodeRuntime,
+  DynamicAgentNodeRuntime,
+  DynamicCommandNodeRuntime,
   // Factory functions
   createAgentNode,
-  createCommandNode,
   createSlashCommandNode,
 } from './nodes';
 export type {
@@ -157,4 +170,11 @@ export type {
   SlashCommandNodeConfig,
   SlashCommand,
   SlashCommandResult,
+  // Primitive node types
+  EvalNodeConfig,
+  EvalResult,
+  DynamicAgentNodeConfig,
+  DynamicAgentResult,
+  DynamicCommandNodeConfig,
+  DynamicCommandResult,
 } from './nodes';

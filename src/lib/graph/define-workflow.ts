@@ -11,8 +11,13 @@ import type {
   AgentNodeDefinition,
   CommandNodeDefinition,
   SlashCommandNodeDefinition,
+  EvalNodeDefinition,
+  DynamicAgentNodeDefinition,
+  DynamicCommandNodeDefinition,
   Transition,
   ToolReference,
+  Dynamic,
+  AgentModel,
 } from './types';
 
 /**
@@ -103,6 +108,120 @@ export function SlashCommandNode<TContext extends Record<string, unknown> = Reco
 }
 
 /**
+ * Creates an EvalNode definition.
+ * EvalNodes perform pure context transformations without LLM calls.
+ *
+ * @example
+ * ```typescript
+ * nodes.EvalNode({
+ *   fn: (state) => ({
+ *     currentIndex: state.context.currentIndex + 1,
+ *     currentTask: state.context.tasks[state.context.currentIndex + 1],
+ *   }),
+ *   next: (state) => state.context.currentTask ? 'EXECUTE' : 'DONE',
+ * })
+ * ```
+ */
+export function EvalNode<TContext extends Record<string, unknown> = Record<string, unknown>>(config: {
+  /** Pure function that transforms context */
+  fn: (state: WorkflowState<TContext>) => Partial<TContext>;
+  /** Transition to next node (static string or dynamic function) */
+  next: Transition<TContext>;
+}): EvalNodeDefinition<TContext> {
+  return {
+    type: 'eval',
+    fn: config.fn,
+    next: config.next,
+  };
+}
+
+/**
+ * Creates a DynamicAgentNode definition.
+ * DynamicAgentNodes run an AI agent with configuration resolved at runtime.
+ *
+ * @example
+ * ```typescript
+ * nodes.DynamicAgentNode({
+ *   model: (state) => state.context.currentTask.model,
+ *   prompt: (state) => state.context.currentTask.prompt,
+ *   tools: ['read_file', 'write_file'],
+ *   next: 'COLLECT_RESULT',
+ * })
+ * ```
+ */
+export function DynamicAgentNode<TContext extends Record<string, unknown> = Record<string, unknown>>(config: {
+  /** Model to use (static or dynamic) */
+  model: Dynamic<AgentModel, TContext>;
+  /** Prompt for the agent (static or dynamic) */
+  prompt: Dynamic<string, TContext>;
+  /** Optional system prompt (separate from user prompt) */
+  system?: Dynamic<string, TContext>;
+  /** Tools available to the agent (static or dynamic) */
+  tools?: Dynamic<ToolReference[], TContext>;
+  /** Maximum turns for the agent loop */
+  maxTurns?: Dynamic<number, TContext>;
+  /** Temperature for generation */
+  temperature?: Dynamic<number, TContext>;
+  /** Maximum tokens to generate */
+  maxTokens?: Dynamic<number, TContext>;
+  /** Transition to next node (static string or dynamic function) */
+  next: Transition<TContext>;
+}): DynamicAgentNodeDefinition<TContext> {
+  const result: DynamicAgentNodeDefinition<TContext> = {
+    type: 'dynamic-agent',
+    model: config.model,
+    prompt: config.prompt,
+    next: config.next,
+  };
+
+  if (config.system !== undefined) result.system = config.system;
+  if (config.tools !== undefined) result.tools = config.tools;
+  if (config.maxTurns !== undefined) result.maxTurns = config.maxTurns;
+  if (config.temperature !== undefined) result.temperature = config.temperature;
+  if (config.maxTokens !== undefined) result.maxTokens = config.maxTokens;
+
+  return result;
+}
+
+/**
+ * Creates a DynamicCommandNode definition.
+ * DynamicCommandNodes execute shell commands with configuration resolved at runtime.
+ *
+ * @example
+ * ```typescript
+ * nodes.DynamicCommandNode({
+ *   command: (state) => state.context.currentTask.command,
+ *   cwd: (state) => state.context.workDir,
+ *   next: 'CHECK_RESULT',
+ * })
+ * ```
+ */
+export function DynamicCommandNode<TContext extends Record<string, unknown> = Record<string, unknown>>(config: {
+  /** Shell command to execute (static or dynamic) */
+  command: Dynamic<string, TContext>;
+  /** Working directory (static or dynamic) */
+  cwd?: Dynamic<string, TContext>;
+  /** Environment variables (static or dynamic) */
+  env?: Dynamic<Record<string, string>, TContext>;
+  /** Timeout in milliseconds (static or dynamic) */
+  timeout?: Dynamic<number, TContext>;
+  /** Transition to next node (static string or dynamic function) */
+  next: Transition<TContext>;
+}): DynamicCommandNodeDefinition<TContext> {
+  const result: DynamicCommandNodeDefinition<TContext> = {
+    type: 'dynamic-command',
+    command: config.command,
+    next: config.next,
+  };
+
+  if (config.cwd !== undefined) result.cwd = config.cwd;
+  if (config.env !== undefined) result.env = config.env;
+  if (config.timeout !== undefined) result.timeout = config.timeout;
+
+  return result;
+}
+
+/**
  * Node factory functions for use in workflow configurations.
  * These provide a clean API for defining different node types.
  */
@@ -110,6 +229,10 @@ export const nodes = {
   AgentNode,
   CommandNode,
   SlashCommandNode,
+  // Primitive nodes for dynamic workflows
+  EvalNode,
+  DynamicAgentNode,
+  DynamicCommandNode,
 } as const;
 
 /**
