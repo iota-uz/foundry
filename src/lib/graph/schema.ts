@@ -29,12 +29,13 @@ import {
   NodeType,
   StdlibTool,
   AgentModel,
+  WorkflowStatus,
   END_NODE,
   type EndNode,
 } from './enums';
 
 // Re-export enums for convenience
-export { NodeType, StdlibTool, AgentModel, END_NODE };
+export { NodeType, StdlibTool, AgentModel, WorkflowStatus, END_NODE };
 
 // ============================================================================
 // Core Schema Types
@@ -49,7 +50,7 @@ export interface WorkflowState<TContext extends Record<string, unknown> = Record
   currentNode: string;
 
   /** Workflow execution status */
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'paused';
+  status: WorkflowStatus;
 
   /** Last update timestamp (ISO 8601) */
   updatedAt: string;
@@ -816,7 +817,7 @@ export function createInitialWorkflowState<
 
   return {
     currentNode: firstNode.name,
-    status: 'pending',
+    status: WorkflowStatus.Pending,
     updatedAt: new Date().toISOString(),
     conversationHistory: [],
     context: (config.initialContext ?? {}) as TContext,

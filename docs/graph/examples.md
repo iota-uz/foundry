@@ -2,7 +2,7 @@
 layout: default
 title: Examples
 parent: Graph Workflow Engine
-nav_order: 7
+nav_order: 8
 description: 'Complete workflow examples'
 ---
 
@@ -15,44 +15,51 @@ Complete workflow examples demonstrating common patterns.
 A complete workflow for implementing features:
 
 ```typescript
-import { defineWorkflow, nodes } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool } from '@sys/graph';
 
-interface FeatureContext {
+interface FeatureContext extends Record<string, unknown> {
   request: string;
   plan?: { tasks: string[] };
   currentTask?: string;
   completedTasks: string[];
   allTasksDone: boolean;
+  lastCommandResult?: { exitCode: number; stdout: string; stderr: string };
 }
 
-export default defineWorkflow<FeatureContext>({
-  id: 'feature-development',
+const schema = defineNodes<FeatureContext>()([
+  'PLAN',
+  'IMPLEMENT',
+  'TEST',
+  'FIX',
+  'COMMIT',
+] as const);
 
-  initialState: {
-    context: {
-      request: '',
-      completedTasks: [],
-      allTasksDone: false,
-    },
+export default defineWorkflow({
+  id: 'feature-development',
+  schema,
+  initialContext: {
+    request: '',
+    completedTasks: [],
+    allTasksDone: false,
   },
 
-  nodes: {
-    PLAN: nodes.AgentNode({
+  nodes: [
+    schema.agent('PLAN', {
       role: 'architect',
-      system: `You are a Tech Lead. Analyze the feature request and create a task plan.
+      prompt: `You are a Tech Lead. Analyze the feature request and create a task plan.
 Output JSON: { "tasks": ["task1", "task2", ...] }`,
-      tools: ['list_files', 'read_file'],
+      capabilities: [StdlibTool.Glob, StdlibTool.Read],
       then: 'IMPLEMENT',
     }),
 
-    IMPLEMENT: nodes.AgentNode({
+    schema.agent('IMPLEMENT', {
       role: 'builder',
-      system: 'Implement the current task from the plan.',
-      tools: ['write_file', 'read_file', 'bash'],
+      prompt: 'Implement the current task from the plan.',
+      capabilities: [StdlibTool.Write, StdlibTool.Read, StdlibTool.Bash],
       then: (state) => (state.context.allTasksDone ? 'TEST' : 'IMPLEMENT'),
     }),
 
-    TEST: nodes.CommandNode({
+    schema.command('TEST', {
       command: 'bun test',
       then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
@@ -62,19 +69,19 @@ Output JSON: { "tasks": ["task1", "task2", ...] }`,
       },
     }),
 
-    FIX: nodes.AgentNode({
+    schema.agent('FIX', {
       role: 'debugger',
-      system: 'Fix the failing tests based on the error output.',
-      tools: ['read_file', 'write_file'],
+      prompt: 'Fix the failing tests based on the error output.',
+      capabilities: [StdlibTool.Read, StdlibTool.Write],
       then: 'TEST',
     }),
 
-    COMMIT: nodes.SlashCommandNode({
+    schema.slashCommand('COMMIT', {
       command: 'commit',
       args: 'Implement feature with passing tests',
       then: 'END',
     }),
-  },
+  ],
 });
 ```
 
@@ -83,35 +90,50 @@ Output JSON: { "tasks": ["task1", "task2", ...] }`,
 Systematic approach to fixing bugs:
 
 ```typescript
-import { defineWorkflow, nodes } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool } from '@sys/graph';
 
-interface BugFixContext {
+interface BugFixContext extends Record<string, unknown> {
   bugId: string;
   description: string;
   reproduced: boolean;
   fixed: boolean;
+  lastCommandResult?: { exitCode: number };
 }
 
-export default defineWorkflow<BugFixContext>({
-  id: 'bug-fix',
+const schema = defineNodes<BugFixContext>()([
+  'REPRODUCE',
+  'FIX',
+  'VERIFY',
+  'COMMIT',
+] as const);
 
-  nodes: {
-    REPRODUCE: nodes.AgentNode({
+export default defineWorkflow({
+  id: 'bug-fix',
+  schema,
+  initialContext: {
+    bugId: '',
+    description: '',
+    reproduced: false,
+    fixed: false,
+  },
+
+  nodes: [
+    schema.agent('REPRODUCE', {
       role: 'debugger',
-      system: `Analyze the bug report and create a reproduction test.
+      prompt: `Analyze the bug report and create a reproduction test.
 Write a failing test that demonstrates the bug.`,
-      tools: ['read_file', 'write_file', 'bash'],
+      capabilities: [StdlibTool.Read, StdlibTool.Write, StdlibTool.Bash],
       then: 'FIX',
     }),
 
-    FIX: nodes.AgentNode({
+    schema.agent('FIX', {
       role: 'developer',
-      system: 'Fix the bug. The reproduction test should pass after your fix.',
-      tools: ['read_file', 'write_file'],
+      prompt: 'Fix the bug. The reproduction test should pass after your fix.',
+      capabilities: [StdlibTool.Read, StdlibTool.Write],
       then: 'VERIFY',
     }),
 
-    VERIFY: nodes.CommandNode({
+    schema.command('VERIFY', {
       command: 'bun test --grep "bug-"',
       then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
@@ -121,12 +143,12 @@ Write a failing test that demonstrates the bug.`,
       },
     }),
 
-    COMMIT: nodes.SlashCommandNode({
+    schema.slashCommand('COMMIT', {
       command: 'commit',
       args: 'Fix bug with regression test',
       then: 'END',
     }),
-  },
+  ],
 });
 ```
 
@@ -135,27 +157,40 @@ Write a failing test that demonstrates the bug.`,
 Automated code review with AI:
 
 ```typescript
-import { defineWorkflow, nodes } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool } from '@sys/graph';
 
-interface ReviewContext {
+interface ReviewContext extends Record<string, unknown> {
   prNumber: number;
   files?: string[];
   feedback?: string;
   approved: boolean;
+  lastCommandResult?: { exitCode: number; stdout: string };
 }
 
-export default defineWorkflow<ReviewContext>({
-  id: 'code-review',
+const schema = defineNodes<ReviewContext>()([
+  'FETCH_PR',
+  'ANALYZE',
+  'COMMENT',
+  'APPROVE',
+] as const);
 
-  nodes: {
-    FETCH_PR: nodes.CommandNode({
+export default defineWorkflow({
+  id: 'code-review',
+  schema,
+  initialContext: {
+    prNumber: 0,
+    approved: false,
+  },
+
+  nodes: [
+    schema.command('FETCH_PR', {
       command: 'gh pr view --json files,body',
       then: 'ANALYZE',
     }),
 
-    ANALYZE: nodes.AgentNode({
+    schema.agent('ANALYZE', {
       role: 'reviewer',
-      system: `You are a senior code reviewer. Analyze the PR changes.
+      prompt: `You are a senior code reviewer. Analyze the PR changes.
 Focus on:
 - Code quality and best practices
 - Potential bugs or security issues
@@ -163,11 +198,11 @@ Focus on:
 - Documentation
 
 Provide constructive feedback.`,
-      tools: ['read_file', 'list_files'],
+      capabilities: [StdlibTool.Read, StdlibTool.Glob],
       then: 'COMMENT',
     }),
 
-    COMMENT: nodes.CommandNode({
+    schema.command('COMMENT', {
       command: 'gh pr comment --body "$REVIEW_COMMENT"',
       then: (state) => {
         if (state.context.approved) {
@@ -177,11 +212,11 @@ Provide constructive feedback.`,
       },
     }),
 
-    APPROVE: nodes.CommandNode({
+    schema.command('APPROVE', {
       command: 'gh pr review --approve',
       then: 'END',
     }),
-  },
+  ],
 });
 ```
 
@@ -190,12 +225,24 @@ Provide constructive feedback.`,
 Workflow with status tracking:
 
 ```typescript
-import { defineWorkflow, nodes } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool } from '@sys/graph';
+import { createGitHubProjectNode } from '@sys/graph/nodes';
 
-interface IssueContext {
+interface IssueContext extends Record<string, unknown> {
   issueNumber: number;
   title: string;
+  lastCommandResult?: { exitCode: number };
 }
+
+const schema = defineNodes<IssueContext>()([
+  'START',
+  'IMPLEMENT',
+  'TEST',
+  'FIX',
+  'REVIEW',
+  'CREATE_PR',
+  'DONE',
+] as const);
 
 const projectConfig = {
   token: process.env.GITHUB_TOKEN!,
@@ -203,27 +250,32 @@ const projectConfig = {
   projectNumber: 1,
   owner: 'my-org',
   repo: 'my-app',
-  issueNumberKey: 'issueNumber',
+  issueNumberKey: 'issueNumber' as const,
 };
 
-export default defineWorkflow<IssueContext>({
+export default defineWorkflow({
   id: 'issue-workflow',
+  schema,
+  initialContext: {
+    issueNumber: 0,
+    title: '',
+  },
 
-  nodes: {
-    START: nodes.GitHubProjectNode({
+  nodes: [
+    createGitHubProjectNode({
       ...projectConfig,
-      status: 'In Progress',
+      updates: { type: 'single_select', field: 'Status', value: 'In Progress' },
       then: 'IMPLEMENT',
     }),
 
-    IMPLEMENT: nodes.AgentNode({
+    schema.agent('IMPLEMENT', {
       role: 'developer',
-      system: 'Implement the feature described in the issue.',
-      tools: ['read_file', 'write_file', 'bash'],
+      prompt: 'Implement the feature described in the issue.',
+      capabilities: [StdlibTool.Read, StdlibTool.Write, StdlibTool.Bash],
       then: 'TEST',
     }),
 
-    TEST: nodes.CommandNode({
+    schema.command('TEST', {
       command: 'bun test',
       then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
@@ -233,30 +285,30 @@ export default defineWorkflow<IssueContext>({
       },
     }),
 
-    FIX: nodes.AgentNode({
+    schema.agent('FIX', {
       role: 'debugger',
-      system: 'Fix the failing tests.',
-      tools: ['read_file', 'write_file'],
+      prompt: 'Fix the failing tests.',
+      capabilities: [StdlibTool.Read, StdlibTool.Write],
       then: 'TEST',
     }),
 
-    REVIEW: nodes.GitHubProjectNode({
+    createGitHubProjectNode({
       ...projectConfig,
-      status: 'In Review',
+      updates: { type: 'single_select', field: 'Status', value: 'In Review' },
       then: 'CREATE_PR',
     }),
 
-    CREATE_PR: nodes.CommandNode({
+    schema.command('CREATE_PR', {
       command: 'gh pr create --fill',
       then: 'DONE',
     }),
 
-    DONE: nodes.GitHubProjectNode({
+    createGitHubProjectNode({
       ...projectConfig,
-      status: 'Done',
+      updates: { type: 'single_select', field: 'Status', value: 'Done' },
       then: 'END',
     }),
-  },
+  ],
 });
 ```
 
@@ -265,20 +317,38 @@ export default defineWorkflow<IssueContext>({
 Multi-stage deployment with rollback:
 
 ```typescript
-import { defineWorkflow, nodes } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool } from '@sys/graph';
 
-interface DeployContext {
+interface DeployContext extends Record<string, unknown> {
   environment: 'staging' | 'production';
   version: string;
   previousVersion?: string;
   deployedAt?: string;
+  lastCommandResult?: { exitCode: number; stdout: string; stderr: string };
 }
 
-export default defineWorkflow<DeployContext>({
-  id: 'deployment',
+const schema = defineNodes<DeployContext>()([
+  'BUILD',
+  'TEST',
+  'DEPLOY',
+  'VERIFY',
+  'ROLLBACK',
+  'SUCCESS',
+  'BUILD_FAILED',
+  'TEST_FAILED',
+  'FAILED',
+] as const);
 
-  nodes: {
-    BUILD: nodes.CommandNode({
+export default defineWorkflow({
+  id: 'deployment',
+  schema,
+  initialContext: {
+    environment: 'staging',
+    version: '',
+  },
+
+  nodes: [
+    schema.command('BUILD', {
       command: 'bun run build',
       then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
@@ -288,7 +358,7 @@ export default defineWorkflow<DeployContext>({
       },
     }),
 
-    TEST: nodes.CommandNode({
+    schema.command('TEST', {
       command: 'bun test',
       then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
@@ -298,7 +368,7 @@ export default defineWorkflow<DeployContext>({
       },
     }),
 
-    DEPLOY: nodes.CommandNode({
+    schema.command('DEPLOY', {
       command: 'railway deploy',
       then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
@@ -308,7 +378,7 @@ export default defineWorkflow<DeployContext>({
       },
     }),
 
-    VERIFY: nodes.CommandNode({
+    schema.command('VERIFY', {
       command: 'curl -f https://api.example.com/health',
       then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
@@ -318,39 +388,39 @@ export default defineWorkflow<DeployContext>({
       },
     }),
 
-    ROLLBACK: nodes.AgentNode({
+    schema.agent('ROLLBACK', {
       role: 'deployer',
-      system: 'Rollback to the previous version.',
-      tools: ['bash'],
+      prompt: 'Rollback to the previous version.',
+      capabilities: [StdlibTool.Bash],
       then: 'FAILED',
     }),
 
-    SUCCESS: nodes.SlashCommandNode({
+    schema.slashCommand('SUCCESS', {
       command: 'commit',
       args: 'Deployment successful',
       then: 'END',
     }),
 
-    BUILD_FAILED: nodes.AgentNode({
+    schema.agent('BUILD_FAILED', {
       role: 'analyst',
-      system: 'Analyze build failure and suggest fixes.',
-      tools: ['read_file'],
+      prompt: 'Analyze build failure and suggest fixes.',
+      capabilities: [StdlibTool.Read],
       then: 'END',
     }),
 
-    TEST_FAILED: nodes.AgentNode({
+    schema.agent('TEST_FAILED', {
       role: 'analyst',
-      system: 'Analyze test failures and suggest fixes.',
-      tools: ['read_file'],
+      prompt: 'Analyze test failures and suggest fixes.',
+      capabilities: [StdlibTool.Read],
       then: 'END',
     }),
 
-    FAILED: nodes.SlashCommandNode({
+    schema.slashCommand('FAILED', {
       command: 'commit',
       args: 'Deployment failed - rolled back',
       then: 'END',
     }),
-  },
+  ],
 });
 ```
 
@@ -359,10 +429,10 @@ export default defineWorkflow<DeployContext>({
 Workflow with custom inline tools:
 
 ```typescript
-import { defineWorkflow, nodes } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool, type InlineTool } from '@sys/graph';
 import { z } from 'zod';
 
-interface AnalysisContext {
+interface AnalysisContext extends Record<string, unknown> {
   filePath: string;
   metrics?: {
     complexity: number;
@@ -371,52 +441,77 @@ interface AnalysisContext {
   };
 }
 
-export default defineWorkflow<AnalysisContext>({
-  id: 'code-analysis',
+// Custom tool definitions
+const calculateComplexity: InlineTool<{ filePath: string }> = {
+  name: 'calculate_complexity',
+  description: 'Calculate cyclomatic complexity of a file',
+  schema: z.object({
+    filePath: z.string(),
+  }),
+  execute: async ({ filePath }) => {
+    // Custom complexity calculation
+    const content = await Bun.file(filePath).text();
+    const complexity = countBranches(content);
+    return { complexity };
+  },
+};
 
-  nodes: {
-    ANALYZE: nodes.AgentNode({
+const countFunctionsTool: InlineTool<{ filePath: string }> = {
+  name: 'count_functions',
+  description: 'Count functions in a file',
+  schema: z.object({
+    filePath: z.string(),
+  }),
+  execute: async ({ filePath }) => {
+    const content = await Bun.file(filePath).text();
+    const functions = countFunctions(content);
+    return { count: functions };
+  },
+};
+
+const schema = defineNodes<AnalysisContext>()([
+  'ANALYZE',
+  'REPORT',
+] as const);
+
+export default defineWorkflow({
+  id: 'code-analysis',
+  schema,
+  initialContext: {
+    filePath: '',
+  },
+
+  nodes: [
+    schema.agent('ANALYZE', {
       role: 'analyzer',
-      system: 'Analyze the code structure and quality.',
-      tools: [
-        'read_file',
-        {
-          name: 'calculate_complexity',
-          description: 'Calculate cyclomatic complexity of a file',
-          schema: z.object({
-            filePath: z.string(),
-          }),
-          execute: async ({ filePath }) => {
-            // Custom complexity calculation
-            const content = await Bun.file(filePath).text();
-            const complexity = countBranches(content);
-            return { complexity };
-          },
-        },
-        {
-          name: 'count_functions',
-          description: 'Count functions in a file',
-          schema: z.object({
-            filePath: z.string(),
-          }),
-          execute: async ({ filePath }) => {
-            const content = await Bun.file(filePath).text();
-            const functions = countFunctions(content);
-            return { count: functions };
-          },
-        },
+      prompt: 'Analyze the code structure and quality.',
+      capabilities: [
+        StdlibTool.Read,
+        calculateComplexity,
+        countFunctionsTool,
       ],
       then: 'REPORT',
     }),
 
-    REPORT: nodes.AgentNode({
+    schema.agent('REPORT', {
       role: 'reporter',
-      system: 'Generate a code quality report based on the analysis.',
-      tools: ['write_file'],
+      prompt: 'Generate a code quality report based on the analysis.',
+      capabilities: [StdlibTool.Write],
       then: 'END',
     }),
-  },
+  ],
 });
+
+// Helper functions (implement as needed)
+function countBranches(content: string): number {
+  const branches = content.match(/if|else|switch|case|for|while|\?/g);
+  return branches?.length ?? 0;
+}
+
+function countFunctions(content: string): number {
+  const functions = content.match(/function\s+\w+|=>\s*{|\w+\s*\([^)]*\)\s*{/g);
+  return functions?.length ?? 0;
+}
 ```
 
 ## Running Examples

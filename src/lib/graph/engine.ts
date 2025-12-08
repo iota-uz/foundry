@@ -6,6 +6,7 @@
  */
 
 import type { BaseState, GraphNode, GraphContext, GraphEngineConfig } from './types';
+import { WorkflowStatus } from './enums';
 import { StateManager } from './state-manager';
 import { AgentWrapper } from './agent/wrapper';
 import { createLogger } from './utils/logger';
@@ -89,7 +90,7 @@ export class GraphEngine<TState extends BaseState> {
       if (!node) {
         const error = `Node '${state.currentNode}' not defined in graph`;
         workflowLogger.error(error);
-        state.status = 'failed';
+        state.status = WorkflowStatus.Failed;
         await this.stateManager.save(id, state);
         throw new Error(error);
       }
@@ -99,7 +100,7 @@ export class GraphEngine<TState extends BaseState> {
 
       try {
         // Mark as running
-        state.status = 'running';
+        state.status = WorkflowStatus.Running;
         state.updatedAt = new Date().toISOString();
         await this.stateManager.save(id, state);
 
@@ -139,7 +140,7 @@ export class GraphEngine<TState extends BaseState> {
         }
 
         // Max retries exceeded, mark as failed
-        state.status = 'failed';
+        state.status = WorkflowStatus.Failed;
         state.updatedAt = new Date().toISOString();
         await this.stateManager.save(id, state);
         throw error;
@@ -148,7 +149,7 @@ export class GraphEngine<TState extends BaseState> {
 
     // Finalize
     workflowLogger.info('Workflow completed successfully');
-    state.status = 'completed';
+    state.status = WorkflowStatus.Completed;
     state.updatedAt = new Date().toISOString();
     await this.stateManager.save(id, state);
 

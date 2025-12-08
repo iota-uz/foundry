@@ -122,6 +122,8 @@ Low-level building blocks for dynamic, composable workflows:
 | [EvalNode](primitives#evalnode) | Context transformation | No LLM, pure functions |
 | [DynamicAgentNode](primitives#dynamicagentnode) | Runtime AI config | Dynamic model/prompt |
 | [DynamicCommandNode](primitives#dynamiccommandnode) | Runtime shell config | Dynamic command/env |
+| [HttpNode](nodes#httpnode) | HTTP requests | JSON I/O, all HTTP methods |
+| [LLMNode](nodes#llmnode) | Direct LLM calls | Schema validation, structured output |
 
 ## Documentation
 

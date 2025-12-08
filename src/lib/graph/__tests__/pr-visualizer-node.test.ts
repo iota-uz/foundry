@@ -9,6 +9,7 @@ import {
   type GitHubPRVisualizerNodeConfig,
 } from '../nodes/github/pr-visualizer-node';
 import type { WorkflowState } from '../types';
+import { WorkflowStatus } from '../enums';
 
 // Helper to create a mock workflow state
 const createMockState = <T extends Record<string, unknown>>(
@@ -16,7 +17,7 @@ const createMockState = <T extends Record<string, unknown>>(
   currentNode = 'BUILD'
 ): WorkflowState<T> => ({
   currentNode,
-  status: 'running',
+  status: WorkflowStatus.Running,
   updatedAt: new Date().toISOString(),
   conversationHistory: [],
   context,

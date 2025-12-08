@@ -102,6 +102,9 @@ Each schema provides factory methods for creating nodes:
 | `schema.eval()` | Pure context transformation (no LLM) |
 | `schema.dynamicAgent()` | Runtime-configured AI node |
 | `schema.dynamicCommand()` | Runtime-configured shell command |
+| `createHttpNode()` | HTTP requests with JSON I/O (factory function) |
+| `createGitHubProjectNode()` | GitHub Projects V2 updates (factory function) |
+| `LLMNodeRuntime` | Direct LLM calls with schema validation (runtime class) |
 
 ### 3. Entry Point
 
@@ -152,12 +155,15 @@ Discriminator for node types:
 ```typescript
 import { NodeType } from '@sys/graph';
 
-NodeType.Agent        // 'agent'
-NodeType.Command      // 'command'
-NodeType.SlashCommand // 'slash-command'
-NodeType.Eval         // 'eval'
-NodeType.DynamicAgent // 'dynamic-agent'
+NodeType.Agent          // 'agent'
+NodeType.Command        // 'command'
+NodeType.SlashCommand   // 'slash-command'
+NodeType.GitHubProject  // 'github-project'
+NodeType.Eval           // 'eval'
+NodeType.DynamicAgent   // 'dynamic-agent'
 NodeType.DynamicCommand // 'dynamic-command'
+NodeType.Http           // 'http'
+NodeType.Llm            // 'llm'
 ```
 
 ### StdlibTool
@@ -330,6 +336,75 @@ schema.dynamicCommand('NODE_NAME', {
   then: Transition;              // Required: Next node
 })
 ```
+
+### HttpNode
+
+HTTP requests with JSON I/O. Uses factory function instead of schema method:
+
+```typescript
+import { createHttpNode } from '@sys/graph/nodes';
+
+createHttpNode({
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  url: string | ((state) => string);  // Static or dynamic URL
+  headers?: Record<string, string>;    // Request headers
+  body?: object | ((state) => object); // Request body
+  params?: Record<string, string>;     // Query parameters
+  timeout?: number;                    // Default: 30000ms
+  throwOnError?: boolean;              // Default: true
+  resultKey?: string;                  // Default: 'lastHttpResult'
+  then: Transition;
+})
+```
+
+See [nodes.md#httpnode](nodes#httpnode) for full documentation.
+
+### LLMNode
+
+Direct LLM calls with optional schema validation. Uses runtime class:
+
+```typescript
+import { LLMNodeRuntime } from '@sys/graph/nodes';
+import { z } from 'zod';
+
+new LLMNodeRuntime({
+  model: 'haiku' | 'sonnet' | 'opus';
+  system: string;                      // System prompt
+  prompt: string | ((state) => string);// User prompt
+  outputSchema?: ZodType;              // Optional output validation
+  temperature?: number;                // Default: 0
+  maxTokens?: number;                  // Default: 4096
+  reasoningEffort?: 'low' | 'medium' | 'high';  // Future
+  resultKey?: string;                  // Default: 'lastLLMResult'
+  then: Transition;
+})
+```
+
+See [nodes.md#llmnode](nodes#llmnode) for full documentation.
+
+### GitHubProjectNode
+
+Updates GitHub Projects V2 fields. Uses factory function:
+
+```typescript
+import { createGitHubProjectNode } from '@sys/graph/nodes';
+
+createGitHubProjectNode({
+  token: string;                       // GitHub token with project scope
+  projectOwner: string;                // User or organization
+  projectNumber: number;               // From project URL
+  owner: string;                       // Repository owner
+  repo: string;                        // Repository name
+  updates: FieldUpdate | FieldUpdate[];// Field updates to apply
+  issueNumber?: number;                // Static issue number
+  issueNumberKey?: string;             // Or read from context
+  throwOnError?: boolean;              // Default: true
+  resultKey?: string;                  // Default: 'lastProjectResult'
+  then: Transition;
+})
+```
+
+See [nodes.md#githubprojectnode](nodes#githubprojectnode) for full documentation.
 
 ---
 

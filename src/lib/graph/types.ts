@@ -8,6 +8,7 @@
  */
 
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
+import { WorkflowStatus as WorkflowStatusEnum } from './enums';
 
 // ============================================================================
 // Re-export v2 Schema Types (Canonical API)
@@ -53,6 +54,7 @@ export {
   NodeType,
   StdlibTool,
   AgentModel,
+  WorkflowStatus,
   END_NODE,
 } from './schema';
 
@@ -117,7 +119,7 @@ export interface BaseState {
   currentNode: string;
 
   /** Execution metadata */
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'paused';
+  status: WorkflowStatusEnum;
   updatedAt: string;
 
   /**
