@@ -574,6 +574,15 @@ body {
       display: block;
       flex-shrink: 0;
     }
+
+    /* Responsive: Hide copy button text on small screens */
+    @media (max-width: 639px) {
+      span {
+        display: none;
+      }
+
+      padding: var(--space-sm);
+    }
   }
 
   footer {
