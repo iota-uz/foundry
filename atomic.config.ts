@@ -189,9 +189,9 @@ Output format:
 Use the available tools to explore the codebase and understand the context.`,
 
       capabilities: [
-        StdlibTool.ListFiles,
-        StdlibTool.ReadFile,
-        StdlibTool.SearchCode,
+        StdlibTool.Glob,
+        StdlibTool.Read,
+        StdlibTool.Grep,
       ],
 
       model: AgentModel.Sonnet,
@@ -221,9 +221,9 @@ Follow best practices:
 - Add documentation where needed`,
 
       capabilities: [
-        StdlibTool.ReadFile,
-        StdlibTool.WriteFile,
-        StdlibTool.ListFiles,
+        StdlibTool.Read,
+        StdlibTool.Write,
+        StdlibTool.Glob,
         runTestsTool,
       ],
 
@@ -291,9 +291,9 @@ Output format for bugs:
 Be thorough but fair - only report genuine issues.`,
 
       capabilities: [
-        StdlibTool.ReadFile,
-        StdlibTool.ListFiles,
-        StdlibTool.SearchCode,
+        StdlibTool.Read,
+        StdlibTool.Glob,
+        StdlibTool.Grep,
         browserTestTool,
       ],
 
@@ -328,9 +328,9 @@ Be systematic:
 - Document the fix in code comments if complex`,
 
       capabilities: [
-        StdlibTool.ReadFile,
-        StdlibTool.WriteFile,
-        StdlibTool.ListFiles,
+        StdlibTool.Read,
+        StdlibTool.Write,
+        StdlibTool.Glob,
       ],
 
       model: AgentModel.Sonnet,

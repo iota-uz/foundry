@@ -55,14 +55,14 @@ export default defineWorkflow({
     schema.agent('PLAN', {
       role: 'architect',
       prompt: 'Analyze the request and output a JSON plan.',
-      capabilities: [StdlibTool.ListFiles, StdlibTool.ReadFile],
+      capabilities: [StdlibTool.Glob, StdlibTool.Read],
       then: 'IMPLEMENT',  // TypeScript validates this!
     }),
 
     schema.agent('IMPLEMENT', {
       role: 'builder',
       prompt: 'Implement the planned tasks.',
-      capabilities: [StdlibTool.WriteFile, StdlibTool.ReadFile, StdlibTool.Bash],
+      capabilities: [StdlibTool.Write, StdlibTool.Read, StdlibTool.Bash],
       then: (state) => state.context.allTasksDone ? 'TEST' : 'IMPLEMENT',
     }),
 
@@ -74,7 +74,7 @@ export default defineWorkflow({
     schema.agent('FIX', {
       role: 'debugger',
       prompt: 'Fix the failing tests.',
-      capabilities: [StdlibTool.ReadFile, StdlibTool.WriteFile],
+      capabilities: [StdlibTool.Read, StdlibTool.Write],
       then: 'TEST',
     }),
 

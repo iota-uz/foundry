@@ -51,7 +51,7 @@ export default defineWorkflow({
     schema.agent('PLAN', {
       role: 'architect',
       prompt: 'Create a development plan for the request.',
-      capabilities: [StdlibTool.ReadFile, StdlibTool.ListFiles],
+      capabilities: [StdlibTool.Read, StdlibTool.Glob],
       model: AgentModel.Sonnet,
       then: 'IMPLEMENT',  // TypeScript validates this!
     }),
@@ -59,7 +59,7 @@ export default defineWorkflow({
     schema.agent('IMPLEMENT', {
       role: 'developer',
       prompt: 'Implement the planned tasks.',
-      capabilities: [StdlibTool.ReadFile, StdlibTool.WriteFile],
+      capabilities: [StdlibTool.Read, StdlibTool.Write],
       then: (state) => state.context.tasksDone ? 'TEST' : 'IMPLEMENT',
     }),
 
@@ -162,31 +162,36 @@ NodeType.DynamicCommand // 'dynamic-command'
 
 ### StdlibTool
 
-Standard library tools for AI agents:
+Standard library tools for AI agents (matches Claude Agent SDK tool names):
 
 ```typescript
 import { StdlibTool } from '@sys/graph';
 
 // File System
-StdlibTool.ReadFile       // 'read_file'
-StdlibTool.WriteFile      // 'write_file'
-StdlibTool.ListFiles      // 'list_files'
-StdlibTool.EditFile       // 'edit_file'
+StdlibTool.Read           // 'Read' - Read files (text, images, PDFs, notebooks)
+StdlibTool.Write          // 'Write' - Write content to a file
+StdlibTool.Edit           // 'Edit' - Perform string replacements in files
+StdlibTool.Glob           // 'Glob' - File pattern matching
+StdlibTool.Grep           // 'Grep' - Code search with ripgrep
+StdlibTool.NotebookEdit   // 'NotebookEdit' - Edit Jupyter notebook cells
 
-// Code Search
-StdlibTool.SearchCode     // 'search_code'
-StdlibTool.GlobFiles      // 'glob_files'
+// Shell & System
+StdlibTool.Bash           // 'Bash' - Execute shell commands
+StdlibTool.BashOutput     // 'BashOutput' - Retrieve output from background shells
+StdlibTool.KillBash       // 'KillBash' - Kill a running background shell
 
-// Shell
-StdlibTool.Bash           // 'bash'
+// Web & Network
+StdlibTool.WebFetch       // 'WebFetch' - Fetch and process URL content
+StdlibTool.WebSearch      // 'WebSearch' - Web search
 
-// Git
-StdlibTool.GitStatus      // 'git_status'
-StdlibTool.GitDiff        // 'git_diff'
+// Agent & Workflow
+StdlibTool.Task           // 'Task' - Launch subagents for complex tasks
+StdlibTool.TodoWrite      // 'TodoWrite' - Task list management
+StdlibTool.ExitPlanMode   // 'ExitPlanMode' - Exit planning mode
 
-// Web
-StdlibTool.WebFetch       // 'web_fetch'
-StdlibTool.WebSearch      // 'web_search'
+// MCP Integration
+StdlibTool.ListMcpResources  // 'ListMcpResources' - List available MCP resources
+StdlibTool.ReadMcpResource   // 'ReadMcpResource' - Read a specific MCP resource
 ```
 
 ### AgentModel
@@ -352,7 +357,7 @@ const runTestsTool: InlineTool<{ pattern: string }> = {
 schema.agent('TEST', {
   role: 'tester',
   prompt: 'Run the tests.',
-  capabilities: [StdlibTool.ReadFile, runTestsTool],
+  capabilities: [StdlibTool.Read, runTestsTool],
   then: 'END',
 })
 ```
@@ -489,7 +494,7 @@ export const workflow = defineWorkflow({
     schema.agent('PLAN', {
       role: 'architect',
       prompt: 'Analyze the issue and create a development plan.',
-      capabilities: [StdlibTool.ReadFile, StdlibTool.SearchCode],
+      capabilities: [StdlibTool.Read, StdlibTool.Grep],
       model: AgentModel.Sonnet,
       then: 'IMPLEMENT',
     }),
@@ -497,7 +502,7 @@ export const workflow = defineWorkflow({
     schema.agent('IMPLEMENT', {
       role: 'developer',
       prompt: 'Implement the planned tasks.',
-      capabilities: [StdlibTool.ReadFile, StdlibTool.WriteFile, runTestsTool],
+      capabilities: [StdlibTool.Read, StdlibTool.Write, runTestsTool],
       then: (state): NodeName | 'END' =>
         state.context.allTasksDone ? 'TEST' : 'IMPLEMENT',
     }),
