@@ -68,7 +68,7 @@ State flows through nodes as a single object:
 Access data from previous nodes via `state.context`:
 
 ```typescript
-next: (state) => {
+then: (state) => {
   // Read plan created by PLAN node
   const plan = state.context.plan;
 
@@ -245,7 +245,7 @@ nodes.CommandNode({
 ### 4. Handle Missing State
 
 ```typescript
-next: (state) => {
+then: (state) => {
   // Guard against missing data
   const result = state.context.lastCommandResult;
   if (!result) {

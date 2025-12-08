@@ -18,7 +18,7 @@ A fixed string specifying the next node:
 nodes.AgentNode({
   role: 'planner',
   system: 'Create a plan.',
-  next: 'IMPLEMENT',  // Always go to IMPLEMENT
+  then: 'IMPLEMENT',  // Always go to IMPLEMENT
 });
 ```
 
@@ -29,7 +29,7 @@ A function that inspects state and returns the next node:
 ```typescript
 nodes.CommandNode({
   command: 'bun test',
-  next: (state) => {
+  then: (state) => {
     if (state.context.lastCommandResult?.exitCode === 0) {
       return 'DEPLOY';
     }
@@ -53,7 +53,7 @@ type Transition<TContext> =
 The reserved `'END'` string terminates the workflow:
 
 ```typescript
-next: 'END'  // Workflow completes successfully
+then: 'END'  // Workflow completes successfully
 ```
 
 ### Starting Node
@@ -76,9 +76,9 @@ Simple sequential execution:
 
 ```typescript
 nodes: {
-  STEP_1: nodes.CommandNode({ command: 'setup', next: 'STEP_2' }),
-  STEP_2: nodes.AgentNode({ role: 'worker', next: 'STEP_3' }),
-  STEP_3: nodes.CommandNode({ command: 'cleanup', next: 'END' }),
+  STEP_1: nodes.CommandNode({ command: 'setup', then: 'STEP_2' }),
+  STEP_2: nodes.AgentNode({ role: 'worker', then: 'STEP_3' }),
+  STEP_3: nodes.CommandNode({ command: 'cleanup', then: 'END' }),
 }
 ```
 
@@ -90,7 +90,7 @@ Route based on results:
 nodes: {
   BUILD: nodes.CommandNode({
     command: 'bun build',
-    next: (state) => {
+    then: (state) => {
       if (state.context.lastCommandResult?.success) {
         return 'TEST';
       }
@@ -101,10 +101,10 @@ nodes: {
   FIX_BUILD: nodes.AgentNode({
     role: 'debugger',
     system: 'Fix the build errors.',
-    next: 'BUILD',  // Loop back
+    then: 'BUILD',  // Loop back
   }),
 
-  TEST: nodes.CommandNode({ command: 'bun test', next: 'END' }),
+  TEST: nodes.CommandNode({ command: 'bun test', then: 'END' }),
 }
 ```
 
@@ -117,7 +117,7 @@ nodes: {
   ANALYZE: nodes.AgentNode({
     role: 'analyzer',
     system: 'Classify the issue type.',
-    next: (state) => {
+    then: (state) => {
       const type = state.context.issueType;
       switch (type) {
         case 'bug':
@@ -152,7 +152,7 @@ interface MyContext {
 nodes: {
   ATTEMPT: nodes.CommandNode({
     command: 'deploy.sh',
-    next: (state) => {
+    then: (state) => {
       if (state.context.lastCommandResult?.success) {
         return 'VERIFY';
       }
@@ -166,7 +166,7 @@ nodes: {
   INCREMENT_RETRY: nodes.AgentNode({
     role: 'counter',
     system: 'Increment retryCount in context.',
-    next: 'ATTEMPT',
+    then: 'ATTEMPT',
   }),
 
   VERIFY: nodes.CommandNode({ ... }),
@@ -183,7 +183,7 @@ nodes: {
   RISKY_OPERATION: nodes.CommandNode({
     command: 'risky-script.sh',
     throwOnError: false,  // Don't throw, check in transition
-    next: (state) => {
+    then: (state) => {
       const result = state.context.lastCommandResult;
       if (result?.success) {
         return 'SUCCESS';
@@ -198,7 +198,7 @@ nodes: {
   RECOVER: nodes.AgentNode({
     role: 'recovery',
     system: 'Attempt to recover from the error.',
-    next: 'RISKY_OPERATION',
+    then: 'RISKY_OPERATION',
   }),
 
   SUCCESS: nodes.CommandNode({ ... }),
@@ -229,7 +229,7 @@ nodes: {
 ### 2. Guard Against Missing Data
 
 ```typescript
-next: (state) => {
+then: (state) => {
   // Defensive check
   const result = state.context.lastCommandResult;
   if (!result) {
@@ -243,10 +243,10 @@ next: (state) => {
 
 ```typescript
 // Good: pure function, no side effects
-next: (state) => state.context.done ? 'END' : 'CONTINUE'
+then: (state) => state.context.done ? 'END' : 'CONTINUE'
 
 // Avoid: side effects in transition
-next: (state) => {
+then: (state) => {
   console.log('Transitioning...');  // Side effect
   state.context.visited = true;      // Mutation
   return 'NEXT';
@@ -256,7 +256,7 @@ next: (state) => {
 ### 4. Document Complex Logic
 
 ```typescript
-next: (state) => {
+then: (state) => {
   // Priority order:
   // 1. Critical errors -> immediate failure
   // 2. Recoverable errors -> retry up to 3 times

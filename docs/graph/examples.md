@@ -42,19 +42,19 @@ export default defineWorkflow<FeatureContext>({
       system: `You are a Tech Lead. Analyze the feature request and create a task plan.
 Output JSON: { "tasks": ["task1", "task2", ...] }`,
       tools: ['list_files', 'read_file'],
-      next: 'IMPLEMENT',
+      then: 'IMPLEMENT',
     }),
 
     IMPLEMENT: nodes.AgentNode({
       role: 'builder',
       system: 'Implement the current task from the plan.',
       tools: ['write_file', 'read_file', 'bash'],
-      next: (state) => (state.context.allTasksDone ? 'TEST' : 'IMPLEMENT'),
+      then: (state) => (state.context.allTasksDone ? 'TEST' : 'IMPLEMENT'),
     }),
 
     TEST: nodes.CommandNode({
       command: 'bun test',
-      next: (state) => {
+      then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
           return 'COMMIT';
         }
@@ -66,13 +66,13 @@ Output JSON: { "tasks": ["task1", "task2", ...] }`,
       role: 'debugger',
       system: 'Fix the failing tests based on the error output.',
       tools: ['read_file', 'write_file'],
-      next: 'TEST',
+      then: 'TEST',
     }),
 
     COMMIT: nodes.SlashCommandNode({
       command: 'commit',
       args: 'Implement feature with passing tests',
-      next: 'END',
+      then: 'END',
     }),
   },
 });
@@ -101,19 +101,19 @@ export default defineWorkflow<BugFixContext>({
       system: `Analyze the bug report and create a reproduction test.
 Write a failing test that demonstrates the bug.`,
       tools: ['read_file', 'write_file', 'bash'],
-      next: 'FIX',
+      then: 'FIX',
     }),
 
     FIX: nodes.AgentNode({
       role: 'developer',
       system: 'Fix the bug. The reproduction test should pass after your fix.',
       tools: ['read_file', 'write_file'],
-      next: 'VERIFY',
+      then: 'VERIFY',
     }),
 
     VERIFY: nodes.CommandNode({
       command: 'bun test --grep "bug-"',
-      next: (state) => {
+      then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
           return 'COMMIT';
         }
@@ -124,7 +124,7 @@ Write a failing test that demonstrates the bug.`,
     COMMIT: nodes.SlashCommandNode({
       command: 'commit',
       args: 'Fix bug with regression test',
-      next: 'END',
+      then: 'END',
     }),
   },
 });
@@ -150,7 +150,7 @@ export default defineWorkflow<ReviewContext>({
   nodes: {
     FETCH_PR: nodes.CommandNode({
       command: 'gh pr view --json files,body',
-      next: 'ANALYZE',
+      then: 'ANALYZE',
     }),
 
     ANALYZE: nodes.AgentNode({
@@ -164,12 +164,12 @@ Focus on:
 
 Provide constructive feedback.`,
       tools: ['read_file', 'list_files'],
-      next: 'COMMENT',
+      then: 'COMMENT',
     }),
 
     COMMENT: nodes.CommandNode({
       command: 'gh pr comment --body "$REVIEW_COMMENT"',
-      next: (state) => {
+      then: (state) => {
         if (state.context.approved) {
           return 'APPROVE';
         }
@@ -179,7 +179,7 @@ Provide constructive feedback.`,
 
     APPROVE: nodes.CommandNode({
       command: 'gh pr review --approve',
-      next: 'END',
+      then: 'END',
     }),
   },
 });
@@ -213,19 +213,19 @@ export default defineWorkflow<IssueContext>({
     START: nodes.GitHubProjectNode({
       ...projectConfig,
       status: 'In Progress',
-      next: 'IMPLEMENT',
+      then: 'IMPLEMENT',
     }),
 
     IMPLEMENT: nodes.AgentNode({
       role: 'developer',
       system: 'Implement the feature described in the issue.',
       tools: ['read_file', 'write_file', 'bash'],
-      next: 'TEST',
+      then: 'TEST',
     }),
 
     TEST: nodes.CommandNode({
       command: 'bun test',
-      next: (state) => {
+      then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
           return 'REVIEW';
         }
@@ -237,24 +237,24 @@ export default defineWorkflow<IssueContext>({
       role: 'debugger',
       system: 'Fix the failing tests.',
       tools: ['read_file', 'write_file'],
-      next: 'TEST',
+      then: 'TEST',
     }),
 
     REVIEW: nodes.GitHubProjectNode({
       ...projectConfig,
       status: 'In Review',
-      next: 'CREATE_PR',
+      then: 'CREATE_PR',
     }),
 
     CREATE_PR: nodes.CommandNode({
       command: 'gh pr create --fill',
-      next: 'DONE',
+      then: 'DONE',
     }),
 
     DONE: nodes.GitHubProjectNode({
       ...projectConfig,
       status: 'Done',
-      next: 'END',
+      then: 'END',
     }),
   },
 });
@@ -280,7 +280,7 @@ export default defineWorkflow<DeployContext>({
   nodes: {
     BUILD: nodes.CommandNode({
       command: 'bun run build',
-      next: (state) => {
+      then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
           return 'TEST';
         }
@@ -290,7 +290,7 @@ export default defineWorkflow<DeployContext>({
 
     TEST: nodes.CommandNode({
       command: 'bun test',
-      next: (state) => {
+      then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
           return 'DEPLOY';
         }
@@ -300,7 +300,7 @@ export default defineWorkflow<DeployContext>({
 
     DEPLOY: nodes.CommandNode({
       command: 'railway deploy',
-      next: (state) => {
+      then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
           return 'VERIFY';
         }
@@ -310,7 +310,7 @@ export default defineWorkflow<DeployContext>({
 
     VERIFY: nodes.CommandNode({
       command: 'curl -f https://api.example.com/health',
-      next: (state) => {
+      then: (state) => {
         if (state.context.lastCommandResult?.exitCode === 0) {
           return 'SUCCESS';
         }
@@ -322,33 +322,33 @@ export default defineWorkflow<DeployContext>({
       role: 'deployer',
       system: 'Rollback to the previous version.',
       tools: ['bash'],
-      next: 'FAILED',
+      then: 'FAILED',
     }),
 
     SUCCESS: nodes.SlashCommandNode({
       command: 'commit',
       args: 'Deployment successful',
-      next: 'END',
+      then: 'END',
     }),
 
     BUILD_FAILED: nodes.AgentNode({
       role: 'analyst',
       system: 'Analyze build failure and suggest fixes.',
       tools: ['read_file'],
-      next: 'END',
+      then: 'END',
     }),
 
     TEST_FAILED: nodes.AgentNode({
       role: 'analyst',
       system: 'Analyze test failures and suggest fixes.',
       tools: ['read_file'],
-      next: 'END',
+      then: 'END',
     }),
 
     FAILED: nodes.SlashCommandNode({
       command: 'commit',
       args: 'Deployment failed - rolled back',
-      next: 'END',
+      then: 'END',
     }),
   },
 });
@@ -406,14 +406,14 @@ export default defineWorkflow<AnalysisContext>({
           },
         },
       ],
-      next: 'REPORT',
+      then: 'REPORT',
     }),
 
     REPORT: nodes.AgentNode({
       role: 'reporter',
       system: 'Generate a code quality report based on the analysis.',
       tools: ['write_file'],
-      next: 'END',
+      then: 'END',
     }),
   },
 });

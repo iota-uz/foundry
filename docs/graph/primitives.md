@@ -55,7 +55,7 @@ nodes.EvalNode({
   }),
 
   // Transition (static or dynamic)
-  next: (state) => state.context.currentTask ? 'EXECUTE' : 'DONE',
+  then: (state) => state.context.currentTask ? 'EXECUTE' : 'DONE',
 })
 ```
 
@@ -80,7 +80,7 @@ INCREMENT: nodes.EvalNode({
   fn: (state) => ({
     currentIndex: state.context.currentIndex + 1,
   }),
-  next: 'CHECK_BOUNDS',
+  then: 'CHECK_BOUNDS',
 }),
 ```
 
@@ -91,7 +91,7 @@ COLLECT: nodes.EvalNode({
   fn: (state) => ({
     results: [...state.context.results, state.context.lastAgentResult],
   }),
-  next: 'NEXT_ITEM',
+  then: 'NEXT_ITEM',
 }),
 ```
 
@@ -105,7 +105,7 @@ SET_CURRENT: nodes.EvalNode({
       currentTask: state.context.tasks[idx] ?? null,
     };
   },
-  next: (state) => state.context.currentTask ? 'PROCESS' : 'DONE',
+  then: (state) => state.context.currentTask ? 'PROCESS' : 'DONE',
 }),
 ```
 
@@ -143,7 +143,7 @@ nodes.DynamicAgentNode({
   temperature: 0,
   maxTokens: 4096,
 
-  next: 'COLLECT_RESULT',
+  then: 'COLLECT_RESULT',
 })
 ```
 
@@ -188,7 +188,7 @@ EXECUTE_TASK: nodes.DynamicAgentNode({
   },
   prompt: (state) => state.context.currentTask.prompt,
   tools: ['read_file', 'write_file', 'bash'],
-  next: 'VERIFY',
+  then: 'VERIFY',
 }),
 ```
 
@@ -224,7 +224,7 @@ nodes.DynamicCommandNode({
   // Timeout in ms: static or dynamic
   timeout: 60000,
 
-  next: 'CHECK_RESULT',
+  then: 'CHECK_RESULT',
 })
 ```
 
@@ -250,7 +250,7 @@ RUN_TEST: nodes.DynamicCommandNode({
   command: (state) => `bun test ${state.context.currentModule}`,
   cwd: '/path/to/project',
   timeout: 120000,
-  next: (state) => {
+  then: (state) => {
     const result = state.context.lastDynamicCommandResult;
     return result?.success ? 'NEXT_MODULE' : 'FIX_TEST';
   },
@@ -314,7 +314,7 @@ Output JSON: { "tasks": [{ "prompt": "...", "model": "haiku"|"sonnet"|"opus" }..
       prompt: (state) => state.context.request,
       outputSchema: TaskPlanSchema,
       resultKey: 'planResult',
-      next: 'INIT_ITERATION',
+      then: 'INIT_ITERATION',
     }),
 
     // 2. Initialize iteration
@@ -324,7 +324,7 @@ Output JSON: { "tasks": [{ "prompt": "...", "model": "haiku"|"sonnet"|"opus" }..
         currentIndex: -1,
         results: [],
       }),
-      next: 'NEXT_TASK',
+      then: 'NEXT_TASK',
     }),
 
     // 3. Advance to next task
@@ -337,7 +337,7 @@ Output JSON: { "tasks": [{ "prompt": "...", "model": "haiku"|"sonnet"|"opus" }..
           currentTask: tasks[nextIndex] ?? null,
         };
       },
-      next: (state) => state.context.currentTask ? 'EXECUTE' : 'FINALIZE',
+      then: (state) => state.context.currentTask ? 'EXECUTE' : 'FINALIZE',
     }),
 
     // 4. Execute current task with dynamic model
@@ -345,7 +345,7 @@ Output JSON: { "tasks": [{ "prompt": "...", "model": "haiku"|"sonnet"|"opus" }..
       model: (state) => state.context.currentTask!.model,
       prompt: (state) => state.context.currentTask!.prompt,
       tools: ['read_file', 'write_file', 'bash'],
-      next: 'COLLECT_RESULT',
+      then: 'COLLECT_RESULT',
     }),
 
     // 5. Collect result and loop back
@@ -362,13 +362,13 @@ Output JSON: { "tasks": [{ "prompt": "...", "model": "haiku"|"sonnet"|"opus" }..
           ],
         };
       },
-      next: 'NEXT_TASK',
+      then: 'NEXT_TASK',
     }),
 
     // 6. Final step
     FINALIZE: nodes.CommandNode({
       command: 'bun test',
-      next: 'END',
+      then: 'END',
     }),
   },
 });
@@ -405,7 +405,7 @@ EXECUTE: nodes.DynamicAgentNode({
     return task.model;
   },
   prompt: (state) => state.context.currentTask?.prompt ?? 'No task',
-  next: 'NEXT',
+  then: 'NEXT',
 }),
 ```
 
@@ -418,7 +418,7 @@ ADVANCE: nodes.EvalNode({
     index: state.context.index + 1,
     current: state.context.items[state.context.index + 1],
   }),
-  next: (state) => {
+  then: (state) => {
     if (!state.context.current) return 'DONE';
     if (state.context.current.skip) return 'ADVANCE';  // Skip item
     return 'PROCESS';

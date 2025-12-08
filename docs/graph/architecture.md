@@ -143,7 +143,7 @@ Transitions are pure functions of state:
 
 ```typescript
 // Given the same state, always returns the same next node
-next: (state) => state.context.success ? 'DEPLOY' : 'ROLLBACK'
+then: (state) => state.context.success ? 'DEPLOY' : 'ROLLBACK'
 ```
 
 ### Fail-Safe Persistence

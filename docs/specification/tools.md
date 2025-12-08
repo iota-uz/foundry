@@ -102,7 +102,7 @@ interface LLMStep {
   outputSchema: ZodSchema; // Enforced structured output
   maxTokens: number;
   timeout: number;
-  next: string; // Next step ID
+  then: string; // Next step ID
 }
 
 interface QuestionStep {
@@ -112,7 +112,7 @@ interface QuestionStep {
   aiGenerated: boolean; // If true, LLM generates question text
   questionType: 'single_choice' | 'multiple_choice' | 'text' | 'code';
   targetField: string; // Dot notation spec path to save answer
-  next: string;
+  then: string;
 }
 ```
 

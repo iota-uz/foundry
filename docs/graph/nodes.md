@@ -22,7 +22,7 @@ nodes.AgentNode({
   system: 'System prompt...',  // AI instructions
   tools: ['list_files'],       // Tool names or inline definitions
   maxTurns: 10,                // Max conversation turns (optional)
-  next: 'NEXT_NODE',           // Static or dynamic transition
+  then: 'NEXT_NODE',           // Static or dynamic transition
 });
 ```
 
@@ -45,7 +45,7 @@ PLAN: nodes.AgentNode({
   system: `You are a Tech Lead. Analyze the request and create a task plan.
 Output a JSON object: { "tasks": ["task1", "task2", ...] }`,
   tools: ['list_files', 'read_file'],
-  next: 'IMPLEMENT',
+  then: 'IMPLEMENT',
 }),
 ```
 
@@ -65,7 +65,7 @@ nodes.CommandNode({
   timeout: 300000,               // Timeout in ms (default: 5 minutes)
   throwOnError: true,            // Throw on non-zero exit (default: true)
   resultKey: 'lastCommandResult', // Context key for result (default)
-  next: 'NEXT_NODE',             // Static or dynamic transition
+  then: 'NEXT_NODE',             // Static or dynamic transition
 });
 ```
 
@@ -95,7 +95,7 @@ interface CommandResult {
 ```typescript
 BUILD: nodes.CommandNode({
   command: 'bun build',
-  next: (state) => {
+  then: (state) => {
     if (state.context.lastCommandResult?.exitCode === 0) {
       return 'TEST';
     }
@@ -117,7 +117,7 @@ nodes.SlashCommandNode({
   command: 'commit',                    // Command without leading /
   args: 'Implement feature X',          // Arguments/instructions
   resultKey: 'lastSlashCommandResult',  // Context key (default)
-  next: 'NEXT_NODE',                    // Static or dynamic transition
+  then: 'NEXT_NODE',                    // Static or dynamic transition
 });
 ```
 
@@ -149,7 +149,7 @@ interface SlashCommandResult {
 COMMIT: nodes.SlashCommandNode({
   command: 'commit',
   args: 'Fix authentication bug',
-  next: (state) => {
+  then: (state) => {
     if (state.context.lastSlashCommandResult?.success) {
       return 'PUSH';
     }
@@ -193,7 +193,7 @@ nodes.GitHubProjectNode({
   resultKey: 'lastProjectUpdate',   // Context key for result
   verbose: false,                   // Enable detailed logging
 
-  next: 'NEXT_NODE',
+  then: 'NEXT_NODE',
 });
 ```
 
@@ -216,13 +216,13 @@ export default defineWorkflow({
     START: nodes.GitHubProjectNode({
       ...projectConfig,
       status: 'In Progress',
-      next: 'IMPLEMENT',
+      then: 'IMPLEMENT',
     }),
 
     DONE: nodes.GitHubProjectNode({
       ...projectConfig,
       status: 'Done',
-      next: 'END',
+      then: 'END',
     }),
   },
 });
@@ -261,14 +261,14 @@ defineWorkflow<{ issueNumber: number }>({
       repo: 'webapp',
       status: 'In Progress',
       issueNumberKey: 'issueNumber',
-      next: 'WORK',
+      then: 'WORK',
     }),
 
     WORK: nodes.AgentNode({
       role: 'developer',
       system: 'Implement the feature described in the issue.',
       tools: ['read_file', 'write_file'],
-      next: 'COMPLETE',
+      then: 'COMPLETE',
     }),
 
     COMPLETE: nodes.GitHubProjectNode({
@@ -279,7 +279,7 @@ defineWorkflow<{ issueNumber: number }>({
       repo: 'webapp',
       status: 'Done',
       issueNumberKey: 'issueNumber',
-      next: 'END',
+      then: 'END',
     }),
   },
 });

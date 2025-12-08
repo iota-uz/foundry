@@ -48,7 +48,7 @@ interface HttpNodeConfig<TContext extends Record<string, unknown>> {
   url: string;
   body?: Record<string, unknown>;
   resultKey: string;
-  next: string | ((state: WorkflowState<TContext>) => string);
+  then: string | ((state: WorkflowState<TContext>) => string);
 }
 
 class HttpNode<TContext extends Record<string, unknown>>
@@ -127,7 +127,7 @@ const fetchUserNode = createHttpNode('FETCH_USER', {
   method: 'GET',
   url: 'https://api.example.com/users/123',
   resultKey: 'userData',
-  next: (state) => {
+  then: (state) => {
     if (state.context.userData?.success) {
       return 'PROCESS_USER';
     }
@@ -191,7 +191,7 @@ interface DbQueryConfig<TContext extends Record<string, unknown>> {
   query: string;
   params?: unknown[];
   resultKey: string;
-  next: string | ((state: WorkflowState<TContext>) => string);
+  then: string | ((state: WorkflowState<TContext>) => string);
 }
 
 class DbQueryNode<TContext extends Record<string, unknown>>
@@ -339,7 +339,7 @@ describe('HttpNode', () => {
       method: 'GET',
       url: 'https://api.example.com/test',
       resultKey: 'testResult',
-      next: 'END',
+      then: 'END',
     });
 
     const mockContext = {
@@ -365,7 +365,7 @@ describe('HttpNode', () => {
       method: 'GET',
       url: 'https://api.example.com/test',
       resultKey: 'testResult',
-      next: (state) => state.context.testResult?.success ? 'OK' : 'FAIL',
+      then: (state) => state.context.testResult?.success ? 'OK' : 'FAIL',
     });
 
     const successState = {
