@@ -2,37 +2,25 @@
  * @sys/graph/nodes - Standard Library Nodes
  *
  * Pre-built node implementations for common agentic workflow patterns.
- * Export this namespace for easy consumption in atomic.config.ts.
+ * These are the runtime implementations used internally by the GraphEngine.
+ *
+ * For defining workflows, use the schema-based API:
  *
  * @example
  * ```typescript
- * import { nodes } from '@sys/graph';
+ * import { defineNodes, defineWorkflow, StdlibTool, AgentModel } from '@sys/graph';
+ *
+ * const schema = defineNodes<MyContext>()(['PLAN', 'BUILD', 'TEST'] as const);
  *
  * export default defineWorkflow({
  *   id: 'my-workflow',
- *   nodes: {
- *     START: nodes.GitHubProjectNode({
- *       token: process.env.GITHUB_TOKEN!,
- *       projectOwner: 'myorg',
- *       projectNumber: 1,
- *       owner: 'myorg',
- *       repo: 'myrepo',
- *       updates: { type: 'single_select', field: 'Status', value: 'In Progress' },
- *       next: 'PLAN',
- *     }),
- *     PLAN: nodes.AgentNode({ role: 'planner', system: '...', next: 'BUILD' }),
- *     BUILD: nodes.CommandNode({ command: 'bun build', next: 'TEST' }),
- *     TEST: nodes.SlashCommandNode({ command: 'test', args: 'all tests', next: 'DONE' }),
- *     DONE: nodes.GitHubProjectNode({
- *       token: process.env.GITHUB_TOKEN!,
- *       projectOwner: 'myorg',
- *       projectNumber: 1,
- *       owner: 'myorg',
- *       repo: 'myrepo',
- *       updates: { type: 'single_select', field: 'Status', value: 'Done' },
- *       next: 'END',
- *     }),
- *   }
+ *   schema,
+ *   initialContext: {},
+ *   nodes: [
+ *     schema.agent('PLAN', { role: 'planner', prompt: '...', then: 'BUILD' }),
+ *     schema.command('BUILD', { command: 'bun build', then: 'TEST' }),
+ *     schema.slashCommand('TEST', { command: 'test', args: 'all tests', then: 'END' }),
+ *   ]
  * });
  * ```
  */
@@ -148,9 +136,6 @@ export {
   type DynamicCommandResult,
 } from './primitives/dynamic-command-node';
 
-// Re-export types that are used across primitive nodes
-export type { AgentModel, Dynamic } from '../types';
-
 // Re-export as module namespace
 export * as primitives from './primitives';
 
@@ -163,8 +148,11 @@ export type {
   GraphContext,
   Transition,
   ToolReference,
-  InlineToolDefinition,
+  InlineTool,
+  Dynamic,
 } from '../types';
+
+export { AgentModel } from '../enums';
 
 // Re-export FieldUpdate type for GitHubProjectNode
 export type { FieldUpdate } from '../../github-projects';

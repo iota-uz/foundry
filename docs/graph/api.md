@@ -2,304 +2,528 @@
 layout: default
 title: API Reference
 parent: Graph Workflow Engine
-nav_order: 6
-description: 'Complete API documentation'
+nav_order: 7
+description: 'Type-safe schema-based workflow API with compile-time validation'
 ---
 
 # API Reference
 
-Complete API documentation for the Graph Workflow Engine.
+The Graph API provides **compile-time type safety** for workflow definitions. Transitions are validated by TypeScript before your code even runs.
 
-## GraphEngine
+## Key Features
 
-The main engine class for running workflows.
+| Feature | Description |
+|---------|-------------|
+| **Transition Validation** | Compile-time TypeScript validation |
+| **Node Definition** | Array-based with names in objects |
+| **Entry Point** | First node in array |
+| **Tool References** | Type-safe enum values |
 
-### Constructor
-
-```typescript
-const engine = new GraphEngine(config?: GraphEngineConfig);
-```
-
-#### GraphEngineConfig
-
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `apiKey` | `string` | - | Anthropic API key for Claude SDK |
-| `model` | `string` | `claude-3-5-sonnet-20241022` | Claude model to use |
-| `maxRetries` | `number` | `0` | Maximum retries for failed nodes |
-
-### Methods
-
-#### run
-
-Execute or resume a workflow.
+## Quick Start
 
 ```typescript
-async run<T>(
-  workflowId: string,
-  initialState?: Partial<WorkflowState<T>>
-): Promise<WorkflowState<T>>
-```
+import { defineNodes, defineWorkflow, StdlibTool, AgentModel } from '@sys/graph';
 
-**Parameters:**
-- `workflowId` - Unique identifier for the workflow
-- `initialState` - Optional initial state (ignored if resuming)
+// 1. Define your context type
+interface MyContext extends Record<string, unknown> {
+  tasksDone: boolean;
+  testsPassed: boolean;
+}
 
-**Returns:** Final workflow state
+// 2. Create a schema with all node names
+const schema = defineNodes<MyContext>()([
+  'PLAN',
+  'IMPLEMENT',
+  'TEST',
+  'COMMIT'
+] as const);
 
-**Example:**
-```typescript
-const result = await engine.run('my-workflow', {
-  context: { input: 'data' },
-});
-```
-
-#### getState
-
-Get current state without executing.
-
-```typescript
-getState<T>(workflowId: string): WorkflowState<T> | null
-```
-
-#### reset
-
-Reset workflow to initial state.
-
-```typescript
-reset(workflowId: string): void
-```
-
----
-
-## defineWorkflow
-
-Factory function to create workflow configurations.
-
-```typescript
-function defineWorkflow<TContext>(
-  config: WorkflowConfig<TContext>
-): WorkflowConfig<TContext>
-```
-
-### WorkflowConfig
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `id` | `string` | Yes | Unique workflow identifier |
-| `initialState` | `Partial<WorkflowState<TContext>>` | No | Default state values |
-| `nodes` | `Record<string, NodeDefinition<TContext>>` | Yes | Node definitions |
-
-**Example:**
-```typescript
-const workflow = defineWorkflow<MyContext>({
+// 3. Define the workflow
+export default defineWorkflow({
   id: 'feature-dev',
-  initialState: {
-    context: { tasks: [], done: false },
+  schema,
+  initialContext: {
+    tasksDone: false,
+    testsPassed: false,
   },
-  nodes: {
-    PLAN: nodes.AgentNode({ ... }),
-    BUILD: nodes.CommandNode({ ... }),
-  },
+  nodes: [
+    // First node is the entry point
+    schema.agent('PLAN', {
+      role: 'architect',
+      prompt: 'Create a development plan for the request.',
+      capabilities: [StdlibTool.ReadFile, StdlibTool.ListFiles],
+      model: AgentModel.Sonnet,
+      then: 'IMPLEMENT',  // TypeScript validates this!
+    }),
+
+    schema.agent('IMPLEMENT', {
+      role: 'developer',
+      prompt: 'Implement the planned tasks.',
+      capabilities: [StdlibTool.ReadFile, StdlibTool.WriteFile],
+      then: (state) => state.context.tasksDone ? 'TEST' : 'IMPLEMENT',
+    }),
+
+    schema.command('TEST', {
+      command: 'bun test',
+      then: (state) => state.context.testsPassed ? 'COMMIT' : 'IMPLEMENT',
+    }),
+
+    schema.slashCommand('COMMIT', {
+      command: 'commit',
+      args: 'Implement feature with tests',
+      then: 'END',  // END is always valid
+    }),
+  ],
 });
 ```
 
----
+## Core Concepts
 
-## Node Factory Functions
+### 1. Schema Definition
 
-### nodes.AgentNode
+The schema defines all valid node names upfront, enabling TypeScript to validate transitions:
 
 ```typescript
-nodes.AgentNode<TContext>(config: AgentNodeConfig<TContext>)
+// The `as const` is required for literal type inference
+const schema = defineNodes<MyContext>()(['NODE_A', 'NODE_B', 'NODE_C'] as const);
+
+// TypeScript now knows the valid transitions are: 'NODE_A' | 'NODE_B' | 'NODE_C' | 'END'
 ```
 
-#### AgentNodeConfig
+### 2. Node Factories
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `role` | `string` | Yes | Role identifier for logging |
-| `system` | `string` | Yes | System prompt for the AI |
-| `tools` | `ToolReference[]` | No | Available tools |
-| `maxTurns` | `number` | No | Max conversation turns |
-| `next` | `Transition<TContext>` | Yes | Next node transition |
+Each schema provides factory methods for creating nodes:
 
-### nodes.CommandNode
+| Method | Purpose |
+|--------|---------|
+| `schema.agent()` | AI-powered node with Claude SDK |
+| `schema.command()` | Shell command execution |
+| `schema.slashCommand()` | Claude Code slash commands |
+| `schema.eval()` | Pure context transformation (no LLM) |
+| `schema.dynamicAgent()` | Runtime-configured AI node |
+| `schema.dynamicCommand()` | Runtime-configured shell command |
+
+### 3. Entry Point
+
+The **first node in the array** is the entry point. No need to specify it separately:
 
 ```typescript
-nodes.CommandNode<TContext>(config: CommandNodeConfig<TContext>)
+nodes: [
+  schema.agent('START', { ... }),  // This is the entry point
+  schema.agent('MIDDLE', { ... }),
+  schema.command('END_NODE', { ... }),
+]
 ```
 
-#### CommandNodeConfig
+### 4. Type-Safe Transitions
 
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `command` | `string` | Yes | - | Shell command to execute |
-| `cwd` | `string` | No | Current dir | Working directory |
-| `env` | `Record<string, string>` | No | - | Environment variables |
-| `timeout` | `number` | No | `300000` | Timeout in ms |
-| `throwOnError` | `boolean` | No | `true` | Throw on non-zero exit |
-| `resultKey` | `string` | No | `lastCommandResult` | Context key for result |
-| `next` | `Transition<TContext>` | Yes | - | Next node transition |
-
-### nodes.SlashCommandNode
+Transitions are validated at compile time:
 
 ```typescript
-nodes.SlashCommandNode<TContext>(config: SlashCommandNodeConfig<TContext>)
+schema.agent('PLAN', {
+  // ...
+  then: 'IMPLEMENT',     // ✅ Valid - IMPLEMENT is in schema
+  then: 'INVALID_NODE',  // ❌ TypeScript error!
+  then: 'END',           // ✅ Valid - END is always allowed
+})
 ```
 
-#### SlashCommandNodeConfig
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `command` | `string` | Yes | - | Command without `/` prefix |
-| `args` | `string` | Yes | - | Command arguments |
-| `resultKey` | `string` | No | `lastSlashCommandResult` | Context key |
-| `next` | `Transition<TContext>` | Yes | - | Next node transition |
-
-### nodes.GitHubProjectNode
+Dynamic transitions also benefit from type checking:
 
 ```typescript
-nodes.GitHubProjectNode<TContext>(config: GitHubProjectNodeConfig<TContext>)
-```
-
-#### GitHubProjectNodeConfig
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `token` | `string` | Yes | - | GitHub token with project scope |
-| `projectOwner` | `string` | Yes | - | Project owner (user/org) |
-| `projectNumber` | `number` | Yes | - | Project number from URL |
-| `owner` | `string` | Yes | - | Repository owner |
-| `repo` | `string` | Yes | - | Repository name |
-| `status` | `string` | Yes | - | Target status value |
-| `issueNumber` | `number` | No | - | Static issue number |
-| `issueNumberKey` | `string` | No | - | Context key for issue number |
-| `throwOnError` | `boolean` | No | `true` | Throw on failure |
-| `resultKey` | `string` | No | `lastProjectUpdate` | Context key |
-| `verbose` | `boolean` | No | `false` | Enable detailed logging |
-| `next` | `Transition<TContext>` | Yes | - | Next node transition |
-
----
-
-## Types
-
-### WorkflowState
-
-```typescript
-interface WorkflowState<TContext> {
-  currentNode: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  updatedAt: string;
-  conversationHistory: Message[];
-  context: TContext;
-}
-```
-
-### Transition
-
-```typescript
-type Transition<TContext> =
-  | string
-  | ((state: WorkflowState<TContext>) => string);
-```
-
-### ToolReference
-
-```typescript
-type ToolReference = string | InlineToolDefinition<unknown>;
-```
-
-### InlineToolDefinition
-
-```typescript
-interface InlineToolDefinition<TInput> {
-  name: string;
-  description?: string;
-  schema: import('zod').ZodType<TInput>;
-  execute: (args: TInput) => Promise<unknown>;
-}
-```
-
-### Result Types
-
-#### CommandResult
-
-```typescript
-interface CommandResult {
-  exitCode: number;
-  stdout: string;
-  stderr: string;
-  success: boolean;
-  duration: number;
-}
-```
-
-#### SlashCommandResult
-
-```typescript
-interface SlashCommandResult {
-  success: boolean;
-  output?: string;
-  error?: string;
-  exitCode?: number;
-}
-```
-
-#### GitHubProjectResult
-
-```typescript
-interface GitHubProjectResult {
-  success: boolean;
-  itemId?: string;
-  previousStatus?: string;
-  newStatus: string;
-  error?: string;
-}
+schema.agent('PROCESS', {
+  // ...
+  then: (state): 'TEST' | 'RETRY' | 'END' => {
+    if (state.context.success) return 'TEST';
+    if (state.context.retries < 3) return 'RETRY';
+    return 'END';
+  }
+})
 ```
 
 ---
 
-## GraphContext
+## Enums
 
-Context provided to node execution functions.
+### NodeType
+
+Discriminator for node types:
 
 ```typescript
-interface GraphContext {
-  agent: IAgentWrapper;
-  logger: Console;
+import { NodeType } from '@sys/graph';
+
+NodeType.Agent        // 'agent'
+NodeType.Command      // 'command'
+NodeType.SlashCommand // 'slash-command'
+NodeType.Eval         // 'eval'
+NodeType.DynamicAgent // 'dynamic-agent'
+NodeType.DynamicCommand // 'dynamic-command'
+```
+
+### StdlibTool
+
+Standard library tools for AI agents:
+
+```typescript
+import { StdlibTool } from '@sys/graph';
+
+// File System
+StdlibTool.ReadFile       // 'read_file'
+StdlibTool.WriteFile      // 'write_file'
+StdlibTool.ListFiles      // 'list_files'
+StdlibTool.EditFile       // 'edit_file'
+
+// Code Search
+StdlibTool.SearchCode     // 'search_code'
+StdlibTool.GlobFiles      // 'glob_files'
+
+// Shell
+StdlibTool.Bash           // 'bash'
+
+// Git
+StdlibTool.GitStatus      // 'git_status'
+StdlibTool.GitDiff        // 'git_diff'
+
+// Web
+StdlibTool.WebFetch       // 'web_fetch'
+StdlibTool.WebSearch      // 'web_search'
+```
+
+### AgentModel
+
+Model selection for AI nodes:
+
+```typescript
+import { AgentModel } from '@sys/graph';
+
+AgentModel.Haiku   // Fast, cost-effective
+AgentModel.Sonnet  // Balanced (default)
+AgentModel.Opus    // Most capable
+```
+
+### WorkflowStatus
+
+Workflow execution status:
+
+```typescript
+import { WorkflowStatus } from '@sys/graph';
+
+WorkflowStatus.Pending    // Not started
+WorkflowStatus.Running    // Executing
+WorkflowStatus.Completed  // Finished successfully
+WorkflowStatus.Failed     // Error occurred
+WorkflowStatus.Paused     // Paused, can resume
+```
+
+---
+
+## Node Types
+
+### Agent Node
+
+AI-powered execution with Claude SDK:
+
+```typescript
+schema.agent('NODE_NAME', {
+  role: string;           // Required: Role for logging
+  prompt: string;         // Required: System prompt
+  capabilities?: ToolReference[];  // Optional: Available tools
+  model?: AgentModel;     // Optional: Model selection (default: Sonnet)
+  maxTurns?: number;      // Optional: Max conversation turns
+  temperature?: number;   // Optional: Generation temperature (0-1)
+  then: Transition;       // Required: Next node
+})
+```
+
+### Command Node
+
+Shell command execution:
+
+```typescript
+schema.command('NODE_NAME', {
+  command: string;        // Required: Shell command
+  cwd?: string;           // Optional: Working directory
+  env?: Record<string, string>;  // Optional: Environment variables
+  timeout?: number;       // Optional: Timeout in ms
+  throwOnError?: boolean; // Optional: Throw on non-zero exit
+  then: Transition;       // Required: Next node
+})
+```
+
+### SlashCommand Node
+
+Claude Code slash commands:
+
+```typescript
+schema.slashCommand('NODE_NAME', {
+  command: string;        // Required: Command without /
+  args: string;           // Required: Command arguments
+  then: Transition;       // Required: Next node
+})
+```
+
+### Eval Node
+
+Pure context transformation (no LLM):
+
+```typescript
+schema.eval('NODE_NAME', {
+  update: (state) => Partial<Context>;  // Required: Transform function
+  then: Transition;                      // Required: Next node
+})
+```
+
+Example - Loop counter:
+
+```typescript
+schema.eval('INCREMENT', {
+  update: (state) => ({
+    counter: state.context.counter + 1,
+  }),
+  then: (state) => state.context.counter < 5 ? 'INCREMENT' : 'DONE',
+})
+```
+
+### DynamicAgent Node
+
+Runtime-configured AI agent:
+
+```typescript
+schema.dynamicAgent('NODE_NAME', {
+  model: Dynamic<AgentModel>;    // Required: Static or dynamic
+  prompt: Dynamic<string>;       // Required: Static or dynamic
+  system?: Dynamic<string>;      // Optional: System prompt
+  capabilities?: Dynamic<ToolReference[]>;  // Optional
+  maxTurns?: Dynamic<number>;    // Optional
+  temperature?: Dynamic<number>; // Optional
+  then: Transition;              // Required: Next node
+})
+```
+
+Example - Task executor:
+
+```typescript
+schema.dynamicAgent('EXECUTE_TASK', {
+  model: (state) => state.context.currentTask.complexity === 'high'
+    ? AgentModel.Opus
+    : AgentModel.Haiku,
+  prompt: (state) => state.context.currentTask.instructions,
+  then: 'NEXT_TASK',
+})
+```
+
+### DynamicCommand Node
+
+Runtime-configured shell command:
+
+```typescript
+schema.dynamicCommand('NODE_NAME', {
+  command: Dynamic<string>;      // Required: Static or dynamic
+  cwd?: Dynamic<string>;         // Optional
+  env?: Dynamic<Record<string, string>>;  // Optional
+  timeout?: Dynamic<number>;     // Optional
+  then: Transition;              // Required: Next node
+})
+```
+
+---
+
+## Inline Tools
+
+Define custom tools with Zod schema validation:
+
+```typescript
+import { z } from 'zod';
+import type { InlineTool } from '@sys/graph';
+
+const runTestsTool: InlineTool<{ pattern: string }> = {
+  name: 'run_tests',
+  description: 'Run tests matching a pattern',
+  schema: z.object({
+    pattern: z.string().describe('Test file glob pattern'),
+  }),
+  execute: async (args) => {
+    const result = await runTests(args.pattern);
+    return { success: result.passed, failures: result.failures };
+  },
+};
+
+// Use in agent node
+schema.agent('TEST', {
+  role: 'tester',
+  prompt: 'Run the tests.',
+  capabilities: [StdlibTool.ReadFile, runTestsTool],
+  then: 'END',
+})
+```
+
+---
+
+## Helper Functions
+
+### createInitialWorkflowState
+
+Create the initial state for workflow execution:
+
+```typescript
+import { createInitialWorkflowState } from '@sys/graph';
+
+const workflow = defineWorkflow({ ... });
+const initialState = createInitialWorkflowState(workflow);
+
+// initialState has:
+// - currentNode: first node name
+// - status: 'pending'
+// - updatedAt: current ISO timestamp
+// - conversationHistory: []
+// - context: workflow.initialContext or {}
+```
+
+### resolveDynamic
+
+Resolve a dynamic value (static or function):
+
+```typescript
+import { resolveDynamic } from '@sys/graph';
+
+const dynamicValue: Dynamic<string, MyContext> = (state) => state.context.name;
+const resolved = resolveDynamic(dynamicValue, currentState);
+```
+
+---
+
+## Validation
+
+### Three-Layer Validation
+
+1. **Compile-time**: TypeScript validates transitions against schema
+2. **Load-time**: Zod schemas validate structure when workflow is loaded
+3. **Runtime**: Dynamic transition results are validated during execution
+
+### Validation Functions
+
+```typescript
+import {
+  validateWorkflow,
+  validateNode,
+  validateComplete,
+  validateSemantics
+} from '@sys/graph';
+
+// Validate workflow structure
+const result = validateWorkflow(config, ['NODE_A', 'NODE_B']);
+if (!result.success) {
+  console.error('Errors:', result.errors);
+}
+
+// Complete validation (structure + semantics)
+const fullResult = validateComplete(config, nodeNames);
+```
+
+### ValidationError
+
+```typescript
+interface ValidationError {
+  path: string[];    // e.g., ['nodes', '0', 'then']
+  message: string;   // Human-readable error
+  code: string;      // Error code
 }
 ```
 
 ---
 
-## Error Classes
-
-### NodeExecutionError
+## Complete Example
 
 ```typescript
-class NodeExecutionError extends Error {
-  constructor(
-    message: string,
-    nodeName: string,
-    nodeType: string,
-    cause?: Error,
-    details?: Record<string, unknown>
-  );
+import { z } from 'zod';
+import {
+  defineNodes,
+  defineWorkflow,
+  StdlibTool,
+  AgentModel,
+  createInitialWorkflowState,
+  type InlineTool,
+  type WorkflowState,
+} from '@sys/graph';
 
-  nodeName: string;
-  nodeType: string;
-  cause?: Error;
-  details?: Record<string, unknown>;
+// Context type
+interface FeatureContext extends Record<string, unknown> {
+  issueId: number;
+  plan?: { tasks: string[]; estimatedHours: number };
+  allTasksDone: boolean;
+  testsPassed: boolean;
+  fixAttempts: number;
 }
-```
 
-### ConfigValidationError
+// Custom tool
+const runTestsTool: InlineTool<{ pattern: string }> = {
+  name: 'run_tests',
+  description: 'Run test suite',
+  schema: z.object({ pattern: z.string() }),
+  execute: async ({ pattern }) => ({ success: true, pattern }),
+};
 
-```typescript
-class ConfigValidationError extends Error {
-  constructor(message: string, errors: string[]);
+// Schema with all nodes
+const schema = defineNodes<FeatureContext>()([
+  'PLAN',
+  'IMPLEMENT',
+  'TEST',
+  'FIX',
+  'COMMIT',
+] as const);
 
-  errors: string[];
-}
+// Type alias for transitions
+type NodeName = typeof schema.names[number];
+
+// Workflow definition
+export const workflow = defineWorkflow({
+  id: 'feature-development',
+  schema,
+  initialContext: {
+    issueId: 0,
+    allTasksDone: false,
+    testsPassed: false,
+    fixAttempts: 0,
+  },
+  nodes: [
+    schema.agent('PLAN', {
+      role: 'architect',
+      prompt: 'Analyze the issue and create a development plan.',
+      capabilities: [StdlibTool.ReadFile, StdlibTool.SearchCode],
+      model: AgentModel.Sonnet,
+      then: 'IMPLEMENT',
+    }),
+
+    schema.agent('IMPLEMENT', {
+      role: 'developer',
+      prompt: 'Implement the planned tasks.',
+      capabilities: [StdlibTool.ReadFile, StdlibTool.WriteFile, runTestsTool],
+      then: (state): NodeName | 'END' =>
+        state.context.allTasksDone ? 'TEST' : 'IMPLEMENT',
+    }),
+
+    schema.command('TEST', {
+      command: 'bun test',
+      then: (state): NodeName | 'END' =>
+        state.context.testsPassed ? 'COMMIT' : 'FIX',
+    }),
+
+    schema.eval('FIX', {
+      update: (state) => ({
+        fixAttempts: state.context.fixAttempts + 1
+      }),
+      then: (state): NodeName | 'END' =>
+        state.context.fixAttempts >= 3 ? 'END' : 'IMPLEMENT',
+    }),
+
+    schema.slashCommand('COMMIT', {
+      command: 'commit',
+      args: 'Implement feature with passing tests',
+      then: 'END',
+    }),
+  ],
+});
+
+// Create initial state
+const initialState = createInitialWorkflowState(workflow);
 ```

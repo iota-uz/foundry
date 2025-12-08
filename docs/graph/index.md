@@ -23,16 +23,12 @@ The Graph Engine enables **multi-step AI workflows** that:
 ## Installation
 
 ```typescript
-// v2 API (Recommended) - Type-safe schema-based
-import { defineNodes, defineWorkflow, StdlibTool, AgentModel } from '@sys/graph';
-
-// v1 API (Legacy) - Map-based
-import { defineWorkflow, nodes, GraphEngine } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool, AgentModel, GraphEngine } from '@sys/graph';
 ```
 
-## Quick Start (v2 API)
+## Quick Start
 
-The v2 API provides **compile-time type safety** for transitions. TypeScript validates that all `then` values point to valid nodes.
+The API provides **compile-time type safety** for transitions. TypeScript validates that all `then` values point to valid nodes.
 
 ### 1. Define a Workflow
 
@@ -137,8 +133,7 @@ Low-level building blocks for dynamic, composable workflows:
 | [State](state) | State management and persistence |
 | [Transitions](transitions) | Routing between nodes |
 | [Custom Nodes](custom-nodes) | Creating your own nodes |
-| [API v2 (Recommended)](api-v2) | Type-safe schema-based API |
-| [API v1 (Legacy)](api) | Original map-based API |
+| [API Reference](api) | Type-safe schema-based API |
 | [Examples](examples) | Full workflow examples |
 
 ## Comparison with Dispatch

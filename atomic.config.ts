@@ -1,14 +1,11 @@
 /**
- * Example Atomic Workflow Configuration
+ * Example Workflow Configuration
  *
- * This configuration demonstrates a full feature development workflow
- * with the following phases:
- * - PLAN: Tech lead analyzes and creates a development plan
- * - IMPLEMENT: Developer implements the planned tasks
- * - TEST: Run automated tests using Claude Code
- * - QA: QA engineer verifies the implementation
- * - FIX: Developer fixes bugs found in QA (using Claude Code /edit)
- * - SUBMIT: Creates a PR and submits the work
+ * This demonstrates the graph engine API with:
+ * - Array-based node definitions
+ * - Type-safe transitions via schema
+ * - Enum-based tool references
+ * - Intuitive naming (prompt, then, capabilities)
  *
  * @example Usage with CLI:
  * ```bash
@@ -16,8 +13,19 @@
  * ```
  */
 
-import { defineWorkflow, nodes, type SlashCommandResult, type CommandResult } from './src/lib/graph';
 import { z } from 'zod';
+import {
+  defineNodes,
+  defineWorkflow,
+  StdlibTool,
+  AgentModel,
+  type InlineTool,
+  type WorkflowState,
+} from './src/lib/graph';
+
+// ============================================================================
+// Context Type Definition
+// ============================================================================
 
 /**
  * Context type for the feature development workflow.
@@ -38,7 +46,7 @@ interface FeatureContext extends Record<string, unknown> {
   };
 
   /** Whether all planned tasks are done */
-  allTasksDone?: boolean;
+  allTasksDone: boolean;
 
   /** QA test results */
   qaResults?: {
@@ -51,48 +59,116 @@ interface FeatureContext extends Record<string, unknown> {
   };
 
   /** Whether QA passed */
-  qaPassed?: boolean;
+  qaPassed: boolean;
 
   /** Number of fix attempts */
-  fixAttempts?: number;
+  fixAttempts: number;
 
   /** Result from last command execution */
-  lastCommandResult?: CommandResult;
+  lastCommandResult?: {
+    success: boolean;
+    stdout: string;
+    stderr: string;
+    exitCode: number;
+  };
 
   /** Result from last slash command */
-  lastSlashCommandResult?: SlashCommandResult;
+  lastSlashCommandResult?: {
+    success: boolean;
+    output: string;
+  };
 }
+
+// ============================================================================
+// Custom Tools
+// ============================================================================
+
+/**
+ * Custom tool for running tests with a specific pattern.
+ */
+const runTestsTool: InlineTool<{ pattern: string }> = {
+  name: 'run_tests',
+  description: 'Run the test suite for a specific file or pattern',
+  schema: z.object({
+    pattern: z.string().describe('Test file pattern (e.g., "*.test.ts")'),
+  }),
+  execute: async (args) => {
+    // In a real implementation, this would run bun test
+    return { success: true, pattern: args.pattern, message: `Tests matching ${args.pattern} passed` };
+  },
+};
+
+/**
+ * Custom tool for running browser E2E tests.
+ */
+const browserTestTool: InlineTool<{ testSuite: string }> = {
+  name: 'browser_test',
+  description: 'Run browser-based E2E tests',
+  schema: z.object({
+    testSuite: z.string().describe('Name of the test suite to run'),
+  }),
+  execute: async (args) => {
+    // In a real implementation, this would run Playwright/Cypress
+    return { success: true, testSuite: args.testSuite, results: [] };
+  },
+};
+
+// ============================================================================
+// Schema Definition
+// ============================================================================
+
+/**
+ * Define the node schema with all valid node names.
+ * This enables compile-time validation of transitions.
+ */
+const schema = defineNodes<FeatureContext>()([
+  'PLAN',
+  'IMPLEMENT',
+  'TEST',
+  'FIX_CODE',
+  'QA',
+  'FIX',
+  'SUBMIT',
+] as const);
+
+// Type alias for convenience
+type NodeName = typeof schema.names[number];
+
+// ============================================================================
+// Workflow Definition
+// ============================================================================
 
 /**
  * Feature development workflow configuration.
  *
  * This workflow implements an iterative development loop:
  *
- *   PLAN → IMPLEMENT → TEST ←→ (loop until tests pass)
+ *   PLAN → IMPLEMENT → TEST ←→ FIX_CODE (loop until tests pass)
  *                        ↓
  *                       QA ←→ FIX (loop until passed)
  *                        ↓
  *                     SUBMIT → END
+ *
+ * Entry point: PLAN (first node in array)
  */
-export default defineWorkflow<FeatureContext>({
+export default defineWorkflow({
   id: 'feature-development',
+  schema,
 
-  // Initial state values (merged with defaults)
-  initialState: {
-    context: {
-      allTasksDone: false,
-      qaPassed: false,
-      fixAttempts: 0,
-    },
+  // Initial context values
+  initialContext: {
+    allTasksDone: false,
+    qaPassed: false,
+    fixAttempts: 0,
   },
 
-  nodes: {
+  nodes: [
     // =========================================================================
-    // Phase 1: Planning
+    // Phase 1: Planning (Entry Point - first in array)
     // =========================================================================
-    PLAN: nodes.AgentNode({
+    schema.agent('PLAN', {
       role: 'architect',
-      system: `You are a senior Tech Lead analyzing a GitHub issue to create a development plan.
+      prompt: `You are a senior Tech Lead analyzing a GitHub issue to create a development plan.
 
 Your responsibilities:
 1. Understand the requirements from the issue
@@ -112,22 +188,24 @@ Output format:
 
 Use the available tools to explore the codebase and understand the context.`,
 
-      tools: [
-        'list_files',
-        'read_file',
-        'search_code',
+      capabilities: [
+        StdlibTool.ListFiles,
+        StdlibTool.ReadFile,
+        StdlibTool.SearchCode,
       ],
 
+      model: AgentModel.Sonnet,
+
       // Static transition - always go to IMPLEMENT after planning
-      next: 'IMPLEMENT',
+      then: 'IMPLEMENT',
     }),
 
     // =========================================================================
     // Phase 2: Implementation (Loop)
     // =========================================================================
-    IMPLEMENT: nodes.AgentNode({
+    schema.agent('IMPLEMENT', {
       role: 'developer',
-      system: `You are a senior software developer implementing planned tasks.
+      prompt: `You are a senior software developer implementing planned tasks.
 
 Your responsibilities:
 1. Read the plan from context
@@ -142,27 +220,17 @@ Follow best practices:
 - Follow existing code style
 - Add documentation where needed`,
 
-      tools: [
-        'read_file',
-        'write_file',
-        'list_files',
-        // Example custom tool definition
-        {
-          name: 'run_tests',
-          description: 'Run the test suite for a specific file or pattern',
-          schema: z.object({
-            pattern: z.string().describe('Test file pattern (e.g., "*.test.ts")'),
-          }),
-          execute: async (args) => {
-            const { pattern } = args as { pattern: string };
-            // In a real implementation, this would run bun test
-            return { success: true, pattern, message: `Tests matching ${pattern} passed` };
-          },
-        },
+      capabilities: [
+        StdlibTool.ReadFile,
+        StdlibTool.WriteFile,
+        StdlibTool.ListFiles,
+        runTestsTool,
       ],
 
+      model: AgentModel.Sonnet,
+
       // Dynamic transition - go to TEST when tasks done, or loop back
-      next: (state) => {
+      then: (state: WorkflowState<FeatureContext>): NodeName | 'END' => {
         if (state.context.allTasksDone) {
           return 'TEST';
         }
@@ -171,14 +239,14 @@ Follow best practices:
     }),
 
     // =========================================================================
-    // Phase 2.5: Automated Testing (using SlashCommandNode)
+    // Phase 2.5: Automated Testing
     // =========================================================================
-    TEST: nodes.SlashCommandNode({
+    schema.slashCommand('TEST', {
       command: 'test',
       args: 'Run all tests and report any failures',
 
       // Dynamic transition - go to QA if tests pass, back to FIX_CODE if they fail
-      next: (state) => {
+      then: (state: WorkflowState<FeatureContext>): NodeName | 'END' => {
         if (state.context.lastSlashCommandResult?.success) {
           return 'QA';
         }
@@ -187,22 +255,22 @@ Follow best practices:
     }),
 
     // =========================================================================
-    // Phase 2.6: Fix code issues found by tests (using SlashCommandNode)
+    // Phase 2.6: Fix Code Issues
     // =========================================================================
-    FIX_CODE: nodes.SlashCommandNode({
+    schema.slashCommand('FIX_CODE', {
       command: 'edit',
       args: 'Fix the failing tests based on the test output. Make minimal changes to resolve the issues.',
 
       // Always go back to TEST after fixing
-      next: 'TEST',
+      then: 'TEST',
     }),
 
     // =========================================================================
     // Phase 3: Quality Assurance
     // =========================================================================
-    QA: nodes.AgentNode({
+    schema.agent('QA', {
       role: 'qa-engineer',
-      system: `You are a senior QA engineer verifying the implementation.
+      prompt: `You are a senior QA engineer verifying the implementation.
 
 Your responsibilities:
 1. Review the implemented code changes
@@ -222,26 +290,17 @@ Output format for bugs:
 
 Be thorough but fair - only report genuine issues.`,
 
-      tools: [
-        'read_file',
-        'list_files',
-        'search_code',
-        {
-          name: 'browser_test',
-          description: 'Run browser-based E2E tests',
-          schema: z.object({
-            testSuite: z.string().describe('Name of the test suite to run'),
-          }),
-          execute: async (args) => {
-            const { testSuite } = args as { testSuite: string };
-            // In a real implementation, this would run Playwright/Cypress
-            return { success: true, testSuite, results: [] };
-          },
-        },
+      capabilities: [
+        StdlibTool.ReadFile,
+        StdlibTool.ListFiles,
+        StdlibTool.SearchCode,
+        browserTestTool,
       ],
 
+      model: AgentModel.Sonnet,
+
       // Dynamic transition - go to FIX if bugs found, SUBMIT if passed
-      next: (state) => {
+      then: (state: WorkflowState<FeatureContext>): NodeName | 'END' => {
         if (state.context.qaPassed) {
           return 'SUBMIT';
         }
@@ -252,9 +311,9 @@ Be thorough but fair - only report genuine issues.`,
     // =========================================================================
     // Phase 4: Bug Fixing (Self-Healing Loop)
     // =========================================================================
-    FIX: nodes.AgentNode({
+    schema.agent('FIX', {
       role: 'developer',
-      system: `You are a developer fixing bugs found during QA.
+      prompt: `You are a developer fixing bugs found during QA.
 
 Your responsibilities:
 1. Read the QA bug report from context
@@ -268,24 +327,26 @@ Be systematic:
 - Write a regression test for each fix
 - Document the fix in code comments if complex`,
 
-      tools: [
-        'read_file',
-        'write_file',
-        'list_files',
+      capabilities: [
+        StdlibTool.ReadFile,
+        StdlibTool.WriteFile,
+        StdlibTool.ListFiles,
       ],
 
+      model: AgentModel.Sonnet,
+
       // Always go back to QA after fixing
-      next: 'QA',
+      then: 'QA',
     }),
 
     // =========================================================================
     // Phase 5: Delivery
     // =========================================================================
-    SUBMIT: nodes.CommandNode({
+    schema.command('SUBMIT', {
       command: 'gh pr create --fill --assignee @me',
 
       // Terminal transition
-      next: 'END',
+      then: 'END',
     }),
-  },
+  ],
 });

@@ -17,8 +17,7 @@ import type { RunConfig } from './types';
 import { CliError } from './types';
 import {
   loadConfig,
-  createInitialState,
-  type WorkflowState,
+  createInitialWorkflowState,
   ConfigValidationError,
 } from '../lib/graph';
 
@@ -206,7 +205,8 @@ EXAMPLES
  * @param config - Run configuration
  * @returns Promise that resolves when workflow completes
  */
-export async function executeWorkflow(config: RunConfig): Promise<WorkflowState<Record<string, unknown>>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function executeWorkflow(config: RunConfig): Promise<any> {
   const log = config.verbose ? console.log.bind(console) : () => {};
 
   // Step 1: Load and validate config
@@ -217,8 +217,9 @@ export async function executeWorkflow(config: RunConfig): Promise<WorkflowState<
     validateTransitions: true,
   });
 
+  const nodeNames = workflowConfig.nodes.map((n) => n.name);
   log(`Loaded workflow: ${workflowConfig.id}`);
-  log(`Nodes: ${Object.keys(workflowConfig.nodes).join(', ')}`);
+  log(`Nodes: ${nodeNames.join(', ')}`);
   log(`Valid transitions: ${Array.from(validNodeNames).join(', ')}`);
 
   // Step 2: If dry run, stop here
@@ -226,34 +227,42 @@ export async function executeWorkflow(config: RunConfig): Promise<WorkflowState<
     console.log('\n✅ Config validation passed (dry run mode)\n');
     console.log('Workflow summary:');
     console.log(`  ID: ${workflowConfig.id}`);
-    console.log(`  Nodes: ${Object.keys(workflowConfig.nodes).length}`);
-    for (const [name, node] of Object.entries(workflowConfig.nodes)) {
-      console.log(`    - ${name} (${node.type})`);
+    console.log(`  Nodes: ${workflowConfig.nodes.length}`);
+    for (const node of workflowConfig.nodes) {
+      console.log(`    - ${node.name} (${node.type})`);
     }
 
     // Return a placeholder state for dry run
-    const firstNode = Object.keys(workflowConfig.nodes)[0];
-    if (!firstNode) {
+    if (workflowConfig.nodes.length === 0) {
       throw new CliError('No nodes defined in workflow config', 'EMPTY_WORKFLOW');
     }
-    return createInitialState(firstNode, config.context ?? undefined);
+    // Create an initial state from the workflow config
+    const mergedInitialContext = {
+      ...(workflowConfig.initialContext ?? {}),
+      ...(config.context ?? {}),
+    };
+    const dryRunConfig = {
+      ...workflowConfig,
+      initialContext: mergedInitialContext,
+    };
+    return createInitialWorkflowState(dryRunConfig);
   }
 
-  // Step 3: Determine starting node
-  const nodeNames = Object.keys(workflowConfig.nodes);
-  const startNode = nodeNames[0];
-
-  if (!startNode) {
+  // Step 3: Validate nodes exist
+  if (workflowConfig.nodes.length === 0) {
     throw new CliError('No nodes defined in workflow config', 'EMPTY_WORKFLOW');
   }
 
-  // Step 4: Create initial state
+  // Step 4: Create initial state with merged context
   const mergedContext = {
-    ...(workflowConfig.initialState?.context ?? {}),
+    ...(workflowConfig.initialContext ?? {}),
     ...(config.context ?? {}),
   };
-
-  const initialState = createInitialState(startNode, mergedContext);
+  const configWithMergedContext = {
+    ...workflowConfig,
+    initialContext: mergedContext,
+  };
+  const initialState = createInitialWorkflowState(configWithMergedContext);
 
   // Step 5: Create and run engine
   // For now, we'll dynamically import to avoid issues in tests
@@ -262,13 +271,15 @@ export async function executeWorkflow(config: RunConfig): Promise<WorkflowState<
 
   const graphNodes = createGraphNodes(workflowConfig);
 
-  const engine = new GraphEngine<WorkflowState<Record<string, unknown>>>({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const engine = new GraphEngine<any>({
     stateDir: config.stateDir,
-    nodes: graphNodes,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    nodes: graphNodes as any,
     apiKey: config.apiKey,
   });
 
-  log(`Starting workflow from node: ${startNode}`);
+  log(`Starting workflow from node: ${initialState.currentNode}`);
 
   // Execute the workflow
   const finalState = await engine.run(workflowConfig.id, initialState);

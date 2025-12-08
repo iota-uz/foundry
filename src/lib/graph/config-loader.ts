@@ -2,16 +2,13 @@
  * @sys/graph - Configuration Loader
  *
  * Handles dynamic import, validation, and error reporting for atomic.config.ts.
- * Validates that all declared node transitions point to valid nodes or 'END'.
+ * Updated for v2 array-based workflow definitions.
  */
 
-import type {
-  WorkflowConfig,
-  WorkflowState,
-  LoadedConfig,
-  Transition,
-} from './types';
+import type { WorkflowConfig, WorkflowState, NodeDef } from './schema';
+import type { LoadedConfig } from './types';
 import { ConfigValidationError } from './types';
+import { END_NODE } from './enums';
 
 /**
  * Options for loading a workflow config.
@@ -35,26 +32,28 @@ export interface LoadConfigOptions {
 const DEFAULT_CONFIG_FILE = 'atomic.config.ts';
 
 /**
- * Validates that all static transitions in a config point to valid node names or 'END'.
+ * Validates that all static transitions in a v2 config point to valid node names or 'END'.
  *
  * @param config - The workflow configuration to validate
  * @returns Array of validation error messages (empty if valid)
  */
-export function validateTransitions<TContext extends Record<string, unknown>>(
-  config: WorkflowConfig<TContext>
-): string[] {
+export function validateTransitions<
+  TNodeNames extends string,
+  TContext extends Record<string, unknown>
+>(config: WorkflowConfig<TNodeNames, TContext>): string[] {
   const errors: string[] = [];
-  const validNodeNames = new Set([...Object.keys(config.nodes), 'END']);
+  const nodeNames = config.nodes.map((n) => n.name);
+  const validNodeNames = new Set([...nodeNames, END_NODE]);
 
-  for (const [nodeName, node] of Object.entries(config.nodes)) {
-    const transition = node.next;
+  for (const node of config.nodes) {
+    const transition = node.then;
 
     // Static transitions can be validated at load time
     if (typeof transition === 'string') {
       if (!validNodeNames.has(transition)) {
         const availableNodes = Array.from(validNodeNames).join(', ');
         errors.push(
-          `Node "${nodeName}" has invalid transition target "${transition}". ` +
+          `Node "${node.name}" has invalid transition target "${transition}". ` +
             `Valid targets are: ${availableNodes}`
         );
       }
@@ -63,7 +62,7 @@ export function validateTransitions<TContext extends Record<string, unknown>>(
     // We just verify it's actually a function here
     else if (typeof transition !== 'function') {
       errors.push(
-        `Node "${nodeName}" has invalid "next" property. ` +
+        `Node "${node.name}" has invalid "then" property. ` +
           `Expected string or function, got ${typeof transition}`
       );
     }
@@ -73,7 +72,7 @@ export function validateTransitions<TContext extends Record<string, unknown>>(
 }
 
 /**
- * Validates the overall structure and required properties of a config.
+ * Validates the overall structure and required properties of a v2 config.
  *
  * @param config - The raw config object to validate
  * @returns Array of validation error messages (empty if valid)
@@ -97,21 +96,25 @@ export function validateConfigSchema(config: unknown): string[] {
     errors.push('Config "id" cannot be empty');
   }
 
-  // Validate required 'nodes' property
+  // Validate required 'schema' property (v2 API)
+  if (!cfg.schema) {
+    errors.push('Config must have a "schema" property (use defineNodes() to create one)');
+  }
+
+  // Validate required 'nodes' property (v2 is array-based)
   if (!cfg.nodes) {
     errors.push('Config must have a "nodes" property');
-  } else if (typeof cfg.nodes !== 'object' || Array.isArray(cfg.nodes)) {
-    errors.push('Config "nodes" must be an object');
+  } else if (!Array.isArray(cfg.nodes)) {
+    errors.push('Config "nodes" must be an array');
   } else {
-    const nodes = cfg.nodes as Record<string, unknown>;
-    const nodeNames = Object.keys(nodes);
+    const nodes = cfg.nodes as unknown[];
 
-    if (nodeNames.length === 0) {
+    if (nodes.length === 0) {
       errors.push('Config must define at least one node');
     } else {
       // Validate each node
-      for (const [nodeName, node] of Object.entries(nodes)) {
-        const nodeErrors = validateNodeDefinition(nodeName, node);
+      for (let i = 0; i < nodes.length; i++) {
+        const nodeErrors = validateNodeDefinition(i, nodes[i]);
         errors.push(...nodeErrors);
       }
     }
@@ -121,17 +124,18 @@ export function validateConfigSchema(config: unknown): string[] {
 }
 
 /**
- * Validates a single node definition.
+ * Validates a single v2 node definition.
  *
- * @param nodeName - The name of the node
+ * @param index - The index of the node in the array
  * @param node - The node definition to validate
  * @returns Array of validation error messages (empty if valid)
  */
-function validateNodeDefinition(nodeName: string, node: unknown): string[] {
+function validateNodeDefinition(index: number, node: unknown): string[] {
   const errors: string[] = [];
+  const location = `nodes[${index}]`;
 
   if (!node || typeof node !== 'object') {
-    errors.push(`Node "${nodeName}" must be an object`);
+    errors.push(`${location} must be an object`);
     return errors;
   }
 
@@ -139,24 +143,28 @@ function validateNodeDefinition(nodeName: string, node: unknown): string[] {
 
   // Validate required 'type' property
   if (!n.type) {
-    errors.push(`Node "${nodeName}" must have a "type" property`);
+    errors.push(`${location} must have a "type" property`);
   } else if (typeof n.type !== 'string') {
-    errors.push(`Node "${nodeName}" type must be a string`);
-  } else if (!['agent', 'command', 'claude-code'].includes(n.type)) {
+    errors.push(`${location} type must be a string`);
+  }
+
+  // Validate required 'name' property (v2 uses name inside object)
+  if (!n.name) {
+    errors.push(`${location} must have a "name" property`);
+  } else if (typeof n.name !== 'string') {
+    errors.push(`${location} name must be a string`);
+  }
+
+  // Validate required 'then' property (v2 uses 'then' not 'next')
+  if (n.then === undefined) {
+    errors.push(`${location} must have a "then" property`);
+  } else if (typeof n.then !== 'string' && typeof n.then !== 'function') {
     errors.push(
-      `Node "${nodeName}" has unknown type "${n.type}". ` +
-        `Valid types are: agent, command, claude-code`
+      `${location} "then" must be a string or function, got ${typeof n.then}`
     );
   }
 
-  // Validate required 'next' property
-  if (n.next === undefined) {
-    errors.push(`Node "${nodeName}" must have a "next" property`);
-  } else if (typeof n.next !== 'string' && typeof n.next !== 'function') {
-    errors.push(
-      `Node "${nodeName}" "next" must be a string or function, got ${typeof n.next}`
-    );
-  }
+  const nodeName = typeof n.name === 'string' ? n.name : `at index ${index}`;
 
   // Type-specific validation
   if (n.type === 'agent') {
@@ -166,15 +174,16 @@ function validateNodeDefinition(nodeName: string, node: unknown): string[] {
       errors.push(`AgentNode "${nodeName}" role must be a string`);
     }
 
-    if (!n.system) {
-      errors.push(`AgentNode "${nodeName}" must have a "system" property`);
-    } else if (typeof n.system !== 'string') {
-      errors.push(`AgentNode "${nodeName}" system must be a string`);
+    // v2 uses 'prompt' not 'system'
+    if (!n.prompt) {
+      errors.push(`AgentNode "${nodeName}" must have a "prompt" property`);
+    } else if (typeof n.prompt !== 'string') {
+      errors.push(`AgentNode "${nodeName}" prompt must be a string`);
     }
 
-    // Tools validation (optional but must be array if present)
-    if (n.tools !== undefined && !Array.isArray(n.tools)) {
-      errors.push(`AgentNode "${nodeName}" tools must be an array`);
+    // v2 uses 'capabilities' not 'tools'
+    if (n.capabilities !== undefined && !Array.isArray(n.capabilities)) {
+      errors.push(`AgentNode "${nodeName}" capabilities must be an array`);
     }
   }
 
@@ -186,17 +195,25 @@ function validateNodeDefinition(nodeName: string, node: unknown): string[] {
     }
   }
 
-  if (n.type === 'claude-code') {
+  if (n.type === 'slash-command') {
     if (!n.command) {
-      errors.push(`ClaudeCodeNode "${nodeName}" must have a "command" property`);
+      errors.push(`SlashCommandNode "${nodeName}" must have a "command" property`);
     } else if (typeof n.command !== 'string') {
-      errors.push(`ClaudeCodeNode "${nodeName}" command must be a string`);
+      errors.push(`SlashCommandNode "${nodeName}" command must be a string`);
     }
 
-    if (!n.args) {
-      errors.push(`ClaudeCodeNode "${nodeName}" must have an "args" property`);
+    if (!n.args && n.args !== '') {
+      errors.push(`SlashCommandNode "${nodeName}" must have an "args" property`);
     } else if (typeof n.args !== 'string') {
-      errors.push(`ClaudeCodeNode "${nodeName}" args must be a string`);
+      errors.push(`SlashCommandNode "${nodeName}" args must be a string`);
+    }
+  }
+
+  if (n.type === 'eval') {
+    if (!n.update) {
+      errors.push(`EvalNode "${nodeName}" must have an "update" property`);
+    } else if (typeof n.update !== 'function') {
+      errors.push(`EvalNode "${nodeName}" update must be a function`);
     }
   }
 
@@ -218,7 +235,7 @@ function formatValidationErrors(errors: string[], configPath: string): string {
 }
 
 /**
- * Loads and validates a workflow configuration from a TypeScript file.
+ * Loads and validates a v2 workflow configuration from a TypeScript file.
  *
  * This function:
  * 1. Dynamically imports the config file using Bun's import
@@ -239,7 +256,7 @@ function formatValidationErrors(errors: string[], configPath: string): string {
  *     configPath: './atomic.config.ts'
  *   });
  *   console.log('Loaded workflow:', config.id);
- *   console.log('Nodes:', Object.keys(config.nodes));
+ *   console.log('Nodes:', config.nodes.map(n => n.name));
  * } catch (error) {
  *   if (error instanceof ConfigValidationError) {
  *     console.error('Validation errors:', error.errors);
@@ -247,9 +264,12 @@ function formatValidationErrors(errors: string[], configPath: string): string {
  * }
  * ```
  */
-export async function loadConfig<TContext extends Record<string, unknown> = Record<string, unknown>>(
+export async function loadConfig<
+  TNodeNames extends string = string,
+  TContext extends Record<string, unknown> = Record<string, unknown>
+>(
   options: LoadConfigOptions = {}
-): Promise<LoadedConfig<TContext>> {
+): Promise<LoadedConfig<TNodeNames, TContext>> {
   const configPath = options.configPath ?? DEFAULT_CONFIG_FILE;
   const validateTransitionsFlag = options.validateTransitions ?? true;
 
@@ -303,7 +323,7 @@ export async function loadConfig<TContext extends Record<string, unknown> = Reco
     );
   }
 
-  const config = rawConfig as WorkflowConfig<TContext>;
+  const config = rawConfig as WorkflowConfig<TNodeNames, TContext>;
 
   // Step 4: Validate transitions
   if (validateTransitionsFlag) {
@@ -317,7 +337,8 @@ export async function loadConfig<TContext extends Record<string, unknown> = Reco
   }
 
   // Step 5: Build result
-  const validNodeNames = new Set([...Object.keys(config.nodes), 'END']);
+  const nodeNames = config.nodes.map((n: NodeDef<TNodeNames, TContext>) => n.name);
+  const validNodeNames = new Set([...nodeNames, END_NODE]);
 
   return {
     config,
@@ -330,7 +351,7 @@ export async function loadConfig<TContext extends Record<string, unknown> = Reco
  * Validates a transition at runtime.
  * This is used by the engine to validate dynamic transitions during execution.
  *
- * @param transition - The transition value (result of calling the next function)
+ * @param transition - The transition value (result of calling the then function)
  * @param validNodeNames - Set of valid node names
  * @param currentNode - Name of the current node (for error messages)
  * @throws Error if the transition is invalid
@@ -342,17 +363,24 @@ export function validateRuntimeTransition(
 ): void {
   if (typeof transition !== 'string') {
     throw new Error(
-      `Node "${currentNode}" next() returned ${typeof transition}, expected string`
+      `Node "${currentNode}" then() returned ${typeof transition}, expected string`
     );
   }
   if (!validNodeNames.has(transition)) {
     const available = Array.from(validNodeNames).join(', ');
     throw new Error(
-      `Node "${currentNode}" next() returned invalid target "${transition}". ` +
+      `Node "${currentNode}" then() returned invalid target "${transition}". ` +
         `Valid targets are: ${available}`
     );
   }
 }
+
+/**
+ * Transition type for resolveTransition function.
+ */
+type TransitionFn<TContext extends Record<string, unknown>> =
+  | string
+  | ((state: WorkflowState<TContext>) => string);
 
 /**
  * Resolves a transition to the next node name.
@@ -366,7 +394,7 @@ export function validateRuntimeTransition(
  * @throws Error if the transition is invalid
  */
 export function resolveTransition<TContext extends Record<string, unknown>>(
-  transition: Transition<TContext>,
+  transition: TransitionFn<TContext>,
   state: WorkflowState<TContext>,
   validNodeNames: Set<string>,
   currentNode: string
@@ -380,7 +408,7 @@ export function resolveTransition<TContext extends Record<string, unknown>>(
     } catch (error) {
       const err = error as Error;
       throw new Error(
-        `Node "${currentNode}" next() function threw an error: ${err.message}`
+        `Node "${currentNode}" then() function threw an error: ${err.message}`
       );
     }
   } else {

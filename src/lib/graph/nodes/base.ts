@@ -9,9 +9,8 @@
 import type {
   WorkflowState,
   GraphContext,
-  Transition,
   ToolReference,
-  InlineToolDefinition,
+  InlineTool,
 } from '../types';
 
 /**
@@ -29,6 +28,13 @@ export interface NodeExecutionResult<TContext extends Record<string, unknown>> {
 }
 
 /**
+ * Transition can be a static string or a dynamic function.
+ */
+type BaseTransition<TContext extends Record<string, unknown>> =
+  | string
+  | ((state: WorkflowState<TContext>) => string);
+
+/**
  * Configuration common to all node types.
  */
 export interface BaseNodeConfig<TContext extends Record<string, unknown>> {
@@ -36,7 +42,7 @@ export interface BaseNodeConfig<TContext extends Record<string, unknown>> {
    * Transition to the next node.
    * Can be a static string (e.g., 'IMPLEMENT') or a function for conditional routing.
    */
-  next: Transition<TContext>;
+  next: BaseTransition<TContext>;
 }
 
 /**
@@ -152,7 +158,8 @@ export abstract class BaseNode<
  */
 export function isInlineToolDefinition(
   tool: ToolReference
-): tool is InlineToolDefinition<unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): tool is InlineTool<any> {
   return typeof tool === 'object' && 'name' in tool && 'schema' in tool;
 }
 

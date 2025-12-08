@@ -9,10 +9,6 @@
  * - SDK Abstraction: Wraps Claude Agent SDK with automatic tool execution
  * - Type Safety: Full TypeScript generics for custom state types
  *
- * ## New API (v2) - Recommended
- *
- * The new API provides compile-time type safety for transitions:
- *
  * @example
  * ```typescript
  * import { defineNodes, defineWorkflow, StdlibTool, AgentModel } from '@sys/graph';
@@ -43,59 +39,116 @@
  *   ]
  * });
  * ```
- *
- * ## Legacy API (v1) - Deprecated
- *
- * The old map-based API is still supported for backward compatibility:
- *
- * @example
- * ```typescript
- * import { defineWorkflow, nodes } from '@sys/graph';
- *
- * export default defineWorkflow({
- *   id: 'my-workflow',
- *   nodes: {
- *     START: nodes.AgentNode({ ... }),
- *     END: nodes.CommandNode({ ... })
- *   }
- * });
- * ```
  */
 
-// Core types
+// ============================================================================
+// Core Runtime Types
+// ============================================================================
+
 export type {
   BaseState,
   GraphNode,
   GraphContext,
   IAgentWrapper,
   GraphEngineConfig,
-  // Workflow config types
-  WorkflowState,
-  WorkflowConfig,
-  NodeDefinition,
-  AgentNodeDefinition,
-  CommandNodeDefinition,
-  SlashCommandNodeDefinition,
-  BaseNodeDefinition,
-  Transition,
-  StaticTransition,
-  DynamicTransition,
-  ToolReference,
-  InlineToolDefinition,
-  LoadedConfig,
-  // Primitive node types
-  EvalNodeDefinition,
-  DynamicAgentNodeDefinition,
-  DynamicCommandNodeDefinition,
-  AgentModel as LegacyAgentModel,
-  Dynamic as LegacyDynamic,
   // Message types
   Message,
   StoredMessage,
+  // Config loading
+  LoadedConfig,
 } from './types';
 
 // Config validation error
 export { ConfigValidationError } from './types';
+
+// ============================================================================
+// Workflow Definition API
+// ============================================================================
+
+// Enums
+export {
+  NodeType,
+  StdlibTool,
+  WorkflowStatus,
+  AgentModel,
+  MODEL_IDS,
+  END_NODE,
+} from './enums';
+export type { EndNode } from './enums';
+
+// Schema-based workflow definition
+export {
+  defineNodes,
+  defineWorkflow,
+  createInitialWorkflowState,
+  resolveDynamic,
+} from './schema';
+
+export type {
+  // Core types
+  WorkflowState,
+  WorkflowConfig,
+  NodeSchema,
+  Dynamic,
+  // Tools
+  InlineTool,
+  ToolReference,
+  // Node definitions
+  NodeDef,
+  BaseNodeDef,
+  AgentNodeDef,
+  CommandNodeDef,
+  SlashCommandNodeDef,
+  EvalNodeDef,
+  DynamicAgentNodeDef,
+  DynamicCommandNodeDef,
+  // Node configs
+  AgentNodeConfig,
+  CommandNodeConfig,
+  SlashCommandNodeConfig,
+  EvalNodeConfig,
+  DynamicAgentNodeConfig,
+  DynamicCommandNodeConfig,
+} from './schema';
+
+// Runtime-compatible transition types (single generic argument)
+export type {
+  Transition,
+  StaticTransition,
+  DynamicTransition,
+} from './types';
+
+// ============================================================================
+// Validation
+// ============================================================================
+
+export {
+  validateWorkflow,
+  validateNode,
+  validateRuntimeTransition,
+  validateState,
+  validateSemantics,
+  validateComplete,
+  // Zod schemas
+  NodeTypeSchema,
+  StdlibToolSchema,
+  AgentModelSchema,
+  WorkflowStatusSchema,
+  InlineToolSchema,
+  ToolReferenceSchema,
+  WorkflowStateSchema,
+  createNodeSchema,
+  createWorkflowSchema,
+} from './validation';
+
+export type {
+  ValidationResult,
+  ValidationError,
+} from './validation';
+
+// ============================================================================
+// Runtime Engine
+// ============================================================================
 
 // Main engine
 export { GraphEngine } from './engine';
@@ -122,143 +175,96 @@ export {
   loadConfig,
   validateTransitions,
   validateConfigSchema,
-  validateRuntimeTransition,
+  validateRuntimeTransition as validateRuntimeTransitionLegacy,
   resolveTransition,
 } from './config-loader';
 export type { LoadConfigOptions } from './config-loader';
 
-// Workflow definition API
-export {
-  defineWorkflow,
-  nodes,
-  AgentNode,
-  CommandNode,
-  SlashCommandNode,
-  // Primitive node factories
-  EvalNode,
-  DynamicAgentNode,
-  DynamicCommandNode,
-  createInitialState,
-} from './define-workflow';
-export type {
-  ExtractContext,
-  WorkflowStateOf,
-} from './define-workflow';
+// ============================================================================
+// Standard Library Nodes
+// ============================================================================
 
-// Standard library node implementations
+// Base classes and utilities
 export {
-  // Base
   BaseNode,
   NodeExecutionError,
   isInlineToolDefinition,
-  // Runtime classes
+} from './nodes';
+
+export type {
+  BaseNodeConfig,
+  NodeExecutionResult,
+} from './nodes';
+
+// Runtime node classes
+export {
+  // Claude Code
   AgentNodeRuntime,
-  CommandNodeRuntime,
   SlashCommandNodeRuntime,
-  // Primitive runtime classes
+  createAgentNode,
+  createSlashCommandNode,
+  // General
+  CommandNodeRuntime,
+  HttpNodeRuntime,
+  LLMNodeRuntime,
+  createHttpNode,
+  // GitHub
+  GitHubProjectNodeRuntime,
+  GithubCommentsNodeRuntime,
+  GitHubPRVisualizerNodeRuntime,
+  createGitHubProjectNode,
+  createGithubCommentsNode,
+  createGitHubPRVisualizerNode,
+  // Primitives
   EvalNodeRuntime,
   DynamicAgentNodeRuntime,
   DynamicCommandNodeRuntime,
-  // Factory functions
-  createAgentNode,
-  createSlashCommandNode,
 } from './nodes';
+
 export type {
-  // Base types
-  BaseNodeConfig,
-  NodeExecutionResult,
-  // AgentNode types
-  AgentNodeConfig,
+  // AgentNode
+  AgentNodeConfig as AgentNodeRuntimeConfig,
   StoredMessage as AgentStoredMessage,
-  // CommandNode types
-  CommandNodeConfig,
+  // CommandNode
+  CommandNodeConfig as CommandNodeRuntimeConfig,
   CommandResult,
-  // SlashCommandNode types
-  SlashCommandNodeConfig,
+  // SlashCommandNode
+  SlashCommandNodeConfig as SlashCommandNodeRuntimeConfig,
   SlashCommand,
   SlashCommandResult,
-  // Primitive node types
-  EvalNodeConfig,
+  // HttpNode
+  HttpNodeConfig,
+  HttpResult,
+  // LLMNode
+  LLMNodeConfig,
+  LLMResult,
+  LLMModel,
+  ReasoningEffort,
+  // GitHubProjectNode
+  GitHubProjectNodeConfig,
+  GitHubProjectResult,
+  // GithubCommentsNode
+  GithubCommentsNodeConfig,
+  CommentAction,
+  CommentResult,
+  // GitHubPRVisualizerNode
+  GitHubPRVisualizerNodeConfig,
+  PRVisualizerResult,
+  WorkflowNodeMeta,
+  // Primitives
+  EvalNodeConfig as EvalNodeRuntimeConfig,
   EvalResult,
-  DynamicAgentNodeConfig,
+  DynamicAgentNodeConfig as DynamicAgentNodeRuntimeConfig,
   DynamicAgentResult,
-  DynamicCommandNodeConfig,
+  DynamicCommandNodeConfig as DynamicCommandNodeRuntimeConfig,
   DynamicCommandResult,
 } from './nodes';
 
-// ============================================================================
-// New API (v2) - Type-Safe Schema-Based Workflow Definition
-// ============================================================================
+// Module namespaces
+export * as github from './nodes/github';
+export * as claudeCode from './nodes/claude-code';
+export * as general from './nodes/general';
+export * as primitives from './nodes/primitives';
 
-// Enums
-export {
-  NodeType,
-  StdlibTool,
-  WorkflowStatus,
-  AgentModel,
-  MODEL_IDS,
-  END_NODE,
-} from './enums';
-export type { EndNode } from './enums';
-
-// Schema-based workflow definition
-export {
-  defineNodes,
-  defineWorkflow as defineWorkflowV2,
-  createInitialWorkflowState,
-  resolveDynamic,
-} from './schema';
-export type {
-  // Core types
-  WorkflowState as WorkflowStateV2,
-  WorkflowConfig as WorkflowConfigV2,
-  NodeSchema,
-  // Transitions
-  StaticTransition as StaticTransitionV2,
-  DynamicTransition as DynamicTransitionV2,
-  Transition as TransitionV2,
-  Dynamic,
-  // Tools
-  InlineTool,
-  ToolReference as ToolReferenceV2,
-  // Node definitions
-  NodeDef,
-  BaseNodeDef,
-  AgentNodeDef,
-  CommandNodeDef,
-  SlashCommandNodeDef,
-  EvalNodeDef,
-  DynamicAgentNodeDef,
-  DynamicCommandNodeDef,
-  // Node configs
-  AgentNodeConfig as AgentNodeConfigV2,
-  CommandNodeConfig as CommandNodeConfigV2,
-  SlashCommandNodeConfig as SlashCommandNodeConfigV2,
-  EvalNodeConfig as EvalNodeConfigV2,
-  DynamicAgentNodeConfig as DynamicAgentNodeConfigV2,
-  DynamicCommandNodeConfig as DynamicCommandNodeConfigV2,
-} from './schema';
-
-// Validation
-export {
-  validateWorkflow,
-  validateNode,
-  validateRuntimeTransition as validateRuntimeTransitionV2,
-  validateState,
-  validateSemantics,
-  validateComplete,
-  // Zod schemas
-  NodeTypeSchema,
-  StdlibToolSchema,
-  AgentModelSchema,
-  WorkflowStatusSchema,
-  InlineToolSchema,
-  ToolReferenceSchema,
-  WorkflowStateSchema,
-  createNodeSchema,
-  createWorkflowSchema,
-} from './validation';
-export type {
-  ValidationResult,
-  ValidationError,
-} from './validation';
+// Re-export FieldUpdate type for GitHubProjectNode
+export type { FieldUpdate } from '../github-projects';
