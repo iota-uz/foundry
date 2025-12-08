@@ -146,9 +146,9 @@ export interface DynamicAgentNodeConfig<TContext extends Record<string, unknown>
  * Maps model aliases to actual Anthropic model IDs.
  */
 const MODEL_MAP: Record<AgentModel, string> = {
-  haiku: 'claude-3-5-haiku-20241022',
-  sonnet: 'claude-sonnet-4-20250514',
-  opus: 'claude-opus-4-1-20250805', // TODO: Update model versions when newer Claude models are released
+  haiku: 'claude-haiku-4.5',
+  sonnet: 'claude-sonnet-4.5',
+  opus: 'claude-opus-4.5',
 };
 
 

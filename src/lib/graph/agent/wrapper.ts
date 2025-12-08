@@ -15,7 +15,7 @@ export interface AgentWrapperConfig {
   /** Anthropic API key */
   apiKey: string;
 
-  /** Claude model to use (default: claude-sonnet-4-5-20250929) */
+  /** Claude model to use (default: claude-sonnet-4.5) */
   model?: string | undefined;
 
   /** Additional SDK options */
@@ -31,7 +31,7 @@ export class AgentWrapper implements IAgentWrapper {
 
   constructor(config: AgentWrapperConfig) {
     this.config = {
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-sonnet-4.5',
       ...config,
     };
   }

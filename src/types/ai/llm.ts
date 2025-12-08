@@ -22,9 +22,9 @@ export interface ModelConfig {
  * Default model names
  */
 export const MODEL_NAMES: ModelConfig = {
-  sonnet: 'claude-sonnet-4.5-20250514',
-  opus: 'claude-opus-4.5-20250514',
-  haiku: 'claude-haiku-4.5-20250514',
+  sonnet: 'claude-sonnet-4.5',
+  opus: 'claude-opus-4.5',
+  haiku: 'claude-haiku-4.5',
 };
 
 /**

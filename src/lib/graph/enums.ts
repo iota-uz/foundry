@@ -177,9 +177,9 @@ export enum AgentModel {
  * Maps AgentModel enum to actual Claude model IDs.
  */
 export const MODEL_IDS: Record<AgentModel, string> = {
-  [AgentModel.Haiku]: 'claude-haiku-4-20250514',
-  [AgentModel.Sonnet]: 'claude-sonnet-4-20250514',
-  [AgentModel.Opus]: 'claude-opus-4-20250514',
+  [AgentModel.Haiku]: 'claude-haiku-4.5',
+  [AgentModel.Sonnet]: 'claude-sonnet-4.5',
+  [AgentModel.Opus]: 'claude-opus-4.5',
 };
 
 /**

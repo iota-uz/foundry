@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     try {
       // Make a small test call to validate the key
       await client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4.5',
         max_tokens: 10,
         messages: [
           {

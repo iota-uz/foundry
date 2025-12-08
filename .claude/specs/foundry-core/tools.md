@@ -47,14 +47,14 @@ This document defines Foundry's AI architecture using a **workflow-based** appro
 
 ```typescript
 interface ModelConfig {
-  default: 'claude-sonnet-4.5-20250514';
+  default: 'claude-sonnet-4.5';
   tasks: {
-    cpo_qa: 'claude-sonnet-4.5-20250514';
-    clarify: 'claude-sonnet-4.5-20250514';
-    cto_qa: 'claude-sonnet-4.5-20250514';
-    reverse_engineering: 'claude-opus-4.5-20250514';
-    actualize: 'claude-opus-4.5-20250514';
-    analysis: 'claude-haiku-4.5-20250514';
+    cpo_qa: 'claude-sonnet-4.5';
+    clarify: 'claude-sonnet-4.5';
+    cto_qa: 'claude-sonnet-4.5';
+    reverse_engineering: 'claude-opus-4.5';
+    actualize: 'claude-opus-4.5';
+    analysis: 'claude-haiku-4.5';
   };
   // User can override in constitution.yaml
   overrides?: Partial<ModelConfig['tasks']>;

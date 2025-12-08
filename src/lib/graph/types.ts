@@ -198,7 +198,7 @@ export interface GraphEngineConfig {
   /** Anthropic API key for Claude SDK */
   apiKey: string;
 
-  /** Claude model to use (default: claude-sonnet-4-20250514) */
+  /** Claude model to use (default: claude-sonnet-4.5) */
   model?: string;
 
   /** Maximum retries for failed nodes (default: 0) */

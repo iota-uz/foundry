@@ -116,7 +116,7 @@ export interface LLMNodeConfig<
   /**
    * Reasoning effort level.
    * Enables extended thinking for more complex reasoning.
-   * Only available for claude-3-5-sonnet and above.
+   * Only available for claude-sonnet-4.5 and above.
    */
   reasoningEffort?: ReasoningEffort;
 
@@ -143,9 +143,9 @@ export interface LLMNodeConfig<
  * Maps model aliases to actual Anthropic model IDs.
  */
 const MODEL_MAP: Record<LLMModel, string> = {
-  haiku: 'claude-3-5-haiku-20241022',
-  sonnet: 'claude-sonnet-4-20250514',
-  opus: 'claude-opus-4-20250514',
+  haiku: 'claude-haiku-4.5',
+  sonnet: 'claude-sonnet-4.5',
+  opus: 'claude-opus-4.5',
 };
 
 // TODO: Implement extended thinking support when SDK adds this capability

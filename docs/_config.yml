@@ -7,6 +7,10 @@ email: your-email@domain.com
 # Build settings
 theme: jekyll-theme-midnight
 markdown: kramdown
+
+# Sass configuration - quiet deprecation warnings from theme dependencies
+sass:
+  quiet_deps: true
 kramdown:
   input: GFM
   syntax_highlighter: rouge

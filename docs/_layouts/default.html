@@ -23,6 +23,15 @@
       <div id="header">
         <nav>
           <ul>
+            <li>
+              <button class="search-trigger" id="search-trigger" type="button" aria-label="Search documentation">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+                <span>Search</span>
+                <kbd>⌘K</kbd>
+              </button>
+            </li>
             <li class="fork"><a href="{{ site.github.repository_url }}">View On GitHub</a></li>
             {% if site.show_downloads %}
               <li class="downloads"><a href="{{ site.github.zip_url }}">ZIP</a></li>
@@ -54,25 +63,29 @@
           <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/mattgraham">mattgraham</a></span>
         </footer>
       </section>
+
+      {% include toc.html %}
     </div>
 
+    {% include search-modal.html %}
+
     <script>
-      // Initialize Mermaid with Linear-inspired dark theme
+      // Initialize Mermaid with shadcn/ui-inspired dark theme
       mermaid.initialize({
         startOnLoad: false,
         theme: 'dark',
         themeVariables: {
-          primaryColor: '#1c1c1f',
+          primaryColor: '#27272a',
           primaryTextColor: '#fafafa',
-          primaryBorderColor: '#818cf8',
-          lineColor: '#818cf8',
-          secondaryColor: '#111113',
-          tertiaryColor: '#18181b',
-          background: '#0a0a0b',
-          mainBkg: '#1c1c1f',
-          nodeBorder: '#818cf8',
+          primaryBorderColor: '#8b5cf6',
+          lineColor: '#8b5cf6',
+          secondaryColor: '#18181b',
+          tertiaryColor: '#27272a',
+          background: '#09090b',
+          mainBkg: '#27272a',
+          nodeBorder: '#8b5cf6',
           clusterBkg: '#18181b',
-          clusterBorder: 'rgba(255, 255, 255, 0.08)',
+          clusterBorder: '#27272a',
           titleColor: '#fafafa',
           edgeLabelBackground: '#18181b'
         }
@@ -130,5 +143,10 @@
         }
       });
     </script>
+
+    <!-- Feature scripts -->
+    <script src="{{ '/assets/js/copy-code.js' | relative_url }}"></script>
+    <script src="{{ '/assets/js/toc.js' | relative_url }}"></script>
+    <script src="{{ '/assets/js/search.js' | relative_url }}"></script>
   </body>
 </html>

@@ -79,7 +79,7 @@ const resumedStream = query({
 ```typescript
 interface QueryOptions {
   // Model selection
-  model?: string;                    // e.g., 'claude-sonnet-4-5'
+  model?: string;                    // e.g., 'claude-sonnet-4.5'
   fallback_models?: string[];
 
   // Session management
