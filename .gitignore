@@ -53,3 +53,6 @@ Thumbs.db
 .turbo/
 .tsbuildinfo
 *.tsbuildinfo
+
+# Jekyll build output
+docs/_site/
