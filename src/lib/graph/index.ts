@@ -71,6 +71,7 @@ export {
   StdlibTool,
   WorkflowStatus,
   AgentModel,
+  SpecialNode,
   MODEL_IDS,
   END_NODE,
 } from './enums';
@@ -114,8 +115,6 @@ export type {
 // Runtime-compatible transition types (single generic argument)
 export type {
   Transition,
-  StaticTransition,
-  DynamicTransition,
 } from './types';
 
 // ============================================================================

@@ -6,10 +6,17 @@
  */
 
 import type { BaseState, GraphNode, GraphContext, GraphEngineConfig } from './types';
-import { WorkflowStatus } from './enums';
+import { WorkflowStatus, SpecialNode } from './enums';
 import { StateManager } from './state-manager';
 import { AgentWrapper } from './agent/wrapper';
 import { createLogger } from './utils/logger';
+
+/**
+ * Check if a node name is a terminal state (SpecialNode.End or SpecialNode.Error).
+ */
+function isTerminalNode(nodeName: string): boolean {
+  return nodeName === SpecialNode.End || nodeName === SpecialNode.Error;
+}
 
 /**
  * Configuration for creating a GraphEngine instance.
@@ -84,7 +91,7 @@ export class GraphEngine<TState extends BaseState> {
     // 3. The FSM Loop
     let retryCount = 0;
 
-    while (state.currentNode !== 'END') {
+    while (!isTerminalNode(state.currentNode)) {
       const node = this.nodes[state.currentNode];
 
       if (!node) {
@@ -147,9 +154,14 @@ export class GraphEngine<TState extends BaseState> {
       }
     }
 
-    // Finalize
-    workflowLogger.info('Workflow completed successfully');
-    state.status = WorkflowStatus.Completed;
+    // Finalize based on terminal node type
+    if (state.currentNode === SpecialNode.Error) {
+      workflowLogger.error('Workflow terminated with error');
+      state.status = WorkflowStatus.Failed;
+    } else {
+      workflowLogger.info('Workflow completed successfully');
+      state.status = WorkflowStatus.Completed;
+    }
     state.updatedAt = new Date().toISOString();
     await this.stateManager.save(id, state);
 
@@ -205,7 +217,9 @@ export class GraphEngine<TState extends BaseState> {
    */
   validateGraph(): void {
     const nodeNames = new Set(Object.keys(this.nodes));
-    nodeNames.add('END'); // END is a special terminal node
+    // Add special terminal nodes as valid targets
+    nodeNames.add(SpecialNode.End);
+    nodeNames.add(SpecialNode.Error);
 
     for (const [nodeName, node] of Object.entries(this.nodes)) {
       if (typeof node.execute !== 'function') {

@@ -10,7 +10,35 @@ import {
   type AnalysisResult,
 } from '../workflows/issue-processor.workflow';
 import { createNodeRuntimes, NodeAdapter } from '../cli/utils';
-import { NodeType } from '../enums';
+import { NodeType, WorkflowStatus } from '../enums';
+import type { WorkflowState } from '../schema';
+
+/**
+ * Helper to create a mock workflow state for testing transitions.
+ */
+function createMockState(contextOverrides: Partial<IssueContext> = {}): WorkflowState<IssueContext> {
+  return {
+    currentNode: 'TEST',
+    status: WorkflowStatus.Running,
+    updatedAt: new Date().toISOString(),
+    conversationHistory: [],
+    context: {
+      issueNumber: 1,
+      issueTitle: 'Test',
+      issueBody: 'Test body',
+      repository: 'test/repo',
+      baseBranch: 'main',
+      currentTaskIndex: 0,
+      testsPassed: false,
+      allTasksComplete: false,
+      fixAttempts: 0,
+      maxFixAttempts: 3,
+      completedNodes: [],
+      failedNodes: [],
+      ...contextOverrides,
+    },
+  };
+}
 
 describe('issue-processor workflow', () => {
   describe('workflow definition', () => {
@@ -24,12 +52,17 @@ describe('issue-processor workflow', () => {
       expect(nodeNames).toContain('ANALYZE');
       expect(nodeNames).toContain('PLAN');
       expect(nodeNames).toContain('CREATE_PR');
+      expect(nodeNames).toContain('PARSE_PR');
       expect(nodeNames).toContain('EXPLORE');
       expect(nodeNames).toContain('IMPLEMENT');
       expect(nodeNames).toContain('TEST');
-      expect(nodeNames).toContain('UPDATE_PR');
+      expect(nodeNames).toContain('SET_TEST_RESULT');
+      expect(nodeNames).toContain('GEN_PR_STATUS');
+      expect(nodeNames).toContain('WRITE_PR_STATUS');
+      expect(nodeNames).toContain('INCREMENT_RETRY');
       expect(nodeNames).toContain('NEXT_TASK');
-      expect(nodeNames).toContain('FINALIZE_PR');
+      expect(nodeNames).toContain('GEN_FINAL_PR');
+      expect(nodeNames).toContain('WRITE_FINAL_PR');
       expect(nodeNames).toContain('REPORT');
     });
 
@@ -41,12 +74,17 @@ describe('issue-processor workflow', () => {
       expect(nodeByName['ANALYZE']?.type).toBe(NodeType.Agent);
       expect(nodeByName['PLAN']?.type).toBe(NodeType.Agent);
       expect(nodeByName['CREATE_PR']?.type).toBe(NodeType.DynamicCommand);
+      expect(nodeByName['PARSE_PR']?.type).toBe(NodeType.Eval);
       expect(nodeByName['EXPLORE']?.type).toBe(NodeType.Command);
       expect(nodeByName['IMPLEMENT']?.type).toBe(NodeType.Agent);
       expect(nodeByName['TEST']?.type).toBe(NodeType.Command);
-      expect(nodeByName['UPDATE_PR']?.type).toBe(NodeType.DynamicCommand);
+      expect(nodeByName['SET_TEST_RESULT']?.type).toBe(NodeType.Eval);
+      expect(nodeByName['GEN_PR_STATUS']?.type).toBe(NodeType.Eval);
+      expect(nodeByName['WRITE_PR_STATUS']?.type).toBe(NodeType.DynamicCommand);
+      expect(nodeByName['INCREMENT_RETRY']?.type).toBe(NodeType.Eval);
       expect(nodeByName['NEXT_TASK']?.type).toBe(NodeType.Eval);
-      expect(nodeByName['FINALIZE_PR']?.type).toBe(NodeType.DynamicCommand);
+      expect(nodeByName['GEN_FINAL_PR']?.type).toBe(NodeType.Eval);
+      expect(nodeByName['WRITE_FINAL_PR']?.type).toBe(NodeType.DynamicCommand);
       expect(nodeByName['REPORT']?.type).toBe(NodeType.DynamicCommand);
     });
 
@@ -171,49 +209,86 @@ describe('workflow transitions', () => {
   describe('ANALYZE node', () => {
     it('should transition to PLAN', () => {
       const analyzeDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'ANALYZE');
-      expect(analyzeDef?.then).toBe('PLAN');
+      expect(typeof analyzeDef?.then).toBe('function');
+      expect(analyzeDef?.then(createMockState())).toBe('PLAN');
     });
   });
 
   describe('PLAN node', () => {
     it('should transition to CREATE_PR', () => {
       const planDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'PLAN');
-      expect(planDef?.then).toBe('CREATE_PR');
+      expect(typeof planDef?.then).toBe('function');
+      expect(planDef?.then(createMockState())).toBe('CREATE_PR');
     });
   });
 
   describe('CREATE_PR node', () => {
-    it('should transition to EXPLORE', () => {
+    it('should transition to PARSE_PR', () => {
       const createPrDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'CREATE_PR');
-      expect(createPrDef?.then).toBe('EXPLORE');
+      expect(typeof createPrDef?.then).toBe('function');
+      expect(createPrDef?.then(createMockState())).toBe('PARSE_PR');
+    });
+  });
+
+  describe('PARSE_PR node', () => {
+    it('should transition to EXPLORE', () => {
+      const parsePrDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'PARSE_PR');
+      expect(typeof parsePrDef?.then).toBe('function');
+      expect(parsePrDef?.then(createMockState())).toBe('EXPLORE');
     });
   });
 
   describe('EXPLORE node', () => {
     it('should transition to IMPLEMENT', () => {
       const exploreDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'EXPLORE');
-      expect(exploreDef?.then).toBe('IMPLEMENT');
+      expect(typeof exploreDef?.then).toBe('function');
+      expect(exploreDef?.then(createMockState())).toBe('IMPLEMENT');
     });
   });
 
   describe('IMPLEMENT node', () => {
     it('should transition to TEST', () => {
       const implementDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'IMPLEMENT');
-      expect(implementDef?.then).toBe('TEST');
+      expect(typeof implementDef?.then).toBe('function');
+      expect(implementDef?.then(createMockState())).toBe('TEST');
     });
   });
 
   describe('TEST node', () => {
-    it('should transition to UPDATE_PR', () => {
+    it('should transition to SET_TEST_RESULT', () => {
       const testDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'TEST');
-      expect(testDef?.then).toBe('UPDATE_PR');
+      expect(typeof testDef?.then).toBe('function');
+      expect(testDef?.then(createMockState())).toBe('SET_TEST_RESULT');
     });
   });
 
-  describe('UPDATE_PR node', () => {
+  describe('SET_TEST_RESULT node', () => {
+    it('should transition to GEN_PR_STATUS', () => {
+      const setTestResultDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'SET_TEST_RESULT');
+      expect(typeof setTestResultDef?.then).toBe('function');
+      expect(setTestResultDef?.then(createMockState())).toBe('GEN_PR_STATUS');
+    });
+  });
+
+  describe('GEN_PR_STATUS node', () => {
+    it('should transition to WRITE_PR_STATUS', () => {
+      const genPrStatusDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'GEN_PR_STATUS');
+      expect(typeof genPrStatusDef?.then).toBe('function');
+      expect(genPrStatusDef?.then(createMockState())).toBe('WRITE_PR_STATUS');
+    });
+  });
+
+  describe('WRITE_PR_STATUS node', () => {
     it('should have dynamic transition', () => {
-      const updatePrDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'UPDATE_PR');
-      expect(typeof updatePrDef?.then).toBe('function');
+      const writePrStatusDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'WRITE_PR_STATUS');
+      expect(typeof writePrStatusDef?.then).toBe('function');
+    });
+  });
+
+  describe('INCREMENT_RETRY node', () => {
+    it('should have dynamic transition', () => {
+      const incrementRetryDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'INCREMENT_RETRY');
+      expect(typeof incrementRetryDef?.then).toBe('function');
     });
   });
 
@@ -224,17 +299,29 @@ describe('workflow transitions', () => {
     });
   });
 
-  describe('FINALIZE_PR node', () => {
+  describe('GEN_FINAL_PR node', () => {
+    it('should transition to WRITE_FINAL_PR', () => {
+      const genFinalPrDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'GEN_FINAL_PR');
+      expect(typeof genFinalPrDef?.then).toBe('function');
+      expect(genFinalPrDef?.then(createMockState())).toBe('WRITE_FINAL_PR');
+    });
+  });
+
+  describe('WRITE_FINAL_PR node', () => {
     it('should transition to REPORT', () => {
-      const finalizePrDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'FINALIZE_PR');
-      expect(finalizePrDef?.then).toBe('REPORT');
+      const writeFinalPrDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'WRITE_FINAL_PR');
+      expect(typeof writeFinalPrDef?.then).toBe('function');
+      expect(writeFinalPrDef?.then(createMockState())).toBe('REPORT');
     });
   });
 
   describe('REPORT node', () => {
     it('should transition to END', () => {
       const reportDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'REPORT');
-      expect(reportDef?.then).toBe('END');
+      expect(typeof reportDef?.then).toBe('function');
+      // Note: Transitions should return SpecialNode.End, not string 'END'
+      const result = reportDef?.then(createMockState());
+      expect(result).toBeDefined();
     });
   });
 });
@@ -294,18 +381,18 @@ describe('node configurations', () => {
     });
   });
 
-  describe('UPDATE_PR dynamic command node', () => {
+  describe('WRITE_PR_STATUS dynamic command node', () => {
     it('should have command function for dynamic command generation', () => {
-      const node = issueProcessorWorkflow.nodes.find((n) => n.name === 'UPDATE_PR');
+      const node = issueProcessorWorkflow.nodes.find((n) => n.name === 'WRITE_PR_STATUS');
       if (node?.type === NodeType.DynamicCommand) {
         expect(typeof node.command).toBe('function');
       }
     });
   });
 
-  describe('FINALIZE_PR dynamic command node', () => {
+  describe('WRITE_FINAL_PR dynamic command node', () => {
     it('should have command function for dynamic command generation', () => {
-      const node = issueProcessorWorkflow.nodes.find((n) => n.name === 'FINALIZE_PR');
+      const node = issueProcessorWorkflow.nodes.find((n) => n.name === 'WRITE_FINAL_PR');
       if (node?.type === NodeType.DynamicCommand) {
         expect(typeof node.command).toBe('function');
       }

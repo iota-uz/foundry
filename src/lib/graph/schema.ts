@@ -30,12 +30,12 @@ import {
   StdlibTool,
   AgentModel,
   WorkflowStatus,
+  SpecialNode,
   END_NODE,
-  type EndNode,
 } from './enums';
 
 // Re-export enums for convenience
-export { NodeType, StdlibTool, AgentModel, WorkflowStatus, END_NODE };
+export { NodeType, StdlibTool, AgentModel, WorkflowStatus, SpecialNode, END_NODE };
 
 // ============================================================================
 // Core Schema Types
@@ -63,25 +63,25 @@ export interface WorkflowState<TContext extends Record<string, unknown> = Record
 }
 
 /**
- * Static transition - a literal node name or END.
- */
-export type StaticTransition<TNodeNames extends string> = TNodeNames | EndNode;
-
-/**
- * Dynamic transition - a function that returns the next node based on state.
- */
-export type DynamicTransition<
-  TNodeNames extends string,
-  TContext extends Record<string, unknown>
-> = (state: WorkflowState<TContext>) => TNodeNames | EndNode;
-
-/**
- * Transition can be static (string literal) or dynamic (function).
+ * Transition function that determines the next node based on workflow state.
+ * Always a function - use arrow functions for static transitions: `() => 'NEXT_NODE'`
+ *
+ * @example
+ * ```typescript
+ * // Static transition
+ * then: () => 'IMPLEMENT'
+ *
+ * // Dynamic transition
+ * then: (state) => state.context.done ? SpecialNode.End : 'RETRY'
+ *
+ * // Error handling
+ * then: (state) => state.context.failed ? SpecialNode.Error : 'NEXT'
+ * ```
  */
 export type Transition<
   TNodeNames extends string,
   TContext extends Record<string, unknown>
-> = StaticTransition<TNodeNames> | DynamicTransition<TNodeNames, TContext>;
+> = (state: WorkflowState<TContext>) => TNodeNames | SpecialNode;
 
 /**
  * Dynamic value: can be static or computed from state at runtime.
@@ -535,7 +535,7 @@ export interface NodeSchema<
  *
  * The schema ensures compile-time validation of:
  * - Node names are valid (from the provided array)
- * - Transition targets are valid node names or 'END'
+ * - Transition return values are valid node names or SpecialNode values
  * - Node configurations have all required fields
  *
  * @param names - Array of valid node names (use `as const` for literal types)
@@ -553,7 +553,7 @@ export interface NodeSchema<
  * const nodes = [
  *   schema.eval('INIT', {
  *     update: () => ({ counter: 0, done: false }),
- *     then: 'PROCESS'
+ *     then: () => 'PROCESS'  // Arrow function for static transition
  *   }),
  *   schema.agent('PROCESS', {
  *     role: 'processor',
@@ -562,7 +562,7 @@ export interface NodeSchema<
  *   }),
  *   schema.command('FINISH', {
  *     command: 'echo "Done!"',
- *     then: 'END'
+ *     then: () => SpecialNode.End  // Use enum for special nodes
  *   })
  * ];
  * ```
@@ -575,14 +575,15 @@ export function defineNodes<
   ): NodeSchema<TNodeNames[number], TContext> {
     type Names = TNodeNames[number];
 
-    // Validate no duplicates
+    // Validate no duplicates and no reserved names
+    const reservedNames = Object.values(SpecialNode) as string[];
     const seen = new Set<string>();
     for (const name of names) {
       if (seen.has(name)) {
         throw new Error(`Duplicate node name: "${name}"`);
       }
-      if (name === END_NODE) {
-        throw new Error(`"${END_NODE}" is reserved and cannot be used as a node name`);
+      if (reservedNames.includes(name)) {
+        throw new Error(`"${name}" is reserved (SpecialNode) and cannot be used as a node name`);
       }
       seen.add(name);
     }
@@ -771,16 +772,13 @@ export function defineWorkflow<
     seenNames.add(node.name);
   }
 
-  // Validate static transitions
-  const validTargets = new Set([...schemaNames, END_NODE]);
+  // Validate transitions are functions
   for (const node of config.nodes) {
-    if (typeof node.then === 'string') {
-      if (!validTargets.has(node.then)) {
-        throw new Error(
-          `Node "${node.name}" has invalid transition target "${node.then}". ` +
-          `Valid targets: ${[...validTargets].join(', ')}`
-        );
-      }
+    if (typeof node.then !== 'function') {
+      throw new Error(
+        `Node "${node.name}" has invalid transition. ` +
+        `"then" must be a function. Use arrow functions for static transitions: () => 'NEXT_NODE'`
+      );
     }
   }
 

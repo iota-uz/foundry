@@ -169,12 +169,25 @@ export const MODEL_IDS: Record<AgentModel, string> = {
 };
 
 /**
- * Reserved node name for workflow termination.
- * All workflows implicitly have this as a valid transition target.
+ * Special node transitions for workflow control flow.
+ * These are always valid transition targets regardless of schema.
  */
-export const END_NODE = 'END' as const;
+export enum SpecialNode {
+  /** Workflow terminates successfully */
+  End = 'END',
+
+  /** Workflow terminates with error state */
+  Error = 'ERROR',
+}
 
 /**
- * Type for the END node constant.
+ * @deprecated Use SpecialNode.End instead
+ * Reserved node name for workflow termination.
  */
-export type EndNode = typeof END_NODE;
+export const END_NODE = SpecialNode.End;
+
+/**
+ * @deprecated Use SpecialNode instead
+ * Type for special node constants.
+ */
+export type EndNode = SpecialNode;

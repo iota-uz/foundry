@@ -28,11 +28,11 @@ export interface NodeExecutionResult<TContext extends Record<string, unknown>> {
 }
 
 /**
- * Transition can be a static string or a dynamic function.
+ * Transition function that determines the next node.
+ * Always a function - use arrow functions for static transitions: `() => 'NEXT_NODE'`
  */
 type BaseTransition<TContext extends Record<string, unknown>> =
-  | string
-  | ((state: WorkflowState<TContext>) => string);
+  (state: WorkflowState<TContext>) => string;
 
 /**
  * Configuration common to all node types.
@@ -40,7 +40,8 @@ type BaseTransition<TContext extends Record<string, unknown>> =
 export interface BaseNodeConfig<TContext extends Record<string, unknown>> {
   /**
    * Transition to the next node.
-   * Can be a static string (e.g., 'IMPLEMENT') or a function for conditional routing.
+   * Must be a function that returns the next node name or SpecialNode.
+   * Use arrow functions for static transitions: `() => 'IMPLEMENT'`
    */
   next: BaseTransition<TContext>;
 }
@@ -94,19 +95,13 @@ export abstract class BaseNode<
 
   /**
    * Resolves the next node based on the current state.
-   * Supports both static (string) and dynamic (function) transitions.
+   * The transition is always a function that returns the next node name.
    *
    * @param state - Current workflow state after execution
-   * @returns The name of the next node
+   * @returns The name of the next node (or SpecialNode value)
    */
   resolveNext(state: WorkflowState<TContext>): string {
-    const transition = this.config.next;
-
-    if (typeof transition === 'function') {
-      return transition(state);
-    }
-
-    return transition;
+    return this.config.next(state);
   }
 
   /**

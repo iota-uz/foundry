@@ -77,14 +77,13 @@ export function createNodeRuntimes<
 
 /**
  * Converts a schema transition to a runtime transition.
+ * Since transitions are now always functions, this just wraps to ensure consistent return type.
  */
 function toRuntimeTransition<TNodeNames extends string, TContext extends Record<string, unknown>>(
   transition: SchemaTransition<TNodeNames, TContext>
-): string | ((state: WorkflowState<TContext>) => string) {
-  if (typeof transition === 'function') {
-    return (state: WorkflowState<TContext>) => transition(state);
-  }
-  return transition as string;
+): (state: WorkflowState<TContext>) => string {
+  // Transition is always a function now
+  return (state: WorkflowState<TContext>) => transition(state);
 }
 
 /**

@@ -39,10 +39,8 @@ export type {
   // Schema and workflow config
   NodeSchema,
   WorkflowConfig,
-  // Transition types (v2 with two generic args)
+  // Transition type (v2 with two generic args)
   Transition as TransitionV2,
-  StaticTransition as StaticTransitionV2,
-  DynamicTransition as DynamicTransitionV2,
 } from './schema';
 
 // Re-export commonly used functions and enums
@@ -55,6 +53,7 @@ export {
   StdlibTool,
   AgentModel,
   WorkflowStatus,
+  SpecialNode,
   END_NODE,
 } from './schema';
 
@@ -65,25 +64,15 @@ export {
 import type { WorkflowState } from './schema';
 
 /**
- * Static transition - a string node name.
- */
-export type StaticTransition = string;
-
-/**
- * Dynamic transition - a function that returns the next node name.
- */
-export type DynamicTransition<TContext extends Record<string, unknown>> = (
-  state: WorkflowState<TContext>
-) => string;
-
-/**
- * Transition can be static (string) or dynamic (function).
+ * Transition function that determines the next node.
+ * Always a function - use arrow functions for static transitions: `() => 'NEXT_NODE'`
+ *
  * This is the runtime-compatible version with single generic argument,
  * used by node runtime classes.
  */
-export type Transition<TContext extends Record<string, unknown>> =
-  | StaticTransition
-  | DynamicTransition<TContext>;
+export type Transition<TContext extends Record<string, unknown>> = (
+  state: WorkflowState<TContext>
+) => string;
 
 // ============================================================================
 // Message Types

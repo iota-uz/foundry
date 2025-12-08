@@ -33,11 +33,6 @@ on:
         required: false
         default: '3'
         type: string
-      dry_run:
-        description: 'Dry run mode (no execution)'
-        required: false
-        default: false
-        type: boolean
 
 # Permissions required for issue processing, PR creation, and commenting
 permissions:
@@ -75,7 +70,6 @@ jobs:
             --label "${{ inputs.label }}" \
             --max-concurrent "${{ inputs.max_concurrent }}" \
             --output matrix.json \
-            ${{ inputs.dry_run && '--dry-run' || '' }} \
             --verbose
 
           # Read matrix and set output
@@ -113,7 +107,7 @@ jobs:
   process:
     name: Process Issue ${{ matrix.issue_number }}
     needs: orchestrate
-    if: needs.orchestrate.outputs.has_issues == 'true' && !inputs.dry_run
+    if: needs.orchestrate.outputs.has_issues == 'true'
     runs-on: ubuntu-latest
 
     strategy:
@@ -215,7 +209,6 @@ jobs:
           echo "| Label | \`${{ inputs.label }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Base Branch | \`${{ inputs.base_branch }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Max Concurrent | ${{ inputs.max_concurrent }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Dry Run | ${{ inputs.dry_run }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Has Issues | ${{ needs.orchestrate.outputs.has_issues }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 

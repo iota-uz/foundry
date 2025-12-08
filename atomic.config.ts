@@ -19,6 +19,7 @@ import {
   defineWorkflow,
   StdlibTool,
   AgentModel,
+  SpecialNode,
   type InlineTool,
   type WorkflowState,
 } from './src/lib/graph';
@@ -197,7 +198,7 @@ Use the available tools to explore the codebase and understand the context.`,
       model: AgentModel.Sonnet,
 
       // Static transition - always go to IMPLEMENT after planning
-      then: 'IMPLEMENT',
+      then: () => 'IMPLEMENT',
     }),
 
     // =========================================================================
@@ -230,7 +231,7 @@ Follow best practices:
       model: AgentModel.Sonnet,
 
       // Dynamic transition - go to TEST when tasks done, or loop back
-      then: (state: WorkflowState<FeatureContext>): NodeName | 'END' => {
+      then: (state: WorkflowState<FeatureContext>): NodeName | SpecialNode => {
         if (state.context.allTasksDone) {
           return 'TEST';
         }
@@ -246,7 +247,7 @@ Follow best practices:
       args: 'Run all tests and report any failures',
 
       // Dynamic transition - go to QA if tests pass, back to FIX_CODE if they fail
-      then: (state: WorkflowState<FeatureContext>): NodeName | 'END' => {
+      then: (state: WorkflowState<FeatureContext>): NodeName | SpecialNode => {
         if (state.context.lastSlashCommandResult?.success) {
           return 'QA';
         }
@@ -262,7 +263,7 @@ Follow best practices:
       args: 'Fix the failing tests based on the test output. Make minimal changes to resolve the issues.',
 
       // Always go back to TEST after fixing
-      then: 'TEST',
+      then: () => 'TEST',
     }),
 
     // =========================================================================
@@ -300,7 +301,7 @@ Be thorough but fair - only report genuine issues.`,
       model: AgentModel.Sonnet,
 
       // Dynamic transition - go to FIX if bugs found, SUBMIT if passed
-      then: (state: WorkflowState<FeatureContext>): NodeName | 'END' => {
+      then: (state: WorkflowState<FeatureContext>): NodeName | SpecialNode => {
         if (state.context.qaPassed) {
           return 'SUBMIT';
         }
@@ -336,7 +337,7 @@ Be systematic:
       model: AgentModel.Sonnet,
 
       // Always go back to QA after fixing
-      then: 'QA',
+      then: () => 'QA',
     }),
 
     // =========================================================================
@@ -346,7 +347,7 @@ Be systematic:
       command: 'gh pr create --fill --assignee @me',
 
       // Terminal transition
-      then: 'END',
+      then: () => SpecialNode.End,
     }),
   ],
 });

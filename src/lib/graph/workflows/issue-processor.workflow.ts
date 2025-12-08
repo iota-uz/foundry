@@ -2,13 +2,15 @@
  * Issue Processor Workflow
  *
  * A queue-based workflow that processes GitHub issues through a full pipeline:
- * ANALYZE → PLAN → CREATE_PR → EXPLORE → IMPLEMENT → TEST → UPDATE_PR → NEXT_TASK → FINALIZE_PR → REPORT → END
+ * ANALYZE → PLAN → CREATE_PR → PARSE_PR → EXPLORE → IMPLEMENT → TEST → SET_TEST_RESULT → GEN_PR_STATUS → WRITE_PR_STATUS → NEXT_TASK → GEN_FINAL_PR → WRITE_FINAL_PR → REPORT → END
  *
  * Features:
  * - AI-powered issue analysis and task decomposition
- * - Draft PR creation with live Mermaid workflow visualization
+ * - Draft PR creation with live Mermaid workflow visualization using built-in mermaid utilities
  * - Iterative implementation with test-driven development
  * - Automatic progress reporting and PR finalization
+ * - Proper context tracking (branchName, prNumber, prUrl, completedNodes, testsPassed, fixAttempts)
+ * - Clean shell command handling with heredoc syntax
  *
  * @example
  * ```bash
@@ -21,8 +23,14 @@ import {
   defineWorkflow,
   StdlibTool,
   AgentModel,
+  SpecialNode,
   type WorkflowState,
 } from '../index';
+import {
+  generateStatusDashboard,
+  createDiagramNodes,
+  type DiagramEdge,
+} from '../mermaid';
 
 // ============================================================================
 // Context Type Definitions
@@ -157,6 +165,12 @@ export interface IssueContext extends Record<string, unknown> {
 
   /** Last command output (from TEST node) */
   lastCommandOutput?: string;
+
+  /** Generated PR body markdown (stored by GEN_PR_STATUS) */
+  prBodyMarkdown?: string;
+
+  /** Result from last dynamic command execution */
+  lastDynamicCommandResult?: { exitCode: number; stdout: string; stderr: string; success: boolean };
 }
 
 // ============================================================================
@@ -171,17 +185,148 @@ const schema = defineNodes<IssueContext>()([
   'ANALYZE',
   'PLAN',
   'CREATE_PR',
+  'PARSE_PR',           // NEW: Extract PR metadata from CREATE_PR output
   'EXPLORE',
   'IMPLEMENT',
   'TEST',
-  'UPDATE_PR',
+  'SET_TEST_RESULT',    // NEW: Set testsPassed from exit code
+  'GEN_PR_STATUS',      // NEW: Generate PR body (replaces UPDATE_PR)
+  'WRITE_PR_STATUS',    // NEW: Write PR body to GitHub
+  'INCREMENT_RETRY',    // NEW: Increment fixAttempts
   'NEXT_TASK',
-  'FINALIZE_PR',
+  'GEN_FINAL_PR',       // NEW: Generate final PR body (replaces FINALIZE_PR)
+  'WRITE_FINAL_PR',     // NEW: Write final PR and mark ready
   'REPORT',
 ] as const);
 
-// Type alias for node names
-type NodeName = (typeof schema.names)[number];
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Generates PR body markdown with workflow status dashboard.
+ * Uses mermaid utilities to create a visual workflow diagram.
+ *
+ * @param state - Current workflow state
+ * @param options - Configuration options
+ * @returns Complete PR body markdown
+ */
+function generatePRBody(
+  state: WorkflowState<IssueContext>,
+  options: { isFinal: boolean }
+): string {
+  const { issueNumber, tasks, currentTaskIndex, fixAttempts, maxFixAttempts, actionsRunUrl, completedNodes } = state.context;
+  const { isFinal } = options;
+
+  // Define all workflow nodes in order
+  const allNodeNames = [
+    'ANALYZE',
+    'PLAN',
+    'CREATE_PR',
+    'PARSE_PR',
+    'EXPLORE',
+    'IMPLEMENT',
+    'TEST',
+    'SET_TEST_RESULT',
+    'GEN_PR_STATUS',
+    'WRITE_PR_STATUS',
+    'INCREMENT_RETRY',
+    'NEXT_TASK',
+    'GEN_FINAL_PR',
+    'WRITE_FINAL_PR',
+    'REPORT',
+  ];
+
+  // Define workflow edges for diagram
+  const edges: DiagramEdge[] = [
+    { from: 'ANALYZE', to: 'PLAN' },
+    { from: 'PLAN', to: 'CREATE_PR' },
+    { from: 'CREATE_PR', to: 'PARSE_PR' },
+    { from: 'PARSE_PR', to: 'EXPLORE' },
+    { from: 'EXPLORE', to: 'IMPLEMENT' },
+    { from: 'IMPLEMENT', to: 'TEST' },
+    { from: 'TEST', to: 'SET_TEST_RESULT' },
+    { from: 'SET_TEST_RESULT', to: 'GEN_PR_STATUS' },
+    { from: 'GEN_PR_STATUS', to: 'WRITE_PR_STATUS' },
+    { from: 'WRITE_PR_STATUS', to: 'NEXT_TASK', label: 'tests passed' },
+    { from: 'WRITE_PR_STATUS', to: 'INCREMENT_RETRY', label: 'tests failed' },
+    { from: 'INCREMENT_RETRY', to: 'IMPLEMENT', label: 'retry' },
+    { from: 'INCREMENT_RETRY', to: 'NEXT_TASK', label: 'max retries' },
+    { from: 'NEXT_TASK', to: 'IMPLEMENT', label: 'more tasks' },
+    { from: 'NEXT_TASK', to: 'GEN_FINAL_PR', label: 'complete' },
+    { from: 'GEN_FINAL_PR', to: 'WRITE_FINAL_PR' },
+    { from: 'WRITE_FINAL_PR', to: 'REPORT' },
+    { from: 'REPORT', to: 'END' },
+  ];
+
+  // Determine current active node based on state
+  const activeNode = isFinal ? 'REPORT' : state.currentNode || 'IMPLEMENT';
+
+  // Create diagram nodes with proper status
+  const diagramNodes = createDiagramNodes(
+    allNodeNames,
+    activeNode,
+    completedNodes || [],
+    state.context.failedNodes || []
+  );
+
+  // Get current task info
+  const currentTask = tasks?.[currentTaskIndex];
+  const taskDescription = currentTask?.description || 'Processing...';
+  const completedCount = tasks?.filter((t) => t.completed).length || 0;
+  const totalCount = tasks?.length || 0;
+
+  // Generate dashboard config
+  const dashboardConfig: {
+    markerId: string;
+    currentTask: string;
+    retryAttempt?: number;
+    maxRetries?: number;
+    actionsRunUrl?: string;
+    title: string;
+  } = {
+    markerId: `issue-${issueNumber}`,
+    currentTask: isFinal ? `✅ All tasks complete (${completedCount}/${totalCount})` : taskDescription,
+    title: 'Workflow Status',
+  };
+
+  // Only add optional properties if they have values (avoid setting to undefined with exactOptionalPropertyTypes)
+  if (!isFinal) {
+    dashboardConfig.retryAttempt = fixAttempts + 1;
+    dashboardConfig.maxRetries = maxFixAttempts;
+  }
+
+  if (actionsRunUrl) {
+    dashboardConfig.actionsRunUrl = actionsRunUrl;
+  }
+
+  const dashboard = generateStatusDashboard(
+    {
+      nodes: diagramNodes,
+      edges,
+      activeNode,
+      direction: 'LR',
+    },
+    dashboardConfig
+  );
+
+  // Build complete PR body
+  const summary = isFinal
+    ? `Issue #${issueNumber} has been processed by the automated workflow.\n\n**Tasks Completed:** ${completedCount} / ${totalCount}`
+    : `Processing issue #${issueNumber} via automated workflow.`;
+
+  return `## Summary
+
+${summary}
+
+---
+
+${dashboard}
+
+---
+
+*Automated by sys/graph workflow engine*`;
+}
 
 // ============================================================================
 // Workflow Definition
@@ -192,12 +337,16 @@ type NodeName = (typeof schema.names)[number];
  *
  * Flow:
  * ```
- * ANALYZE → PLAN → CREATE_PR → EXPLORE → IMPLEMENT → TEST ─┬─→ UPDATE_PR → NEXT_TASK ──┬─→ FINALIZE_PR → REPORT → END
- *                                  ↑                       │                           │
- *                                  └───────────────────────┘ (fix/next task)           │
- *                                                                                      │
- *                                  ↑                                                   │
- *                                  └───────────────────────────────────────────────────┘ (more tasks)
+ * ANALYZE → PLAN → CREATE_PR → PARSE_PR → EXPLORE → IMPLEMENT → TEST → SET_TEST_RESULT → GEN_PR_STATUS → WRITE_PR_STATUS
+ *                                  ↑                                                                              │
+ *                                  │                                                    ┌────────────────────────┼─→ NEXT_TASK ──┬─→ GEN_FINAL_PR → WRITE_FINAL_PR → REPORT → END
+ *                                  │                                                    │ (tests passed)         │                  (all tasks done)
+ *                                  │                                                    │                        │
+ *                                  │                                                    ↓                        │
+ *                                  │                                             INCREMENT_RETRY                 │
+ *                                  │                                                    │                        │
+ *                                  └────────────────────────────────────────────────────┼───────────────────────┘
+ *                                                         (retry/max retries)           (more tasks)
  * ```
  */
 export const issueProcessorWorkflow = defineWorkflow({
@@ -247,7 +396,7 @@ Update the context with your analysis:
 Be thorough but efficient. Use the available tools to explore the codebase.`,
       capabilities: [StdlibTool.Read, StdlibTool.Glob, StdlibTool.Grep],
       model: AgentModel.Sonnet,
-      then: 'PLAN',
+      then: () => 'PLAN',
     }),
 
     // =========================================================================
@@ -292,7 +441,7 @@ interface Task {
 Order tasks so dependencies come first.`,
       capabilities: [StdlibTool.Read, StdlibTool.Glob],
       model: AgentModel.Sonnet,
-      then: 'CREATE_PR',
+      then: () => 'CREATE_PR',
     }),
 
     // =========================================================================
@@ -304,6 +453,15 @@ Order tasks so dependencies come first.`,
         const branchName = `claude/issue-${issueNumber}`;
         const safeTitle = issueTitle.replace(/"/g, '\\"').substring(0, 100);
 
+        // Simple initial PR body
+        const initialBody = `## Summary
+
+Processing issue #${issueNumber} via automated workflow.
+
+---
+
+*Automated by sys/graph workflow engine*`;
+
         // Create branch and draft PR in one command sequence
         return `git checkout -b ${branchName} 2>/dev/null || git checkout ${branchName} && \\
 git push -u origin ${branchName} 2>/dev/null || true && \\
@@ -311,44 +469,39 @@ gh pr create --draft \\
   --base ${baseBranch} \\
   --head ${branchName} \\
   --title "Issue #${issueNumber}: ${safeTitle}" \\
-  --body "## Summary
-
-Processing issue #${issueNumber} via automated workflow.
-
----
-
-<!-- foundry-workflow-dashboard:issue-${issueNumber} -->
-## Workflow Status
-
-\\\`\\\`\\\`mermaid
-stateDiagram-v2
-    direction LR
-    [*] --> ANALYZE
-    ANALYZE --> PLAN
-    PLAN --> CREATE_PR
-    CREATE_PR --> EXPLORE
-    EXPLORE --> IMPLEMENT
-    IMPLEMENT --> TEST
-    TEST --> UPDATE_PR
-    UPDATE_PR --> NEXT_TASK
-    NEXT_TASK --> FINALIZE_PR
-    FINALIZE_PR --> REPORT
-    REPORT --> [*]
-\\\`\\\`\\\`
-
-| Field | Value |
-|-------|-------|
-| **Status** | Starting implementation... |
-
-<!-- /foundry-workflow-dashboard:issue-${issueNumber} -->
-
----
-
-*Automated by sys/graph workflow engine*" \\
+  --body "${initialBody.replace(/"/g, '\\"')}" \\
   --repo ${repository} 2>&1 || echo "PR may already exist"`;
       },
       timeout: 60000,
-      then: 'EXPLORE',
+      then: () => 'PARSE_PR',
+    }),
+
+    // =========================================================================
+    // PARSE_PR: Extract PR metadata from CREATE_PR output
+    // =========================================================================
+    schema.eval('PARSE_PR', {
+      update: (state) => {
+        const result = state.context.lastDynamicCommandResult as { stdout?: string } | undefined;
+        const output = result?.stdout ?? '';
+
+        // gh pr create outputs: https://github.com/owner/repo/pull/123
+        const prUrlMatch = output.match(/https:\/\/github\.com\/[^\/]+\/[^\/]+\/pull\/(\d+)/);
+        const branchName = `claude/issue-${state.context.issueNumber}`;
+
+        const updates: Partial<IssueContext> = {
+          branchName,
+          completedNodes: [...state.context.completedNodes, 'CREATE_PR', 'PARSE_PR'],
+        };
+
+        // Only set if we have values (avoid setting to undefined with exactOptionalPropertyTypes)
+        if (prUrlMatch) {
+          updates.prNumber = parseInt(prUrlMatch[1]!, 10);
+          updates.prUrl = prUrlMatch[0];
+        }
+
+        return updates;
+      },
+      then: () => 'EXPLORE',
     }),
 
     // =========================================================================
@@ -357,7 +510,7 @@ stateDiagram-v2
     schema.command('EXPLORE', {
       command: 'tree -L 3 src/ --gitignore 2>/dev/null || find src -type f -name "*.ts" | head -50',
       timeout: 30000,
-      then: 'IMPLEMENT',
+      then: () => 'IMPLEMENT',
     }),
 
     // =========================================================================
@@ -399,7 +552,7 @@ When done, the workflow will run tests to verify your changes.`,
       ],
       model: AgentModel.Sonnet,
       maxTurns: 20,
-      then: 'TEST',
+      then: () => 'TEST',
     }),
 
     // =========================================================================
@@ -409,94 +562,80 @@ When done, the workflow will run tests to verify your changes.`,
       command: 'bun run lint && bun run typecheck && bun run test',
       timeout: 300000, // 5 minutes
       throwOnError: false, // Don't throw, let transition handle it
-      then: 'UPDATE_PR', // Always go to UPDATE_PR to update status
+      then: () => 'SET_TEST_RESULT', // Go to SET_TEST_RESULT to parse results
     }),
 
     // =========================================================================
-    // UPDATE_PR: Update PR body with current workflow status
+    // SET_TEST_RESULT: Set testsPassed from exit code
     // =========================================================================
-    schema.dynamicCommand('UPDATE_PR', {
-      command: (state: WorkflowState<IssueContext>): string => {
-        const { issueNumber, repository, tasks, currentTaskIndex, fixAttempts, maxFixAttempts, testsPassed, actionsRunUrl } = state.context;
-        const currentTask = tasks?.[currentTaskIndex];
-        const taskDescription = currentTask?.description || 'Processing...';
+    schema.eval('SET_TEST_RESULT', {
+      update: (state) => {
+        const result = state.context.lastDynamicCommandResult as { success?: boolean; stdout?: string } | undefined;
+        return {
+          testsPassed: result?.success ?? false,
+          lastCommandOutput: result?.stdout ?? '',
+          completedNodes: [...state.context.completedNodes, 'TEST', 'SET_TEST_RESULT'],
+        };
+      },
+      then: () => 'GEN_PR_STATUS',
+    }),
 
-        // Determine node statuses for visualization
-        const completedNodesForDiagram = ['ANALYZE', 'PLAN', 'CREATE_PR', 'EXPLORE'];
+    // =========================================================================
+    // GEN_PR_STATUS: Generate PR body markdown
+    // =========================================================================
+    schema.eval('GEN_PR_STATUS', {
+      update: (state) => {
+        const prBody = generatePRBody(state, { isFinal: false });
+        return {
+          prBodyMarkdown: prBody,
+          completedNodes: [...state.context.completedNodes, 'GEN_PR_STATUS'],
+        };
+      },
+      then: () => 'WRITE_PR_STATUS',
+    }),
 
-        // Build class assignments for Mermaid
-        const completedClass = completedNodesForDiagram.join(',');
-        const actionsLink = actionsRunUrl ? `[View Logs →](${actionsRunUrl})` : '_Running locally_';
-        const attemptInfo = `${fixAttempts + 1} / ${maxFixAttempts}`;
+    // =========================================================================
+    // WRITE_PR_STATUS: Write PR body to GitHub
+    // =========================================================================
+    schema.dynamicCommand('WRITE_PR_STATUS', {
+      command: (state) => {
+        const { prBodyMarkdown, repository, prNumber, issueNumber } = state.context;
 
-        const prBody = `## Summary
+        if (!prNumber) {
+          return 'echo "No PR number found, skipping PR update"';
+        }
 
-Processing issue #${issueNumber} via automated workflow.
-
----
-
-<!-- foundry-workflow-dashboard:issue-${issueNumber} -->
-## Workflow Status
-
-\\\`\\\`\\\`mermaid
-stateDiagram-v2
-    direction LR
-    classDef completed fill:#d1fae5
-    classDef active fill:#fef3c7
-    classDef failed fill:#fee2e2
-    classDef pending fill:#e5e7eb
-
-    [*] --> ANALYZE
-    ANALYZE --> PLAN
-    PLAN --> CREATE_PR
-    CREATE_PR --> EXPLORE
-    EXPLORE --> IMPLEMENT
-    IMPLEMENT --> TEST
-    TEST --> UPDATE_PR
-    UPDATE_PR --> NEXT_TASK
-    NEXT_TASK --> FINALIZE_PR
-    FINALIZE_PR --> REPORT
-    REPORT --> [*]
-
-    class ${completedClass} completed
-    class IMPLEMENT,TEST active
-    class UPDATE_PR,NEXT_TASK,FINALIZE_PR,REPORT pending
-\\\`\\\`\\\`
-
-| Field | Value |
-|-------|-------|
-| **Current Task** | ${taskDescription} |
-| **Test Status** | ${testsPassed ? '✅ Passed' : '❌ Failed'} |
-| **Attempt** | ${attemptInfo} |
-| **Actions** | ${actionsLink} |
-
-<sub>Updated: ${new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC</sub>
-
-<!-- /foundry-workflow-dashboard:issue-${issueNumber} -->
-
----
-
-*Automated by sys/graph workflow engine*`;
-
-        // Write body to temp file and use gh pr edit
-        const escapedBody = prBody.replace(/'/g, "'\\''");
-        return `echo '${escapedBody}' > /tmp/pr-body-${issueNumber}.md && \\
-gh pr edit --repo ${repository} --body-file /tmp/pr-body-${issueNumber}.md 2>&1 || echo "PR update skipped"`;
+        // Use heredoc to avoid escaping issues
+        return `cat << 'PREOF' > /tmp/pr-body-${issueNumber}.md
+${prBodyMarkdown}
+PREOF
+gh pr edit ${prNumber} --repo ${repository} --body-file /tmp/pr-body-${issueNumber}.md`;
       },
       timeout: 30000,
-      then: (state: WorkflowState<IssueContext>): NodeName | 'END' => {
+      then: (state) => {
         // Check if tests passed
         if (state.context.testsPassed) {
           return 'NEXT_TASK';
         }
 
-        // Tests failed - check if we should retry
-        if (state.context.fixAttempts < state.context.maxFixAttempts) {
-          return 'IMPLEMENT'; // Go back to fix
-        }
+        // Tests failed - retry or give up
+        return 'INCREMENT_RETRY';
+      },
+    }),
 
-        // Max retries exceeded - move to next task anyway
-        return 'NEXT_TASK';
+    // =========================================================================
+    // INCREMENT_RETRY: Increment fixAttempts and decide retry vs. move on
+    // =========================================================================
+    schema.eval('INCREMENT_RETRY', {
+      update: (state) => ({
+        fixAttempts: state.context.fixAttempts + 1,
+        completedNodes: [...state.context.completedNodes, 'INCREMENT_RETRY'],
+      }),
+      then: (state) => {
+        if (state.context.fixAttempts < state.context.maxFixAttempts) {
+          return 'IMPLEMENT'; // Retry implementation
+        }
+        return 'NEXT_TASK'; // Give up on this task, move to next
       },
     }),
 
@@ -523,82 +662,49 @@ gh pr edit --repo ${repository} --body-file /tmp/pr-body-${issueNumber}.md 2>&1 
           allTasksComplete: !hasMoreTasks,
           fixAttempts: 0, // Reset for next task
           testsPassed: false, // Reset for next task
+          completedNodes: [...state.context.completedNodes, 'NEXT_TASK'],
         };
       },
-      then: (state: WorkflowState<IssueContext>): NodeName | 'END' => {
+      then: (state) => {
         if (state.context.allTasksComplete) {
-          return 'FINALIZE_PR';
+          return 'GEN_FINAL_PR';
         }
         return 'IMPLEMENT'; // Continue with next task
       },
     }),
 
     // =========================================================================
-    // FINALIZE_PR: Update final status and mark PR ready for review
+    // GEN_FINAL_PR: Generate final PR body markdown
     // =========================================================================
-    schema.dynamicCommand('FINALIZE_PR', {
-      command: (state: WorkflowState<IssueContext>): string => {
-        const { issueNumber, repository, tasks, actionsRunUrl } = state.context;
-        const completedCount = tasks?.filter((t) => t.completed).length || 0;
-        const totalCount = tasks?.length || 0;
-        const actionsLink = actionsRunUrl ? `[View Logs →](${actionsRunUrl})` : '_Completed_';
+    schema.eval('GEN_FINAL_PR', {
+      update: (state) => {
+        const prBody = generatePRBody(state, { isFinal: true });
+        return {
+          prBodyMarkdown: prBody,
+          completedNodes: [...state.context.completedNodes, 'GEN_FINAL_PR'],
+        };
+      },
+      then: () => 'WRITE_FINAL_PR',
+    }),
 
-        const prBody = `## Summary
+    // =========================================================================
+    // WRITE_FINAL_PR: Write final PR body and mark ready for review
+    // =========================================================================
+    schema.dynamicCommand('WRITE_FINAL_PR', {
+      command: (state) => {
+        const { prBodyMarkdown, repository, prNumber, issueNumber } = state.context;
 
-Issue #${issueNumber} has been processed by the automated workflow.
+        if (!prNumber) {
+          return 'echo "No PR number found, skipping PR finalization"';
+        }
 
-**Tasks Completed:** ${completedCount} / ${totalCount}
-
----
-
-<!-- foundry-workflow-dashboard:issue-${issueNumber} -->
-## Workflow Status
-
-\\\`\\\`\\\`mermaid
-stateDiagram-v2
-    direction LR
-    classDef completed fill:#d1fae5
-    classDef active fill:#fef3c7
-    classDef pending fill:#e5e7eb
-
-    [*] --> ANALYZE
-    ANALYZE --> PLAN
-    PLAN --> CREATE_PR
-    CREATE_PR --> EXPLORE
-    EXPLORE --> IMPLEMENT
-    IMPLEMENT --> TEST
-    TEST --> UPDATE_PR
-    UPDATE_PR --> NEXT_TASK
-    NEXT_TASK --> FINALIZE_PR
-    FINALIZE_PR --> REPORT
-    REPORT --> [*]
-
-    class ANALYZE,PLAN,CREATE_PR,EXPLORE,IMPLEMENT,TEST,UPDATE_PR,NEXT_TASK,FINALIZE_PR completed
-    class REPORT active
-\\\`\\\`\\\`
-
-| Field | Value |
-|-------|-------|
-| **Status** | ✅ Complete |
-| **Tasks** | ${completedCount} / ${totalCount} completed |
-| **Actions** | ${actionsLink} |
-
-<sub>Completed: ${new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC</sub>
-
-<!-- /foundry-workflow-dashboard:issue-${issueNumber} -->
-
----
-
-*Automated by sys/graph workflow engine*`;
-
-        // Update PR body and mark ready for review
-        const escapedBody = prBody.replace(/'/g, "'\\''");
-        return `echo '${escapedBody}' > /tmp/pr-body-${issueNumber}.md && \\
-gh pr edit --repo ${repository} --body-file /tmp/pr-body-${issueNumber}.md && \\
-gh pr ready --repo ${repository} 2>&1 || echo "PR ready command skipped"`;
+        return `cat << 'PREOF' > /tmp/pr-body-${issueNumber}.md
+${prBodyMarkdown}
+PREOF
+gh pr edit ${prNumber} --repo ${repository} --body-file /tmp/pr-body-${issueNumber}.md && gh pr ready ${prNumber} --repo ${repository}`;
       },
       timeout: 30000,
-      then: 'REPORT',
+      then: () => 'REPORT',
     }),
 
     // =========================================================================
@@ -626,7 +732,7 @@ Please review the PR and provide feedback.
 *Automated by sys/graph workflow engine*"`;
       },
       timeout: 30000,
-      then: 'END',
+      then: () => SpecialNode.End,
     }),
   ],
 });

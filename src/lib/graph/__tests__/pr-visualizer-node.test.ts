@@ -36,7 +36,7 @@ describe('GitHubPRVisualizerNode', () => {
           PLAN: {},
           BUILD: {},
         },
-        next: 'END',
+        next: () => 'END',
       });
 
       expect(node.nodeType).toBe('github-pr-visualizer');
@@ -50,7 +50,7 @@ describe('GitHubPRVisualizerNode', () => {
         prNumber: 123,
         currentTask: 'Testing',
         workflowNodes: {},
-        next: 'NEXT_NODE',
+        next: () => 'NEXT_NODE',
       });
 
       const state = createMockState({});
@@ -80,7 +80,7 @@ describe('GitHubPRVisualizerNode', () => {
         prNumber: 1,
         currentTask: 'Task',
         workflowNodes: {},
-        next: 'END',
+        next: () => 'END',
       };
 
       const node = new GitHubPRVisualizerNodeRuntime(config);
@@ -121,7 +121,7 @@ describe('GitHubPRVisualizerNode', () => {
         completedNodes: ['PLAN'],
         position: 'top',
         throwOnError: true,
-        next: 'DONE',
+        next: () => 'DONE',
       });
 
       expect(config.token).toBe('token123');
@@ -141,7 +141,7 @@ describe('GitHubPRVisualizerNode', () => {
       expect(config.completedNodes).toEqual(['PLAN']);
       expect(config.position).toBe('top');
       expect(config.throwOnError).toBe(true);
-      expect(config.next).toBe('DONE');
+      expect(typeof config.next).toBe('function');
     });
 
     it('should support dynamic value resolvers', () => {
@@ -159,7 +159,7 @@ describe('GitHubPRVisualizerNode', () => {
         currentTask: (state) => state.context.taskDescription,
         retryAttempt: (state) => state.context.attempt,
         workflowNodes: {},
-        next: 'END',
+        next: () => 'END',
       });
 
       expect(typeof config.prNumber).toBe('function');
@@ -196,7 +196,7 @@ describe('GitHubPRVisualizerNode', () => {
         prNumberKey: 'myPrNumber',
         currentTask: 'Task',
         workflowNodes: {},
-        next: 'END',
+        next: () => 'END',
       });
 
       expect(config.prNumberKey).toBe('myPrNumber');
@@ -215,7 +215,7 @@ describe('GitHubPRVisualizerNode', () => {
         currentTask: 'Task',
         workflowNodes: {},
         completedNodesKey: 'finishedSteps',
-        next: 'END',
+        next: () => 'END',
       });
 
       expect(config.completedNodesKey).toBe('finishedSteps');
@@ -243,7 +243,7 @@ describe('GitHubPRVisualizerNode', () => {
           { from: 'FIX', to: 'QA', label: 'retry' },
           { from: 'QA', to: 'END', label: 'success' },
         ],
-        next: 'END',
+        next: () => 'END',
       });
 
       expect(config.workflowEdges).toHaveLength(5);
@@ -261,7 +261,7 @@ describe('GitHubPRVisualizerNode', () => {
         currentTask: 'Task',
         workflowNodes: {},
         markerId: 'custom-workflow-id',
-        next: 'END',
+        next: () => 'END',
       });
 
       expect(config.markerId).toBe('custom-workflow-id');
@@ -280,7 +280,7 @@ describe('GitHubPRVisualizerNode', () => {
         currentTask: 'Task',
         workflowNodes: {},
         markerId: (state) => `wf-${state.context.workflowId}`,
-        next: 'END',
+        next: () => 'END',
       });
 
       expect(typeof config.markerId).toBe('function');
@@ -300,7 +300,7 @@ describe('GitHubPRVisualizerNode', () => {
         prNumber: 1,
         currentTask: 'Task',
         workflowNodes: {},
-        next: 'END',
+        next: () => 'END',
       });
 
       const nodeConfig = (node as unknown as { config: { throwOnError: boolean } }).config;
@@ -316,7 +316,7 @@ describe('GitHubPRVisualizerNode', () => {
         currentTask: 'Task',
         workflowNodes: {},
         throwOnError: true,
-        next: 'END',
+        next: () => 'END',
       });
 
       const nodeConfig = (node as unknown as { config: { throwOnError: boolean } }).config;
@@ -333,7 +333,7 @@ describe('GitHubPRVisualizerNode', () => {
         prNumber: 1,
         currentTask: 'Task',
         workflowNodes: {},
-        next: 'END',
+        next: () => 'END',
       });
 
       const nodeConfig = (node as unknown as { config: { position: string } }).config;
@@ -349,7 +349,7 @@ describe('GitHubPRVisualizerNode', () => {
         currentTask: 'Task',
         workflowNodes: {},
         position: 'top',
-        next: 'END',
+        next: () => 'END',
       });
 
       const nodeConfig = (node as unknown as { config: { position: string } }).config;
