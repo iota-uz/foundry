@@ -250,3 +250,41 @@ export type ProjectsErrorCode =
   | 'GRAPHQL_ERROR'
   | 'RATE_LIMIT'
   | 'VALIDATION_ERROR';
+
+/**
+ * Project item with field values for dispatch
+ */
+export interface ProjectItemWithFields {
+  /** Item node ID */
+  id: string;
+
+  /** Issue content */
+  content: {
+    /** GitHub node ID */
+    id: string;
+    /** Issue number */
+    number: number;
+    /** Issue title */
+    title: string;
+    /** Issue body */
+    body: string;
+    /** Issue state */
+    state: 'OPEN' | 'CLOSED';
+    /** Repository reference */
+    repository: {
+      owner: { login: string };
+      name: string;
+    };
+  } | null;
+
+  /** Field values (lowercase field name → value) */
+  fieldValues: Record<string, string>;
+}
+
+/**
+ * Request to fetch items by status
+ */
+export interface FetchItemsByStatusRequest {
+  /** Target status value (e.g., "Ready") */
+  status: string;
+}

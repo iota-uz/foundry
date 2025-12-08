@@ -46,7 +46,10 @@ The dispatcher is included with Foundry. Run it using:
 
 ```bash
 # Using bun directly
-bun src/lib/dispatch/cli.ts [options]
+bun run graph dispatch.config.ts
+
+# Or via npm script
+bun run dispatch
 ```
 
 ## Usage
@@ -54,28 +57,34 @@ bun src/lib/dispatch/cli.ts [options]
 ### Command Line Interface
 
 ```bash
-foundry dispatch [options]
+bun run graph dispatch.config.ts [--verbose] [--help]
 ```
 
-#### Options
+#### CLI Options
 
-| Option                 | Description                  | Default                         |
-| ---------------------- | ---------------------------- | ------------------------------- |
-| `--owner <owner>`      | Repository owner             | Parsed from `GITHUB_REPOSITORY` |
-| `--repo <repo>`        | Repository name              | Parsed from `GITHUB_REPOSITORY` |
-| `--token <token>`      | GitHub personal access token | `GITHUB_TOKEN` env              |
-| `--label <label>`      | Label to filter issues       | `queue`                         |
-| `--max-concurrent <n>` | Maximum concurrent issues    | unlimited                       |
-| `--output, -o <file>`  | Output file for matrix JSON  | stdout                          |
-| `--dry-run`            | Run without side effects     | false                           |
-| `--verbose, -v`        | Enable verbose logging       | false                           |
+| Option           | Description            |
+| ---------------- | ---------------------- |
+| `--verbose, -v`  | Enable verbose logging |
+| `--help, -h`     | Show help              |
 
 #### Environment Variables
 
-| Variable            | Description                                     |
-| ------------------- | ----------------------------------------------- |
-| `GITHUB_TOKEN`      | GitHub personal access token                    |
-| `GITHUB_REPOSITORY` | Repository in `owner/repo` format (auto-parsed) |
+All configuration is via environment variables with `GRAPH_*` prefix:
+
+| Variable                   | Description                     | Default                         |
+| -------------------------- | ------------------------------- | ------------------------------- |
+| `GITHUB_TOKEN`             | GitHub personal access token    | (required)                      |
+| `GITHUB_REPOSITORY`        | Repository in `owner/repo`      | (required)                      |
+| `GRAPH_SOURCE`             | Issue source: `label`, `project`| `label`                         |
+| `GRAPH_LABEL`              | Label to filter issues          | `queue`                         |
+| `GRAPH_PROJECT_OWNER`      | Project owner (for project src) | From `GITHUB_REPOSITORY`        |
+| `GRAPH_PROJECT_NUMBER`     | Project number (for project src)| (required if source=project)    |
+| `GRAPH_READY_STATUS`       | Status to filter ready issues   | `Ready`                         |
+| `GRAPH_IN_PROGRESS_STATUS` | Status when processing          | `In Progress`                   |
+| `GRAPH_MAX_CONCURRENT`     | Maximum concurrent issues       | unlimited                       |
+| `GRAPH_OUTPUT_FILE`        | Output file for matrix JSON     | stdout                          |
+| `GRAPH_DRY_RUN`            | Run without side effects        | `false`                         |
+| `GRAPH_VERBOSE`            | Enable verbose logging          | `false`                         |
 
 ### Programmatic API
 
@@ -218,19 +227,24 @@ jobs:
       - run: bun install
 
       - id: dispatch
-        run: |
-          bun src/lib/dispatch/cli.ts \
-            --max-concurrent 3 \
-            --output matrix.json
-          echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
+        run: bun run graph dispatch.config.ts --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+          GRAPH_SOURCE: project
+          GRAPH_PROJECT_NUMBER: '14'
+          GRAPH_MAX_CONCURRENT: '3'
+          GRAPH_OUTPUT_FILE: matrix.json
 
       - id: check
         run: |
-          if jq -e '.include | length > 0' matrix.json > /dev/null; then
-            echo "has-issues=true" >> $GITHUB_OUTPUT
+          if [ -f matrix.json ]; then
+            MATRIX=$(cat matrix.json)
+            if [ "$MATRIX" = '{"include":[]}' ]; then
+              echo "has-issues=false" >> $GITHUB_OUTPUT
+            else
+              echo "has-issues=true" >> $GITHUB_OUTPUT
+              echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+            fi
           else
             echo "has-issues=false" >> $GITHUB_OUTPUT
           fi

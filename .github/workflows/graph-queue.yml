@@ -4,8 +4,12 @@
 # through a queue-based execution system.
 #
 # Flow:
-# 1. Orchestrator: Uses dispatch CLI to find ready issues
-# 2. Process: Matrix job runs graph workflow for each ready issue
+# 1. Orchestrator: Uses dispatch workflow to find ready issues
+# 2. Process: Matrix job runs issue-processor workflow for each ready issue
+#
+# Supports two source types:
+# - 'label': Fetch issues by label
+# - 'project': Fetch issues from GitHub Projects V2 by status column
 #
 # Trigger: Manual (workflow_dispatch) only for initial testing
 
@@ -14,20 +18,14 @@ name: Graph Issue Queue
 on:
   workflow_dispatch:
     inputs:
-      label:
-        description: 'Issue label to process'
+      source:
+        description: 'Issue source type'
         required: false
-        default: 'queue'
-        type: string
-      base_branch:
-        description: 'Target branch for PRs'
-        required: false
-        default: 'main'
+        default: 'project'
         type: choice
         options:
-          - main
-          - develop
-          - staging
+          - label
+          - project
       max_concurrent:
         description: 'Maximum concurrent issues'
         required: false
@@ -39,6 +37,16 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+
+# Hardcoded project configuration
+env:
+  GRAPH_PROJECT_OWNER: iota-uz
+  GRAPH_PROJECT_NUMBER: '14'
+  GRAPH_READY_STATUS: Ready
+  GRAPH_IN_PROGRESS_STATUS: In Progress
+  GRAPH_DONE_STATUS: Done
+  GRAPH_BASE_BRANCH: main
+  GRAPH_LABEL: queue
 
 jobs:
   # ============================================================================
@@ -63,34 +71,31 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Run dispatch to find ready issues
+      - name: Run dispatch workflow
         id: dispatch
-        run: |
-          bun run dispatch \
-            --label "${{ inputs.label }}" \
-            --max-concurrent "${{ inputs.max_concurrent }}" \
-            --output matrix.json \
-            --verbose
-
-          # Read matrix and set output
-          if [ -f matrix.json ]; then
-            echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
-          else
-            echo 'matrix={"include":[]}' >> $GITHUB_OUTPUT
-          fi
+        run: bun run graph dispatch.config.ts --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GRAPH_SOURCE: ${{ inputs.source }}
+          GRAPH_MAX_CONCURRENT: ${{ inputs.max_concurrent }}
+          GRAPH_OUTPUT_FILE: matrix.json
 
       - name: Check if there are issues to process
         id: check
         run: |
-          MATRIX='${{ steps.dispatch.outputs.matrix }}'
-          if [ "$MATRIX" = '{"include":[]}' ] || [ -z "$MATRIX" ]; then
-            echo "has_issues=false" >> $GITHUB_OUTPUT
-            echo "No issues ready for processing"
+          if [ -f matrix.json ]; then
+            MATRIX=$(cat matrix.json)
+            if [ "$MATRIX" = '{"include":[]}' ] || [ -z "$MATRIX" ]; then
+              echo "has_issues=false" >> $GITHUB_OUTPUT
+              echo "No issues ready for processing"
+            else
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+              echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+              echo "Found issues to process"
+            fi
           else
-            echo "has_issues=true" >> $GITHUB_OUTPUT
-            echo "Found issues to process"
+            echo "has_issues=false" >> $GITHUB_OUTPUT
+            echo "No matrix file found"
           fi
 
       - name: Upload matrix artifact
@@ -141,16 +146,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run graph workflow for issue
+      - name: Run issue processor workflow
         id: workflow
-        run: |
-          bun run src/lib/graph/cli/run-issue.ts \
-            --issue ${{ matrix.issue_number }} \
-            --base-branch ${{ inputs.base_branch }} \
-            --verbose
+        run: bun run graph issue-processor.config.ts --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GRAPH_ISSUE_NUMBER: ${{ matrix.issue_number }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
         continue-on-error: true
@@ -206,8 +208,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Label | \`${{ inputs.label }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Base Branch | \`${{ inputs.base_branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Source | \`${{ inputs.source }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Max Concurrent | ${{ inputs.max_concurrent }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Has Issues | ${{ needs.orchestrate.outputs.has_issues }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

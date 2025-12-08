@@ -308,10 +308,18 @@ describe('workflow transitions', () => {
   });
 
   describe('WRITE_FINAL_PR node', () => {
-    it('should transition to REPORT', () => {
+    it('should transition to SET_DONE_STATUS', () => {
       const writeFinalPrDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'WRITE_FINAL_PR');
       expect(typeof writeFinalPrDef?.then).toBe('function');
-      expect(writeFinalPrDef?.then(createMockState())).toBe('REPORT');
+      expect(writeFinalPrDef?.then(createMockState())).toBe('SET_DONE_STATUS');
+    });
+  });
+
+  describe('SET_DONE_STATUS node', () => {
+    it('should transition to REPORT', () => {
+      const setDoneStatusDef = issueProcessorWorkflow.nodes.find((n) => n.name === 'SET_DONE_STATUS');
+      expect(typeof setDoneStatusDef?.then).toBe('function');
+      expect(setDoneStatusDef?.then(createMockState())).toBe('REPORT');
     });
   });
 

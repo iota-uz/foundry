@@ -57,5 +57,10 @@ export {
   setGitHubActionsOutput,
 } from './dispatcher';
 
-// CLI
-export { main as dispatchCli, parseArgs, buildConfig, showHelp } from './cli';
+// Dispatch Workflow (graph-based approach)
+export {
+  runDispatchWorkflow,
+  IOTA_UZ_CONFIG,
+  type DispatchWorkflowConfig,
+  type DispatchContext,
+} from './dispatch-workflow';
