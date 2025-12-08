@@ -2,7 +2,7 @@
  * Issue Processor Workflow
  *
  * A queue-based workflow that processes GitHub issues through a full pipeline:
- * ANALYZE → PLAN → CREATE_PR → PARSE_PR → EXPLORE → IMPLEMENT → TEST → SET_TEST_RESULT → GEN_PR_STATUS → WRITE_PR_STATUS → NEXT_TASK → GEN_FINAL_PR → WRITE_FINAL_PR → REPORT → END
+ * ANALYZE → PLAN → CREATE_PR → PARSE_PR → EXPLORE → IMPLEMENT → TEST → SET_TEST_RESULT → GEN_PR_STATUS → WRITE_PR_STATUS → NEXT_TASK → GEN_FINAL_PR → WRITE_FINAL_PR → SET_DONE_STATUS → REPORT → END
  *
  * Features:
  * - AI-powered issue analysis and task decomposition
@@ -106,6 +106,19 @@ export interface IssueContext extends Record<string, unknown> {
   actionsRunUrl?: string;
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Project tracking (optional - for status updates)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Project owner (for status updates) */
+  projectOwner?: string;
+
+  /** Project number (for status updates) */
+  projectNumber?: number;
+
+  /** Status to set when complete (default: 'Done') */
+  doneStatus?: string;
+
+  // ─────────────────────────────────────────────────────────────────────────
   // ANALYZE output
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -196,6 +209,7 @@ const schema = defineNodes<IssueContext>()([
   'NEXT_TASK',
   'GEN_FINAL_PR',       // NEW: Generate final PR body (replaces FINALIZE_PR)
   'WRITE_FINAL_PR',     // NEW: Write final PR and mark ready
+  'SET_DONE_STATUS',    // NEW: Update project status to "Done" (project source only)
   'REPORT',
 ] as const);
 
@@ -234,6 +248,7 @@ function generatePRBody(
     'NEXT_TASK',
     'GEN_FINAL_PR',
     'WRITE_FINAL_PR',
+    'SET_DONE_STATUS',
     'REPORT',
   ];
 
@@ -255,7 +270,8 @@ function generatePRBody(
     { from: 'NEXT_TASK', to: 'IMPLEMENT', label: 'more tasks' },
     { from: 'NEXT_TASK', to: 'GEN_FINAL_PR', label: 'complete' },
     { from: 'GEN_FINAL_PR', to: 'WRITE_FINAL_PR' },
-    { from: 'WRITE_FINAL_PR', to: 'REPORT' },
+    { from: 'WRITE_FINAL_PR', to: 'SET_DONE_STATUS' },
+    { from: 'SET_DONE_STATUS', to: 'REPORT' },
     { from: 'REPORT', to: 'END' },
   ];
 
@@ -339,7 +355,7 @@ ${dashboard}
  * ```
  * ANALYZE → PLAN → CREATE_PR → PARSE_PR → EXPLORE → IMPLEMENT → TEST → SET_TEST_RESULT → GEN_PR_STATUS → WRITE_PR_STATUS
  *                                  ↑                                                                              │
- *                                  │                                                    ┌────────────────────────┼─→ NEXT_TASK ──┬─→ GEN_FINAL_PR → WRITE_FINAL_PR → REPORT → END
+ *                                  │                                                    ┌────────────────────────┼─→ NEXT_TASK ──┬─→ GEN_FINAL_PR → WRITE_FINAL_PR → SET_DONE_STATUS → REPORT → END
  *                                  │                                                    │ (tests passed)         │                  (all tasks done)
  *                                  │                                                    │                        │
  *                                  │                                                    ↓                        │
@@ -704,6 +720,23 @@ PREOF
 gh pr edit ${prNumber} --repo ${repository} --body-file /tmp/pr-body-${issueNumber}.md && gh pr ready ${prNumber} --repo ${repository}`;
       },
       timeout: 30000,
+      then: () => 'SET_DONE_STATUS',
+    }),
+
+    // =========================================================================
+    // SET_DONE_STATUS: Update project status to "Done" (project source only)
+    // This is a placeholder that gets replaced with SetDoneStatusNodeRuntime
+    // in run-issue.ts for proper ProjectsClient-based GraphQL operations
+    // =========================================================================
+    schema.eval('SET_DONE_STATUS', {
+      update: (state) => {
+        // Placeholder - actual implementation injected by run-issue.ts
+        // This allows the workflow to be defined declaratively while
+        // the runtime uses ProjectsClient for type-safe API calls
+        return {
+          completedNodes: [...state.context.completedNodes, 'SET_DONE_STATUS'],
+        };
+      },
       then: () => 'REPORT',
     }),
 

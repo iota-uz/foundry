@@ -18,6 +18,8 @@ import type {
   UpdateFieldsRequest,
   UpdateFieldsResult,
   FieldUpdateResult,
+  ProjectItemWithFields,
+  FetchItemsByStatusRequest,
 } from './types';
 import { ProjectsError } from './types';
 
@@ -652,6 +654,139 @@ export class ProjectsClient {
    */
   getAvailableStatuses(): string[] {
     return Array.from(this.statusOptions.values()).map((o) => o.name);
+  }
+
+  /**
+   * Fetch all project items with a specific status.
+   *
+   * NOTE: Limited to first 100 items due to GraphQL pagination.
+   * Client-side filtering is required as GraphQL can't filter by field values.
+   *
+   * @param request - Status filter options
+   * @returns Array of project items with their field values
+   */
+  async fetchItemsByStatus(request: FetchItemsByStatusRequest): Promise<ProjectItemWithFields[]> {
+    if (!this.project) {
+      throw new ProjectsError('Project not validated. Call validate() first.', 'VALIDATION_ERROR');
+    }
+
+    this.log(`Fetching items with status "${request.status}"...`);
+
+    const query = `
+      query($projectId: ID!) {
+        node(id: $projectId) {
+          ... on ProjectV2 {
+            items(first: 100) {
+              nodes {
+                id
+                content {
+                  ... on Issue {
+                    id
+                    number
+                    title
+                    body
+                    state
+                    repository {
+                      owner { login }
+                      name
+                    }
+                  }
+                }
+                fieldValues(first: 20) {
+                  nodes {
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      name
+                      field {
+                        ... on ProjectV2SingleSelectField {
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    interface RawProjectItem {
+      id: string;
+      content: {
+        id?: string;
+        number?: number;
+        title?: string;
+        body?: string;
+        state?: 'OPEN' | 'CLOSED';
+        repository?: {
+          owner: { login: string };
+          name: string;
+        };
+      } | null;
+      fieldValues?: {
+        nodes: Array<{
+          name?: string;
+          field?: {
+            name?: string;
+          };
+        }>;
+      };
+    }
+
+    interface ItemsResponse {
+      node: {
+        items: {
+          nodes: RawProjectItem[];
+        };
+      };
+    }
+
+    const data = await this.graphql<ItemsResponse>(query, {
+      projectId: this.project.id,
+    });
+
+    // Map and filter items
+    const items: ProjectItemWithFields[] = [];
+    const targetStatus = request.status.toLowerCase();
+
+    for (const rawItem of data.node.items.nodes) {
+      // Skip non-issue items (PRs, draft issues without content)
+      if (!rawItem.content || rawItem.content.id === undefined) {
+        continue;
+      }
+
+      // Extract field values
+      const fieldValues: Record<string, string> = {};
+      for (const fieldValue of rawItem.fieldValues?.nodes ?? []) {
+        if (fieldValue.field?.name && fieldValue.name) {
+          fieldValues[fieldValue.field.name.toLowerCase()] = fieldValue.name;
+        }
+      }
+
+      // Filter by status
+      const itemStatus = fieldValues['status']?.toLowerCase();
+      if (itemStatus !== targetStatus) {
+        continue;
+      }
+
+      items.push({
+        id: rawItem.id,
+        content: {
+          id: rawItem.content.id,
+          number: rawItem.content.number!,
+          title: rawItem.content.title ?? '',
+          body: rawItem.content.body ?? '',
+          state: rawItem.content.state ?? 'OPEN',
+          repository: rawItem.content.repository!,
+        },
+        fieldValues,
+      });
+    }
+
+    this.log(`Found ${items.length} items with status "${request.status}"`);
+
+    return items;
   }
 
   /**

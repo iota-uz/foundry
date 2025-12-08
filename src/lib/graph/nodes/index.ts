@@ -140,6 +140,46 @@ export {
 export * as primitives from './primitives';
 
 // ============================================================================
+// Dispatch Workflow Nodes
+// ============================================================================
+
+export {
+  FetchIssuesNodeRuntime,
+  type FetchIssuesNodeConfig,
+  type FetchIssuesResult,
+  type IssueSourceType,
+  createFetchIssuesNode,
+} from './dispatch/fetch-issues-node';
+
+export {
+  BuildDagNodeRuntime,
+  type BuildDagNodeConfig,
+  type BuildDagResult,
+  createBuildDagNode,
+} from './dispatch/build-dag-node';
+
+export {
+  SetStatusNodeRuntime,
+  type SetStatusNodeConfig,
+  type SetStatusResult,
+  type IssueStatusUpdateResult,
+  createSetStatusNode,
+} from './dispatch/set-status-node';
+
+// Re-export as module namespace
+export * as dispatch from './dispatch';
+
+// ============================================================================
+// Issue Processor Nodes
+// ============================================================================
+
+export {
+  SetDoneStatusNodeRuntime,
+  type SetDoneStatusNodeConfig,
+  type SetDoneStatusResult,
+} from './set-done-status-node';
+
+// ============================================================================
 // Re-export types from parent module for convenience
 // ============================================================================
 

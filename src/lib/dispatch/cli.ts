@@ -7,7 +7,12 @@
  *   --owner <owner>          Repository owner (parsed from GITHUB_REPOSITORY)
  *   --repo <repo>            Repository name (parsed from GITHUB_REPOSITORY)
  *   --token <token>          GitHub token (or set GITHUB_TOKEN)
- *   --label <label>          Queue label (default: 'queue')
+ *   --source <type>          Issue source type: 'label' or 'project' (default: 'label')
+ *   --label <label>          Queue label for label source (default: 'queue')
+ *   --project-owner <owner>  Project owner for project source
+ *   --project-number <n>     Project number for project source
+ *   --ready-status <status>  Status to filter by for project source (default: 'Ready')
+ *   --in-progress <status>   Status to set when processing (default: 'In Progress')
  *   --max-concurrent <n>     Maximum concurrent issues (default: unlimited)
  *   --output <file>          Output file for matrix JSON
  *   --dry-run                Dry run mode
@@ -17,11 +22,15 @@
 
 import { DispatchError, type DispatchConfig } from './types';
 import {
-  dispatch,
   formatResultSummary,
   writeMatrixToFile,
   setGitHubActionsOutput,
 } from './dispatcher';
+import {
+  runDispatchWorkflow,
+  type DispatchWorkflowConfig,
+} from './dispatch-workflow';
+import type { IssueSourceType } from '../graph/nodes/dispatch/fetch-issues-node';
 
 /**
  * CLI arguments parsed
@@ -30,7 +39,12 @@ interface CliArgs {
   owner?: string;
   repo?: string;
   token?: string;
+  source?: IssueSourceType;
   label?: string;
+  projectOwner?: string;
+  projectNumber?: number;
+  readyStatus?: string;
+  inProgressStatus?: string;
   maxConcurrent?: number;
   output?: string;
   dryRun: boolean;
@@ -84,10 +98,53 @@ export function parseArgs(args: string[]): CliArgs {
         }
         break;
       }
+      case '--source': {
+        const value = getNextArg(i, '--source');
+        if (value === 'label' || value === 'project') {
+          result.source = value;
+          i++;
+        }
+        break;
+      }
       case '--label': {
         const value = getNextArg(i, '--label');
         if (value) {
           result.label = value;
+          i++;
+        }
+        break;
+      }
+      case '--project-owner': {
+        const value = getNextArg(i, '--project-owner');
+        if (value) {
+          result.projectOwner = value;
+          i++;
+        }
+        break;
+      }
+      case '--project-number': {
+        const value = getNextArg(i, '--project-number');
+        if (value) {
+          const num = parseInt(value, 10);
+          if (!isNaN(num) && num > 0) {
+            result.projectNumber = num;
+          }
+          i++;
+        }
+        break;
+      }
+      case '--ready-status': {
+        const value = getNextArg(i, '--ready-status');
+        if (value) {
+          result.readyStatus = value;
+          i++;
+        }
+        break;
+      }
+      case '--in-progress': {
+        const value = getNextArg(i, '--in-progress');
+        if (value) {
+          result.inProgressStatus = value;
           i++;
         }
         break;
@@ -192,8 +249,12 @@ export function showHelp(): void {
 foundry dispatch - GitHub Issue DAG Dispatcher
 
 DESCRIPTION
-  Analyzes GitHub issues with a specified label, builds a dependency graph (DAG),
+  Analyzes GitHub issues from various sources, builds a dependency graph (DAG),
   and generates a GitHub Actions matrix for parallel execution.
+
+  Supports two source types:
+  - 'label': Fetch issues by label (default)
+  - 'project': Fetch issues from GitHub Projects V2 by status column
 
 USAGE
   foundry dispatch [options]
@@ -202,62 +263,143 @@ OPTIONS
   --owner <owner>          Repository owner (parsed from GITHUB_REPOSITORY)
   --repo <repo>            Repository name (parsed from GITHUB_REPOSITORY)
   --token <token>          GitHub token (or set GITHUB_TOKEN)
-  --label <label>          Queue label to filter issues (default: 'queue')
+  --source <type>          Issue source: 'label' or 'project' (default: 'label')
   --max-concurrent <n>     Maximum concurrent issues in matrix
   --output, -o <file>      Output file for matrix JSON
   --dry-run                Run without side effects
   --verbose, -v            Enable verbose logging
   --help, -h               Show this help message
 
+LABEL SOURCE OPTIONS
+  --label <label>          Queue label to filter issues (default: 'queue')
+
+PROJECT SOURCE OPTIONS
+  --project-owner <owner>  Project owner (defaults to --owner)
+  --project-number <n>     Project number (visible in project URL)
+  --ready-status <status>  Status to filter by (default: 'Ready')
+  --in-progress <status>   Status to set when processing (default: 'In Progress')
+
 ENVIRONMENT VARIABLES
   GITHUB_TOKEN             GitHub personal access token
   GITHUB_REPOSITORY        Repository in owner/repo format (auto-parsed)
 
-DEPENDENCY SYNTAX
-  Issues can declare dependencies in their body using:
-    - Depends on #123
-    - Depends on owner/repo#123
-    - Blocked by #456
-    - Requires #789, #790
+DEPENDENCY HANDLING
+  The dispatcher uses GitHub's sub-issues feature for dependency tracking.
+  A parent issue is blocked until all its sub-issues are closed.
 
-PRIORITY LABELS
-  Issues can be prioritized using labels:
-    - priority:critical (highest)
-    - priority:high
-    - priority:medium
-    - priority:low
+PRIORITY
+  For 'label' source: Uses priority:* labels (critical, high, medium, low)
+  For 'project' source: Uses the 'Priority' field from the project
 
 OUTPUT
   The command outputs a GitHub Actions matrix JSON to stdout and optionally
-  to a file. The matrix can be used in workflow job strategy:
-
-    jobs:
-      dispatch:
-        steps:
-          - run: foundry dispatch --output matrix.json
-          - id: set-matrix
-            run: echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
-      
-      process:
-        needs: dispatch
-        strategy:
-          matrix: \${{ fromJson(needs.dispatch.outputs.matrix) }}
+  to a file. The matrix can be used in workflow job strategy.
 
 EXAMPLES
-  # Basic usage with environment variables
-  export GITHUB_TOKEN=ghp_xxx
-  export GITHUB_REPOSITORY=owner/repo
-  foundry dispatch
+  # Label-based dispatch (default)
+  foundry dispatch --label queue
 
-  # With explicit arguments
-  foundry dispatch --owner iota-uz --repo foundry --token ghp_xxx
+  # Project-based dispatch
+  foundry dispatch --source project --project-owner iota-uz --project-number 14
+
+  # Project dispatch with custom status
+  foundry dispatch --source project --project-owner iota-uz --project-number 14 \\
+    --ready-status "Ready" --in-progress "In Progress"
 
   # With max concurrent limit
-  foundry dispatch --max-concurrent 5 --verbose
+  foundry dispatch --source project --project-number 14 --max-concurrent 5
 
-  # Output to file
-  foundry dispatch -o matrix.json
+  # Dry run (don't update status)
+  foundry dispatch --source project --project-number 14 --dry-run --verbose
 `);
+}
+
+/**
+ * Build workflow config from CLI args
+ */
+function buildWorkflowConfig(args: CliArgs): DispatchWorkflowConfig {
+  // Get token from args or environment
+  const token = args.token ?? process.env['GITHUB_TOKEN'];
+  if (!token) {
+    throw new DispatchError(
+      'GitHub token is required. Set GITHUB_TOKEN or use --token',
+      'INVALID_CONFIG'
+    );
+  }
+
+  // Get owner/repo from GITHUB_REPOSITORY or CLI args
+  let owner = args.owner;
+  let repo = args.repo;
+
+  // Parse from GITHUB_REPOSITORY (owner/repo format)
+  if ((!owner || !repo) && process.env['GITHUB_REPOSITORY']) {
+    const parts = process.env['GITHUB_REPOSITORY'].split('/');
+    if (parts.length === 2) {
+      owner = owner ?? parts[0];
+      repo = repo ?? parts[1];
+    }
+  }
+
+  if (!owner) {
+    throw new DispatchError(
+      'Repository owner is required. Set GITHUB_REPOSITORY or use --owner',
+      'INVALID_CONFIG'
+    );
+  }
+
+  if (!repo) {
+    throw new DispatchError(
+      'Repository name is required. Set GITHUB_REPOSITORY or use --repo',
+      'INVALID_CONFIG'
+    );
+  }
+
+  const sourceType = args.source ?? 'label';
+
+  // Validate project source config
+  if (sourceType === 'project') {
+    const projectOwner = args.projectOwner ?? owner;
+    const projectNumber = args.projectNumber;
+
+    if (!projectNumber) {
+      throw new DispatchError(
+        'Project number is required for project source. Use --project-number',
+        'INVALID_CONFIG'
+      );
+    }
+
+    const config: DispatchWorkflowConfig = {
+      sourceType: 'project',
+      token,
+      owner,
+      repo,
+      projectOwner,
+      projectNumber,
+      verbose: args.verbose,
+      dryRun: args.dryRun,
+    };
+
+    if (args.readyStatus !== undefined) config.readyStatus = args.readyStatus;
+    if (args.inProgressStatus !== undefined) config.inProgressStatus = args.inProgressStatus;
+    if (args.maxConcurrent !== undefined) config.maxConcurrent = args.maxConcurrent;
+
+    return config;
+  }
+
+  // Label source config
+  const config: DispatchWorkflowConfig = {
+    sourceType: 'label',
+    token,
+    owner,
+    repo,
+    verbose: args.verbose,
+    dryRun: args.dryRun,
+  };
+
+  if (args.label !== undefined) config.label = args.label;
+  if (args.maxConcurrent !== undefined) config.maxConcurrent = args.maxConcurrent;
+
+  return config;
 }
 
 /**
@@ -272,16 +414,17 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   }
 
   try {
-    const config = buildConfig(args);
-    const result = await dispatch(config);
+    // Use new workflow for all sources
+    const workflowConfig = buildWorkflowConfig(args);
+    const result = await runDispatchWorkflow(workflowConfig);
 
     // Print summary
     console.log(formatResultSummary(result));
 
     // Write to output file if specified
-    if (config.outputFile) {
-      await writeMatrixToFile(result.matrix, config.outputFile);
-      console.log(`\nMatrix written to: ${config.outputFile}`);
+    if (args.output) {
+      await writeMatrixToFile(result.matrix, args.output);
+      console.log(`\nMatrix written to: ${args.output}`);
     }
 
     // Set GitHub Actions output
@@ -290,7 +433,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
     }
 
     // Exit with error if no ready issues and not dry run
-    if (result.readyIssues.length === 0 && !config.dryRun) {
+    if (result.readyIssues.length === 0 && !args.dryRun) {
       console.log('\nNo issues ready for execution.');
       process.exit(0);
     }

@@ -22,6 +22,8 @@ export type {
   UpdateFieldsRequest,
   UpdateFieldsResult,
   FieldUpdateResult,
+  ProjectItemWithFields,
+  FetchItemsByStatusRequest,
 } from './types';
 
 export { ProjectsError } from './types';

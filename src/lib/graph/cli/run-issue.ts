@@ -6,14 +6,17 @@
  *   bun run src/lib/graph/cli/run-issue.ts --issue <number> [options]
  *
  * Options:
- *   --issue <number>     GitHub issue number (required)
- *   --owner <owner>      Repository owner (from GITHUB_REPOSITORY)
- *   --repo <repo>        Repository name (from GITHUB_REPOSITORY)
- *   --base-branch <br>   Target branch for PRs (default: main)
- *   --state-dir <dir>    State directory (default: .graph-state)
- *   --dry-run            Print workflow config without executing
- *   --verbose            Enable verbose logging
- *   --help               Show help
+ *   --issue <number>         GitHub issue number (required)
+ *   --owner <owner>          Repository owner (from GITHUB_REPOSITORY)
+ *   --repo <repo>            Repository name (from GITHUB_REPOSITORY)
+ *   --base-branch <br>       Target branch for PRs (default: main)
+ *   --project-owner <owner>  Project owner for status updates (optional)
+ *   --project-number <n>     Project number for status updates (optional)
+ *   --done-status <status>   Status to set when complete (default: Done)
+ *   --state-dir <dir>        State directory (default: .graph-state)
+ *   --dry-run                Print workflow config without executing
+ *   --verbose                Enable verbose logging
+ *   --help                   Show help
  *
  * Environment Variables:
  *   GITHUB_TOKEN         GitHub personal access token (for gh CLI)
@@ -26,7 +29,8 @@
 import { GraphEngine } from '../engine';
 import { createInitialWorkflowState, type WorkflowState } from '../schema';
 import { issueProcessorWorkflow, type IssueContext } from '../workflows/issue-processor.workflow';
-import { createNodeRuntimes } from './utils';
+import { createNodeRuntimes, NodeAdapter } from './utils';
+import { SetDoneStatusNodeRuntime } from '../nodes';
 
 // ============================================================================
 // CLI Arguments
@@ -37,6 +41,9 @@ interface CliArgs {
   owner?: string;
   repo?: string;
   baseBranch: string;
+  projectOwner?: string;
+  projectNumber?: number;
+  doneStatus?: string;
   stateDir: string;
   dryRun: boolean;
   verbose: boolean;
@@ -83,6 +90,27 @@ function parseArgs(args: string[]): CliArgs {
           i++;
         }
         break;
+      case '--project-owner':
+        if (nextArg && !nextArg.startsWith('-')) {
+          result.projectOwner = nextArg;
+          i++;
+        }
+        break;
+      case '--project-number':
+        if (nextArg && !nextArg.startsWith('-')) {
+          const num = parseInt(nextArg, 10);
+          if (!isNaN(num) && num > 0) {
+            result.projectNumber = num;
+          }
+          i++;
+        }
+        break;
+      case '--done-status':
+        if (nextArg && !nextArg.startsWith('-')) {
+          result.doneStatus = nextArg;
+          i++;
+        }
+        break;
       case '--state-dir':
         if (nextArg && !nextArg.startsWith('-')) {
           result.stateDir = nextArg;
@@ -119,14 +147,17 @@ USAGE
   bun run src/lib/graph/cli/run-issue.ts --issue <number> [options]
 
 OPTIONS
-  --issue, -i <number>   GitHub issue number (required)
-  --owner <owner>        Repository owner (from GITHUB_REPOSITORY)
-  --repo <repo>          Repository name (from GITHUB_REPOSITORY)
-  --base-branch, -b <br> Target branch for PRs (default: main)
-  --state-dir <dir>      State directory (default: .graph-state)
-  --dry-run              Print workflow config without executing
-  --verbose, -v          Enable verbose logging
-  --help, -h             Show this help message
+  --issue, -i <number>         GitHub issue number (required)
+  --owner <owner>              Repository owner (from GITHUB_REPOSITORY)
+  --repo <repo>                Repository name (from GITHUB_REPOSITORY)
+  --base-branch, -b <br>       Target branch for PRs (default: main)
+  --project-owner <owner>      Project owner for status updates (optional)
+  --project-number <n>         Project number for status updates (optional)
+  --done-status <status>       Status to set when complete (default: Done)
+  --state-dir <dir>            State directory (default: .graph-state)
+  --dry-run                    Print workflow config without executing
+  --verbose, -v                Enable verbose logging
+  --help, -h                   Show this help message
 
 ENVIRONMENT VARIABLES
   GITHUB_TOKEN           GitHub personal access token (for gh CLI)
@@ -141,6 +172,9 @@ EXAMPLES
 
   # With explicit repository and base branch
   bun run src/lib/graph/cli/run-issue.ts --issue 123 --owner my-org --repo my-repo --base-branch develop
+
+  # With project status updates
+  bun run src/lib/graph/cli/run-issue.ts --issue 123 --project-owner iota-uz --project-number 14
 
   # Dry run to see configuration
   bun run src/lib/graph/cli/run-issue.ts --issue 123 --dry-run
@@ -259,6 +293,11 @@ async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
     console.log(`  Base Branch: ${args.baseBranch}`);
     console.log(`  State Dir: ${args.stateDir}`);
     console.log(`  Dry Run: ${args.dryRun}`);
+    if (args.projectOwner || args.projectNumber) {
+      console.log(`  Project Owner: ${args.projectOwner || 'N/A'}`);
+      console.log(`  Project Number: ${args.projectNumber || 'N/A'}`);
+      console.log(`  Done Status: ${args.doneStatus || 'Done'}`);
+    }
     if (actionsRunUrl) {
       console.log(`  Actions URL: ${actionsRunUrl}`);
     }
@@ -297,9 +336,19 @@ async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
     repository,
     baseBranch: args.baseBranch,
   };
-  // Add actionsRunUrl only if defined
+
+  // Add optional properties only if defined
   if (actionsRunUrl) {
     context.actionsRunUrl = actionsRunUrl;
+  }
+  if (args.projectOwner) {
+    context.projectOwner = args.projectOwner;
+  }
+  if (args.projectNumber) {
+    context.projectNumber = args.projectNumber;
+  }
+  if (args.doneStatus) {
+    context.doneStatus = args.doneStatus;
   }
 
   // Create properly typed state
@@ -322,6 +371,20 @@ async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
 
   // Create node runtimes from workflow definition
   const nodes = createNodeRuntimes(workflow);
+
+  // Inject SetDoneStatusNodeRuntime if project configuration is provided
+  // This replaces the placeholder eval node with the actual implementation
+  // that uses ProjectsClient for type-safe GraphQL operations
+  if (args.projectOwner && args.projectNumber) {
+    const setDoneStatusRuntime = new SetDoneStatusNodeRuntime<IssueContext>({
+      verbose: args.verbose,
+      next: () => 'REPORT',
+    });
+    nodes['SET_DONE_STATUS'] = new NodeAdapter('SET_DONE_STATUS', setDoneStatusRuntime);
+    if (args.verbose) {
+      console.log('Injected SetDoneStatusNodeRuntime for project status updates');
+    }
+  }
 
   // Create and run engine
   console.log('\nStarting workflow...');
