@@ -8,26 +8,26 @@ description: 'Routing between workflow nodes'
 
 # Transitions
 
-Transitions determine the flow between nodes in your workflow.
+Transitions determine the flow between nodes in your workflow. All transitions are functions that return the next node name.
 
-## Static Transitions
+## Basic Transitions
 
-A fixed string specifying the next node:
+Use arrow functions for simple, static transitions:
 
 ```typescript
-nodes.AgentNode({
+schema.agent('PLAN', {
   role: 'planner',
-  system: 'Create a plan.',
-  then: 'IMPLEMENT',  // Always go to IMPLEMENT
+  prompt: 'Create a plan.',
+  then: () => 'IMPLEMENT',  // Always go to IMPLEMENT
 });
 ```
 
 ## Dynamic Transitions
 
-A function that inspects state and returns the next node:
+For conditional routing, use the `state` parameter:
 
 ```typescript
-nodes.CommandNode({
+schema.command('TEST', {
   command: 'bun test',
   then: (state) => {
     if (state.context.lastCommandResult?.exitCode === 0) {
@@ -41,31 +41,61 @@ nodes.CommandNode({
 ### Type Signature
 
 ```typescript
-type Transition<TContext> =
-  | string
-  | ((state: WorkflowState<TContext>) => string);
+type Transition<TNodeNames, TContext> =
+  (state: WorkflowState<TContext>) => TNodeNames | SpecialNode;
 ```
 
-## Special Nodes
+## SpecialNode Enum
 
-### END Node
-
-The reserved `'END'` string terminates the workflow:
+The `SpecialNode` enum provides typed terminal states:
 
 ```typescript
-then: 'END'  // Workflow completes successfully
-```
+import { SpecialNode } from '@sys/graph';
 
-### Starting Node
+enum SpecialNode {
+  /** Workflow terminates successfully */
+  End = 'END',
 
-The first defined node is the entry point:
-
-```typescript
-nodes: {
-  INIT: nodes.CommandNode({ ... }),    // This is the starting node
-  PROCESS: nodes.AgentNode({ ... }),
-  DONE: nodes.CommandNode({ ... }),
+  /** Workflow terminates with error state */
+  Error = 'ERROR',
 }
+```
+
+### Using SpecialNode
+
+```typescript
+// Successful completion
+schema.command('FINALIZE', {
+  command: 'git push',
+  then: () => SpecialNode.End,
+});
+
+// Error termination
+schema.eval('CHECK_CRITICAL', {
+  update: (state) => ({ ... }),
+  then: (state) => {
+    if (state.context.criticalFailure) {
+      return SpecialNode.Error;  // Workflow fails
+    }
+    return 'CONTINUE';
+  },
+});
+```
+
+The engine handles these differently:
+- `SpecialNode.End` → `status: WorkflowStatus.Completed`
+- `SpecialNode.Error` → `status: WorkflowStatus.Failed`
+
+## Starting Node
+
+The first defined node in the array is the entry point:
+
+```typescript
+nodes: [
+  schema.command('INIT', { ... }),    // This is the starting node
+  schema.agent('PROCESS', { ... }),
+  schema.command('DONE', { ... }),
+]
 ```
 
 ## Transition Patterns
@@ -75,11 +105,11 @@ nodes: {
 Simple sequential execution:
 
 ```typescript
-nodes: {
-  STEP_1: nodes.CommandNode({ command: 'setup', then: 'STEP_2' }),
-  STEP_2: nodes.AgentNode({ role: 'worker', then: 'STEP_3' }),
-  STEP_3: nodes.CommandNode({ command: 'cleanup', then: 'END' }),
-}
+nodes: [
+  schema.command('STEP_1', { command: 'setup', then: () => 'STEP_2' }),
+  schema.agent('STEP_2', { role: 'worker', then: () => 'STEP_3' }),
+  schema.command('STEP_3', { command: 'cleanup', then: () => SpecialNode.End }),
+]
 ```
 
 ### Conditional Branching
@@ -87,8 +117,8 @@ nodes: {
 Route based on results:
 
 ```typescript
-nodes: {
-  BUILD: nodes.CommandNode({
+nodes: [
+  schema.command('BUILD', {
     command: 'bun build',
     then: (state) => {
       if (state.context.lastCommandResult?.success) {
@@ -98,14 +128,14 @@ nodes: {
     },
   }),
 
-  FIX_BUILD: nodes.AgentNode({
+  schema.agent('FIX_BUILD', {
     role: 'debugger',
-    system: 'Fix the build errors.',
-    then: 'BUILD',  // Loop back
+    prompt: 'Fix the build errors.',
+    then: () => 'BUILD',  // Loop back
   }),
 
-  TEST: nodes.CommandNode({ command: 'bun test', then: 'END' }),
-}
+  schema.command('TEST', { command: 'bun test', then: () => SpecialNode.End }),
+]
 ```
 
 ### Multi-way Branching
@@ -113,30 +143,23 @@ nodes: {
 Multiple possible outcomes:
 
 ```typescript
-nodes: {
-  ANALYZE: nodes.AgentNode({
-    role: 'analyzer',
-    system: 'Classify the issue type.',
-    then: (state) => {
-      const type = state.context.issueType;
-      switch (type) {
-        case 'bug':
-          return 'FIX_BUG';
-        case 'feature':
-          return 'IMPLEMENT_FEATURE';
-        case 'docs':
-          return 'UPDATE_DOCS';
-        default:
-          return 'MANUAL_REVIEW';
-      }
-    },
-  }),
-
-  FIX_BUG: nodes.AgentNode({ ... }),
-  IMPLEMENT_FEATURE: nodes.AgentNode({ ... }),
-  UPDATE_DOCS: nodes.AgentNode({ ... }),
-  MANUAL_REVIEW: nodes.SlashCommandNode({ ... }),
-}
+schema.agent('ANALYZE', {
+  role: 'analyzer',
+  prompt: 'Classify the issue type.',
+  then: (state) => {
+    const type = state.context.issueType;
+    switch (type) {
+      case 'bug':
+        return 'FIX_BUG';
+      case 'feature':
+        return 'IMPLEMENT_FEATURE';
+      case 'docs':
+        return 'UPDATE_DOCS';
+      default:
+        return 'MANUAL_REVIEW';
+    }
+  },
+}),
 ```
 
 ### Loop with Counter
@@ -149,29 +172,27 @@ interface MyContext {
   maxRetries: number;
 }
 
-nodes: {
-  ATTEMPT: nodes.CommandNode({
+nodes: [
+  schema.command('ATTEMPT', {
     command: 'deploy.sh',
     then: (state) => {
       if (state.context.lastCommandResult?.success) {
         return 'VERIFY';
       }
       if (state.context.retryCount >= state.context.maxRetries) {
-        return 'FAILED';
+        return SpecialNode.Error;  // Give up after max retries
       }
       return 'INCREMENT_RETRY';
     },
   }),
 
-  INCREMENT_RETRY: nodes.AgentNode({
-    role: 'counter',
-    system: 'Increment retryCount in context.',
-    then: 'ATTEMPT',
+  schema.eval('INCREMENT_RETRY', {
+    update: (state) => ({ retryCount: state.context.retryCount + 1 }),
+    then: () => 'ATTEMPT',
   }),
 
-  VERIFY: nodes.CommandNode({ ... }),
-  FAILED: nodes.SlashCommandNode({ ... }),
-}
+  schema.command('VERIFY', { command: 'verify.sh', then: () => SpecialNode.End }),
+]
 ```
 
 ### Error Recovery
@@ -179,71 +200,78 @@ nodes: {
 Handle failures gracefully:
 
 ```typescript
-nodes: {
-  RISKY_OPERATION: nodes.CommandNode({
-    command: 'risky-script.sh',
-    throwOnError: false,  // Don't throw, check in transition
-    then: (state) => {
-      const result = state.context.lastCommandResult;
-      if (result?.success) {
-        return 'SUCCESS';
-      }
-      if (result?.stderr?.includes('recoverable')) {
-        return 'RECOVER';
-      }
-      return 'FATAL_ERROR';
-    },
-  }),
+schema.command('RISKY_OPERATION', {
+  command: 'risky-script.sh',
+  throwOnError: false,  // Don't throw, check in transition
+  then: (state) => {
+    const result = state.context.lastCommandResult;
+    if (result?.success) {
+      return 'SUCCESS';
+    }
+    if (result?.stderr?.includes('recoverable')) {
+      return 'RECOVER';
+    }
+    return SpecialNode.Error;  // Unrecoverable error
+  },
+}),
 
-  RECOVER: nodes.AgentNode({
-    role: 'recovery',
-    system: 'Attempt to recover from the error.',
-    then: 'RISKY_OPERATION',
-  }),
+schema.agent('RECOVER', {
+  role: 'recovery',
+  prompt: 'Attempt to recover from the error.',
+  then: () => 'RISKY_OPERATION',
+}),
 
-  SUCCESS: nodes.CommandNode({ ... }),
-  FATAL_ERROR: nodes.SlashCommandNode({ ... }),
-}
+schema.command('SUCCESS', { command: 'celebrate.sh', then: () => SpecialNode.End }),
 ```
 
 ## Best Practices
 
-### 1. Use Descriptive Node Names
+### 1. Use Arrow Functions for Static Transitions
+
+```typescript
+// Good: clear intent, consistent style
+then: () => 'NEXT_NODE'
+
+// Also good for conditional
+then: (state) => state.context.done ? SpecialNode.End : 'CONTINUE'
+```
+
+### 2. Use Descriptive Node Names
 
 ```typescript
 // Good
-nodes: {
-  VALIDATE_INPUT: ...,
-  TRANSFORM_DATA: ...,
-  SAVE_RESULTS: ...,
-}
+nodes: [
+  schema.eval('VALIDATE_INPUT', ...),
+  schema.agent('TRANSFORM_DATA', ...),
+  schema.command('SAVE_RESULTS', ...),
+]
 
 // Avoid
-nodes: {
-  STEP_1: ...,
-  STEP_2: ...,
-  STEP_3: ...,
-}
+nodes: [
+  schema.eval('STEP_1', ...),
+  schema.agent('STEP_2', ...),
+  schema.command('STEP_3', ...),
+]
 ```
 
-### 2. Guard Against Missing Data
+### 3. Guard Against Missing Data
 
 ```typescript
 then: (state) => {
   // Defensive check
   const result = state.context.lastCommandResult;
   if (!result) {
-    return 'ERROR_NO_RESULT';
+    return SpecialNode.Error;
   }
   return result.success ? 'NEXT' : 'RETRY';
 }
 ```
 
-### 3. Keep Transitions Pure
+### 4. Keep Transitions Pure
 
 ```typescript
 // Good: pure function, no side effects
-then: (state) => state.context.done ? 'END' : 'CONTINUE'
+then: (state) => state.context.done ? SpecialNode.End : 'CONTINUE'
 
 // Avoid: side effects in transition
 then: (state) => {
@@ -253,7 +281,7 @@ then: (state) => {
 }
 ```
 
-### 4. Document Complex Logic
+### 5. Document Complex Logic
 
 ```typescript
 then: (state) => {
@@ -264,13 +292,13 @@ then: (state) => {
   const result = state.context.lastCommandResult;
 
   if (result?.stderr?.includes('CRITICAL')) {
-    return 'FATAL_ERROR';
+    return SpecialNode.Error;
   }
 
   if (!result?.success && state.context.retryCount < 3) {
     return 'RETRY';
   }
 
-  return result?.success ? 'CONTINUE' : 'GIVE_UP';
+  return result?.success ? 'CONTINUE' : SpecialNode.Error;
 }
 ```

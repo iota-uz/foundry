@@ -22,7 +22,7 @@ The Graph API provides **compile-time type safety** for workflow definitions. Tr
 ## Quick Start
 
 ```typescript
-import { defineNodes, defineWorkflow, StdlibTool, AgentModel } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool, AgentModel, SpecialNode } from '@sys/graph';
 
 // 1. Define your context type
 interface MyContext extends Record<string, unknown> {
@@ -53,7 +53,7 @@ export default defineWorkflow({
       prompt: 'Create a development plan for the request.',
       capabilities: [StdlibTool.Read, StdlibTool.Glob],
       model: AgentModel.Sonnet,
-      then: 'IMPLEMENT',  // TypeScript validates this!
+      then: () => 'IMPLEMENT',  // TypeScript validates this!
     }),
 
     schema.agent('IMPLEMENT', {
@@ -71,7 +71,7 @@ export default defineWorkflow({
     schema.slashCommand('COMMIT', {
       command: 'commit',
       args: 'Implement feature with tests',
-      then: 'END',  // END is always valid
+      then: () => SpecialNode.End,  // Terminal state
     }),
   ],
 });
@@ -87,7 +87,7 @@ The schema defines all valid node names upfront, enabling TypeScript to validate
 // The `as const` is required for literal type inference
 const schema = defineNodes<MyContext>()(['NODE_A', 'NODE_B', 'NODE_C'] as const);
 
-// TypeScript now knows the valid transitions are: 'NODE_A' | 'NODE_B' | 'NODE_C' | 'END'
+// TypeScript knows valid transitions are: 'NODE_A' | 'NODE_B' | 'NODE_C' | SpecialNode
 ```
 
 ### 2. Node Factories
@@ -120,26 +120,26 @@ nodes: [
 
 ### 4. Type-Safe Transitions
 
-Transitions are validated at compile time:
+All transitions are functions. Use arrow functions for static routing:
 
 ```typescript
 schema.agent('PLAN', {
   // ...
-  then: 'IMPLEMENT',     // ✅ Valid - IMPLEMENT is in schema
-  then: 'INVALID_NODE',  // ❌ TypeScript error!
-  then: 'END',           // ✅ Valid - END is always allowed
+  then: () => 'IMPLEMENT',     // ✅ Valid - IMPLEMENT is in schema
+  then: () => 'INVALID_NODE',  // ❌ TypeScript error!
+  then: () => SpecialNode.End, // ✅ Valid - terminal state
 })
 ```
 
-Dynamic transitions also benefit from type checking:
+Dynamic transitions for conditional routing:
 
 ```typescript
 schema.agent('PROCESS', {
   // ...
-  then: (state): 'TEST' | 'RETRY' | 'END' => {
+  then: (state) => {
     if (state.context.success) return 'TEST';
     if (state.context.retries < 3) return 'RETRY';
-    return 'END';
+    return SpecialNode.Error;  // Workflow fails
   }
 })
 ```
@@ -226,6 +226,31 @@ WorkflowStatus.Failed     // Error occurred
 WorkflowStatus.Paused     // Paused, can resume
 ```
 
+### SpecialNode
+
+Terminal states for workflow transitions:
+
+```typescript
+import { SpecialNode } from '@sys/graph';
+
+SpecialNode.End    // Workflow terminates successfully → WorkflowStatus.Completed
+SpecialNode.Error  // Workflow terminates with failure → WorkflowStatus.Failed
+```
+
+Use in transitions:
+
+```typescript
+schema.command('DEPLOY', {
+  command: 'deploy.sh',
+  then: (state) => {
+    if (state.context.lastCommandResult?.success) {
+      return SpecialNode.End;    // Success!
+    }
+    return SpecialNode.Error;    // Failed deployment
+  },
+});
+```
+
 ---
 
 ## Node Types
@@ -242,7 +267,7 @@ schema.agent('NODE_NAME', {
   model?: AgentModel;     // Optional: Model selection (default: Sonnet)
   maxTurns?: number;      // Optional: Max conversation turns
   temperature?: number;   // Optional: Generation temperature (0-1)
-  then: Transition;       // Required: Next node
+  then: () => NodeName | SpecialNode;  // Required: Transition function
 })
 ```
 
@@ -257,7 +282,7 @@ schema.command('NODE_NAME', {
   env?: Record<string, string>;  // Optional: Environment variables
   timeout?: number;       // Optional: Timeout in ms
   throwOnError?: boolean; // Optional: Throw on non-zero exit
-  then: Transition;       // Required: Next node
+  then: () => NodeName | SpecialNode;  // Required: Transition function
 })
 ```
 
@@ -269,7 +294,7 @@ Claude Code slash commands:
 schema.slashCommand('NODE_NAME', {
   command: string;        // Required: Command without /
   args: string;           // Required: Command arguments
-  then: Transition;       // Required: Next node
+  then: () => NodeName | SpecialNode;  // Required: Transition function
 })
 ```
 
@@ -279,8 +304,8 @@ Pure context transformation (no LLM):
 
 ```typescript
 schema.eval('NODE_NAME', {
-  update: (state) => Partial<Context>;  // Required: Transform function
-  then: Transition;                      // Required: Next node
+  update: (state) => Partial<Context>;         // Required: Transform function
+  then: () => NodeName | SpecialNode;          // Required: Transition function
 })
 ```
 
@@ -291,7 +316,7 @@ schema.eval('INCREMENT', {
   update: (state) => ({
     counter: state.context.counter + 1,
   }),
-  then: (state) => state.context.counter < 5 ? 'INCREMENT' : 'DONE',
+  then: (state) => state.context.counter < 5 ? 'INCREMENT' : SpecialNode.End,
 })
 ```
 
@@ -307,7 +332,7 @@ schema.dynamicAgent('NODE_NAME', {
   capabilities?: Dynamic<ToolReference[]>;  // Optional
   maxTurns?: Dynamic<number>;    // Optional
   temperature?: Dynamic<number>; // Optional
-  then: Transition;              // Required: Next node
+  then: () => NodeName | SpecialNode;  // Required: Transition function
 })
 ```
 
@@ -319,7 +344,7 @@ schema.dynamicAgent('EXECUTE_TASK', {
     ? AgentModel.Opus
     : AgentModel.Haiku,
   prompt: (state) => state.context.currentTask.instructions,
-  then: 'NEXT_TASK',
+  then: () => 'NEXT_TASK',
 })
 ```
 
@@ -333,7 +358,7 @@ schema.dynamicCommand('NODE_NAME', {
   cwd?: Dynamic<string>;         // Optional
   env?: Dynamic<Record<string, string>>;  // Optional
   timeout?: Dynamic<number>;     // Optional
-  then: Transition;              // Required: Next node
+  then: () => NodeName | SpecialNode;  // Required: Transition function
 })
 ```
 
@@ -353,7 +378,7 @@ createHttpNode({
   timeout?: number;                    // Default: 30000ms
   throwOnError?: boolean;              // Default: true
   resultKey?: string;                  // Default: 'lastHttpResult'
-  then: Transition;
+  then: () => NodeName | SpecialNode;  // Transition function
 })
 ```
 
@@ -376,7 +401,7 @@ new LLMNodeRuntime({
   maxTokens?: number;                  // Default: 4096
   reasoningEffort?: 'low' | 'medium' | 'high';  // Future
   resultKey?: string;                  // Default: 'lastLLMResult'
-  then: Transition;
+  then: () => NodeName | SpecialNode;  // Transition function
 })
 ```
 
@@ -400,7 +425,7 @@ createGitHubProjectNode({
   issueNumberKey?: string;             // Or read from context
   throwOnError?: boolean;              // Default: true
   resultKey?: string;                  // Default: 'lastProjectResult'
-  then: Transition;
+  then: () => NodeName | SpecialNode;  // Transition function
 })
 ```
 
@@ -433,7 +458,7 @@ schema.agent('TEST', {
   role: 'tester',
   prompt: 'Run the tests.',
   capabilities: [StdlibTool.Read, runTestsTool],
-  then: 'END',
+  then: () => SpecialNode.End,
 })
 ```
 
@@ -521,6 +546,7 @@ import {
   defineWorkflow,
   StdlibTool,
   AgentModel,
+  SpecialNode,
   createInitialWorkflowState,
   type InlineTool,
   type WorkflowState,
@@ -571,20 +597,20 @@ export const workflow = defineWorkflow({
       prompt: 'Analyze the issue and create a development plan.',
       capabilities: [StdlibTool.Read, StdlibTool.Grep],
       model: AgentModel.Sonnet,
-      then: 'IMPLEMENT',
+      then: () => 'IMPLEMENT',
     }),
 
     schema.agent('IMPLEMENT', {
       role: 'developer',
       prompt: 'Implement the planned tasks.',
       capabilities: [StdlibTool.Read, StdlibTool.Write, runTestsTool],
-      then: (state): NodeName | 'END' =>
+      then: (state): NodeName | SpecialNode =>
         state.context.allTasksDone ? 'TEST' : 'IMPLEMENT',
     }),
 
     schema.command('TEST', {
       command: 'bun test',
-      then: (state): NodeName | 'END' =>
+      then: (state): NodeName | SpecialNode =>
         state.context.testsPassed ? 'COMMIT' : 'FIX',
     }),
 
@@ -592,14 +618,14 @@ export const workflow = defineWorkflow({
       update: (state) => ({
         fixAttempts: state.context.fixAttempts + 1
       }),
-      then: (state): NodeName | 'END' =>
-        state.context.fixAttempts >= 3 ? 'END' : 'IMPLEMENT',
+      then: (state): NodeName | SpecialNode =>
+        state.context.fixAttempts >= 3 ? SpecialNode.Error : 'IMPLEMENT',
     }),
 
     schema.slashCommand('COMMIT', {
       command: 'commit',
       args: 'Implement feature with passing tests',
-      then: 'END',
+      then: () => SpecialNode.End,
     }),
   ],
 });

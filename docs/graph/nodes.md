@@ -15,7 +15,7 @@ The Graph Engine provides built-in node types for common workflow operations. No
 Define nodes using `defineNodes` and a typed schema:
 
 ```typescript
-import { defineNodes, defineWorkflow, StdlibTool, AgentModel, END_NODE } from '@sys/graph';
+import { defineNodes, defineWorkflow, StdlibTool, AgentModel, SpecialNode } from '@sys/graph';
 
 // Define context type
 interface MyContext extends Record<string, unknown> {
@@ -36,16 +36,16 @@ export default defineWorkflow({
       role: 'architect',
       prompt: 'Create an implementation plan...',
       capabilities: [StdlibTool.Read, StdlibTool.Glob],
-      then: 'IMPLEMENT',
+      then: () => 'IMPLEMENT',
     }),
     schema.command('IMPLEMENT', {
       command: 'bun build',
-      then: 'TEST',
+      then: () => 'TEST',
     }),
     schema.slashCommand('TEST', {
       command: 'test',
       args: 'Run all tests',
-      then: END_NODE,
+      then: () => SpecialNode.End,
     }),
   ],
 });
@@ -117,7 +117,7 @@ schema.agent('PLAN', {
   model: AgentModel.Sonnet,       // Model selection (optional)
   maxTurns: 10,                   // Max conversation turns (optional)
   temperature: 0,                 // Generation temperature (optional)
-  then: 'NEXT_NODE',              // Static or dynamic transition
+  then: () => 'NEXT_NODE',        // Transition function
 });
 ```
 
@@ -140,7 +140,7 @@ schema.agent('PLAN', {
   prompt: `You are a Tech Lead. Analyze the request and create a task plan.
 Output a JSON object: { "tasks": ["task1", "task2", ...] }`,
   capabilities: [StdlibTool.Glob, StdlibTool.Read],
-  then: 'IMPLEMENT',
+  then: () => 'IMPLEMENT',
 }),
 ```
 
@@ -159,7 +159,7 @@ schema.command('BUILD', {
   env: { NODE_ENV: 'test' },     // Environment variables (optional)
   timeout: 300000,               // Timeout in ms (default: 5 minutes)
   throwOnError: true,            // Throw on non-zero exit (default: true)
-  then: 'NEXT_NODE',             // Static or dynamic transition
+  then: () => 'NEXT_NODE',       // Transition function
 });
 ```
 
@@ -215,7 +215,7 @@ schema.slashCommand('TEST', {
   throwOnError: true,                 // Throw on failure (default: true)
   model: 'claude-sonnet-4.5',         // Model override (optional)
   additionalContext: 'Focus on...',   // Extra context (optional)
-  then: 'NEXT_NODE',                  // Static or dynamic transition
+  then: () => 'NEXT_NODE',            // Transition function
 });
 ```
 
@@ -281,7 +281,7 @@ schema.eval('INCREMENT', {
   update: (state) => ({           // Pure function returning context updates
     counter: state.context.counter + 1,
   }),
-  then: 'NEXT_NODE',              // Static or dynamic transition
+  then: () => 'NEXT_NODE',        // Transition function
 });
 ```
 
@@ -326,7 +326,7 @@ schema.eval('COLLECT', {
   update: (state) => ({
     results: [...state.context.results, state.context.lastResult],
   }),
-  then: 'NEXT_ITEM',
+  then: () => 'NEXT_ITEM',
 }),
 ```
 
@@ -347,7 +347,7 @@ schema.dynamicAgent('EXECUTE_TASK', {
   maxTurns: 10,                                         // Max agent turns
   temperature: 0,                                       // Generation temperature
   maxTokens: 4096,                                      // Max output tokens
-  then: 'NEXT_TASK',
+  then: () => 'NEXT_TASK',                              // Transition function
 });
 ```
 
@@ -389,7 +389,7 @@ schema.dynamicAgent('EXECUTE_TASK', {
   model: (state) => state.context.currentTask.model,
   prompt: (state) => state.context.currentTask.prompt,
   capabilities: [StdlibTool.Read, StdlibTool.Write, StdlibTool.Bash],
-  then: 'COLLECT_RESULT',
+  then: () => 'COLLECT_RESULT',
 }),
 ```
 
@@ -408,7 +408,7 @@ schema.dynamicCommand('RUN_SCRIPT', {
   env: { NODE_ENV: 'production' },                 // Static or dynamic env
   timeout: 300000,                                 // Timeout in ms
   throwOnError: true,                              // Throw on failure
-  then: 'CHECK_RESULT',
+  then: () => 'CHECK_RESULT',                      // Transition function
 });
 ```
 
@@ -468,7 +468,7 @@ createHttpNode({
   params: { env: 'production' },                    // Query parameters
   timeout: 30000,                                   // Timeout in ms (default: 30s)
   throwOnError: true,                               // Throw on non-2xx
-  then: 'VERIFY',
+  then: () => 'VERIFY',                             // Transition function
 });
 ```
 
@@ -545,7 +545,7 @@ new LLMNodeRuntime({
   temperature: 0,                              // Generation temperature
   maxTokens: 4096,                             // Max output tokens
   reasoningEffort: 'medium',                   // low | medium | high (future)
-  then: 'IMPLEMENT',
+  then: () => 'IMPLEMENT',                     // Transition function
 });
 ```
 
@@ -638,7 +638,7 @@ createGitHubProjectNode({
   throwOnError: true,               // Throw on failure (default: true)
   verbose: false,                   // Enable detailed logging
 
-  then: 'NEXT_NODE',
+  then: () => 'NEXT_NODE',          // Transition function
 });
 ```
 
@@ -689,6 +689,9 @@ interface GitHubProjectResult {
 ### Example: Issue Workflow
 
 ```typescript
+import { defineWorkflow, StdlibTool, SpecialNode } from '@sys/graph';
+import { createGitHubProjectNode } from '@sys/graph/nodes';
+
 const projectConfig = {
   token: process.env.GITHUB_TOKEN!,
   projectOwner: 'acme',
@@ -707,21 +710,21 @@ defineWorkflow<{ issueNumber: number }>({
     createGitHubProjectNode({
       ...projectConfig,
       updates: { type: 'single_select', field: 'Status', value: 'In Progress' },
-      then: 'WORK',
+      then: () => 'WORK',
     }),
 
     schema.agent('WORK', {
       role: 'developer',
       prompt: 'Implement the feature described in the issue.',
       capabilities: [StdlibTool.Read, StdlibTool.Write],
-      then: 'COMPLETE',
+      then: () => 'COMPLETE',
     }),
 
     // Mark as Done
     createGitHubProjectNode({
       ...projectConfig,
       updates: { type: 'single_select', field: 'Status', value: 'Done' },
-      then: END_NODE,
+      then: () => SpecialNode.End,
     }),
   ],
 });
