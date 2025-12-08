@@ -22,7 +22,7 @@ import type {
   GraphContext,
   Transition,
   ToolReference,
-  InlineToolDefinition,
+  InlineTool,
 } from '../../types';
 
 /**
@@ -166,7 +166,7 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
     for (const tool of tools) {
       if (isInlineToolDefinition(tool)) {
         // Convert inline tool definition to SDK format
-        const inlineTool = tool as InlineToolDefinition<unknown>;
+        const inlineTool = tool as InlineTool<unknown>;
         preparedTools.push({
           name: inlineTool.name,
           description: inlineTool.description || inlineTool.name,

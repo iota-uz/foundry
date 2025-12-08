@@ -11,84 +11,144 @@
  *
  * @example
  * ```typescript
- * import { GraphEngine, BaseState, GraphNode } from '@sys/graph';
+ * import { defineNodes, defineWorkflow, StdlibTool, AgentModel } from '@sys/graph';
  *
- * interface MyState extends BaseState {
+ * interface MyContext extends Record<string, unknown> {
  *   counter: number;
  * }
  *
- * const nodes: Record<string, GraphNode<MyState>> = {
- *   start: {
- *     name: 'start',
- *     async execute(state, context) {
- *       // Use the agent to perform AI operations
- *       // The result contains the response and updated conversation history
- *       const { response } = await context.agent.runStep(
- *         state,
- *         'Increment the counter',
- *         []
- *       );
- *       context.logger.info('AI response:', response);
- *       return { counter: state.counter + 1 };
- *     },
- *     next(state) {
- *       return state.counter >= 5 ? 'END' : 'start';
- *     },
- *   },
- * };
+ * const schema = defineNodes<MyContext>()(['INCREMENT', 'CHECK', 'DONE'] as const);
  *
- * const engine = new GraphEngine({
- *   stateDir: './.graph-state',
- *   nodes,
- *   apiKey: process.env.ANTHROPIC_API_KEY!,
+ * export default defineWorkflow({
+ *   id: 'counter-workflow',
+ *   schema,
+ *   initialContext: { counter: 0 },
+ *   nodes: [
+ *     schema.eval('INCREMENT', {
+ *       update: (state) => ({ counter: state.context.counter + 1 }),
+ *       then: 'CHECK'
+ *     }),
+ *     schema.eval('CHECK', {
+ *       update: (state) => state.context,
+ *       then: (state) => state.context.counter >= 5 ? 'DONE' : 'INCREMENT'
+ *     }),
+ *     schema.command('DONE', {
+ *       command: 'echo "Finished!"',
+ *       then: 'END'
+ *     })
+ *   ]
  * });
- *
- * const finalState = await engine.run('my-workflow', {
- *   currentNode: 'start',
- *   status: 'pending',
- *   updatedAt: new Date().toISOString(),
- *   conversationHistory: [],
- *   counter: 0,
- * });
- *
- * console.log('Final counter:', finalState.counter);
  * ```
  */
 
-// Core types
+// ============================================================================
+// Core Runtime Types
+// ============================================================================
+
 export type {
   BaseState,
   GraphNode,
   GraphContext,
   IAgentWrapper,
   GraphEngineConfig,
-  // Workflow config types
-  WorkflowState,
-  WorkflowConfig,
-  NodeDefinition,
-  AgentNodeDefinition,
-  CommandNodeDefinition,
-  SlashCommandNodeDefinition,
-  BaseNodeDefinition,
-  Transition,
-  StaticTransition,
-  DynamicTransition,
-  ToolReference,
-  InlineToolDefinition,
-  LoadedConfig,
-  // Primitive node types
-  EvalNodeDefinition,
-  DynamicAgentNodeDefinition,
-  DynamicCommandNodeDefinition,
-  AgentModel,
-  Dynamic,
   // Message types
   Message,
   StoredMessage,
+  // Config loading
+  LoadedConfig,
 } from './types';
 
 // Config validation error
 export { ConfigValidationError } from './types';
+
+// ============================================================================
+// Workflow Definition API
+// ============================================================================
+
+// Enums
+export {
+  NodeType,
+  StdlibTool,
+  WorkflowStatus,
+  AgentModel,
+  MODEL_IDS,
+  END_NODE,
+} from './enums';
+export type { EndNode } from './enums';
+
+// Schema-based workflow definition
+export {
+  defineNodes,
+  defineWorkflow,
+  createInitialWorkflowState,
+  resolveDynamic,
+} from './schema';
+
+export type {
+  // Core types
+  WorkflowState,
+  WorkflowConfig,
+  NodeSchema,
+  Dynamic,
+  // Tools
+  InlineTool,
+  ToolReference,
+  // Node definitions
+  NodeDef,
+  BaseNodeDef,
+  AgentNodeDef,
+  CommandNodeDef,
+  SlashCommandNodeDef,
+  EvalNodeDef,
+  DynamicAgentNodeDef,
+  DynamicCommandNodeDef,
+  // Node configs
+  AgentNodeConfig,
+  CommandNodeConfig,
+  SlashCommandNodeConfig,
+  EvalNodeConfig,
+  DynamicAgentNodeConfig,
+  DynamicCommandNodeConfig,
+} from './schema';
+
+// Runtime-compatible transition types (single generic argument)
+export type {
+  Transition,
+  StaticTransition,
+  DynamicTransition,
+} from './types';
+
+// ============================================================================
+// Validation
+// ============================================================================
+
+export {
+  validateWorkflow,
+  validateNode,
+  validateRuntimeTransition,
+  validateState,
+  validateSemantics,
+  validateComplete,
+  // Zod schemas
+  NodeTypeSchema,
+  StdlibToolSchema,
+  AgentModelSchema,
+  WorkflowStatusSchema,
+  InlineToolSchema,
+  ToolReferenceSchema,
+  WorkflowStateSchema,
+  createNodeSchema,
+  createWorkflowSchema,
+} from './validation';
+
+export type {
+  ValidationResult,
+  ValidationError,
+} from './validation';
+
+// ============================================================================
+// Runtime Engine
+// ============================================================================
 
 // Main engine
 export { GraphEngine } from './engine';
@@ -115,66 +175,96 @@ export {
   loadConfig,
   validateTransitions,
   validateConfigSchema,
-  validateRuntimeTransition,
+  validateRuntimeTransition as validateRuntimeTransitionLegacy,
   resolveTransition,
 } from './config-loader';
 export type { LoadConfigOptions } from './config-loader';
 
-// Workflow definition API
-export {
-  defineWorkflow,
-  nodes,
-  AgentNode,
-  CommandNode,
-  SlashCommandNode,
-  // Primitive node factories
-  EvalNode,
-  DynamicAgentNode,
-  DynamicCommandNode,
-  createInitialState,
-} from './define-workflow';
-export type {
-  ExtractContext,
-  WorkflowStateOf,
-} from './define-workflow';
+// ============================================================================
+// Standard Library Nodes
+// ============================================================================
 
-// Standard library node implementations
+// Base classes and utilities
 export {
-  // Base
   BaseNode,
   NodeExecutionError,
   isInlineToolDefinition,
-  // Runtime classes
+} from './nodes';
+
+export type {
+  BaseNodeConfig,
+  NodeExecutionResult,
+} from './nodes';
+
+// Runtime node classes
+export {
+  // Claude Code
   AgentNodeRuntime,
-  CommandNodeRuntime,
   SlashCommandNodeRuntime,
-  // Primitive runtime classes
+  createAgentNode,
+  createSlashCommandNode,
+  // General
+  CommandNodeRuntime,
+  HttpNodeRuntime,
+  LLMNodeRuntime,
+  createHttpNode,
+  // GitHub
+  GitHubProjectNodeRuntime,
+  GithubCommentsNodeRuntime,
+  GitHubPRVisualizerNodeRuntime,
+  createGitHubProjectNode,
+  createGithubCommentsNode,
+  createGitHubPRVisualizerNode,
+  // Primitives
   EvalNodeRuntime,
   DynamicAgentNodeRuntime,
   DynamicCommandNodeRuntime,
-  // Factory functions
-  createAgentNode,
-  createSlashCommandNode,
 } from './nodes';
+
 export type {
-  // Base types
-  BaseNodeConfig,
-  NodeExecutionResult,
-  // AgentNode types
-  AgentNodeConfig,
+  // AgentNode
+  AgentNodeConfig as AgentNodeRuntimeConfig,
   StoredMessage as AgentStoredMessage,
-  // CommandNode types
-  CommandNodeConfig,
+  // CommandNode
+  CommandNodeConfig as CommandNodeRuntimeConfig,
   CommandResult,
-  // SlashCommandNode types
-  SlashCommandNodeConfig,
+  // SlashCommandNode
+  SlashCommandNodeConfig as SlashCommandNodeRuntimeConfig,
   SlashCommand,
   SlashCommandResult,
-  // Primitive node types
-  EvalNodeConfig,
+  // HttpNode
+  HttpNodeConfig,
+  HttpResult,
+  // LLMNode
+  LLMNodeConfig,
+  LLMResult,
+  LLMModel,
+  ReasoningEffort,
+  // GitHubProjectNode
+  GitHubProjectNodeConfig,
+  GitHubProjectResult,
+  // GithubCommentsNode
+  GithubCommentsNodeConfig,
+  CommentAction,
+  CommentResult,
+  // GitHubPRVisualizerNode
+  GitHubPRVisualizerNodeConfig,
+  PRVisualizerResult,
+  WorkflowNodeMeta,
+  // Primitives
+  EvalNodeConfig as EvalNodeRuntimeConfig,
   EvalResult,
-  DynamicAgentNodeConfig,
+  DynamicAgentNodeConfig as DynamicAgentNodeRuntimeConfig,
   DynamicAgentResult,
-  DynamicCommandNodeConfig,
+  DynamicCommandNodeConfig as DynamicCommandNodeRuntimeConfig,
   DynamicCommandResult,
 } from './nodes';
+
+// Module namespaces
+export * as github from './nodes/github';
+export * as claudeCode from './nodes/claude-code';
+export * as general from './nodes/general';
+export * as primitives from './nodes/primitives';
+
+// Re-export FieldUpdate type for GitHubProjectNode
+export type { FieldUpdate } from '../github-projects';

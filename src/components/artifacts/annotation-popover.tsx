@@ -7,7 +7,7 @@
  * Shows existing annotations as badges with click-to-view.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Popover, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import {
@@ -37,8 +37,8 @@ interface AnnotationPopoverProps {
 }
 
 export function AnnotationPopover({
-  artifactType,
-  artifactId,
+  artifactType: _artifactType,
+  artifactId: _artifactId,
   lineNumber,
   annotations = [],
   onAddAnnotation,
@@ -51,9 +51,15 @@ export function AnnotationPopover({
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // TODO: WebSocket real-time updates
-  // When implemented, subscribe to annotation updates for this artifact
-  // Example: useEffect(() => {
+  // TODO: WebSocket real-time updates for annotations
+  // Priority: Medium - enhances collaboration but not critical for MVP
+  // Implementation steps:
+  // 1. Set up WebSocket server endpoint for annotation updates
+  // 2. Subscribe to annotation updates for this specific artifact
+  // 3. Handle incoming messages and update local state
+  // 4. Clean up WebSocket connection on unmount
+  // Example implementation:
+  // useEffect(() => {
   //   const ws = new WebSocket(`ws://localhost:3000/annotations/${artifactType}/${artifactId}`);
   //   ws.onmessage = (event) => {
   //     const update = JSON.parse(event.data);
@@ -62,11 +68,27 @@ export function AnnotationPopover({
   //   return () => ws.close();
   // }, [artifactType, artifactId]);
 
-  // Load annotations from API on mount
-  useEffect(() => {
-    // TODO: Implement API call to load annotations
-    // Example: fetchAnnotations(artifactType, artifactId).then(setAnnotations);
-  }, [artifactType, artifactId]);
+  // TODO: Load annotations from API on mount
+  // Priority: High - required for basic annotation functionality
+  // Implementation steps:
+  // 1. Create API endpoint GET /api/annotations?artifactType=X&artifactId=Y
+  // 2. Implement fetchAnnotations service function
+  // 3. Handle loading and error states
+  // 4. Update annotations prop or use local state
+  // Example implementation:
+  // useEffect(() => {
+  //   let mounted = true;
+  //   const loadAnnotations = async () => {
+  //     try {
+  //       const data = await fetchAnnotations(artifactType, artifactId);
+  //       if (mounted) setAnnotations(data);
+  //     } catch (error) {
+  //       console.error('Failed to load annotations:', error);
+  //     }
+  //   };
+  //   loadAnnotations();
+  //   return () => { mounted = false; };
+  // }, [artifactType, artifactId]);
 
   const unresolvedCount = annotations.filter((a) => !a.resolved).length;
 

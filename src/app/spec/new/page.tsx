@@ -23,6 +23,17 @@ export default function NewSpecPage() {
     setError(null);
     setIsSubmitting(true);
 
+    // Validate and trim inputs
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+    const trimmedPath = projectPath.trim();
+
+    if (!trimmedName || !trimmedDescription || !trimmedPath) {
+      setError('All fields are required');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
@@ -30,9 +41,9 @@ export default function NewSpecPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name,
-          description,
-          path: projectPath,
+          name: trimmedName,
+          description: trimmedDescription,
+          path: trimmedPath,
           mode: 'new',
         }),
       });
@@ -184,7 +195,7 @@ export default function NewSpecPage() {
               <Button
                 type="submit"
                 variant="primary"
-                disabled={isSubmitting || !name.trim() || !description.trim()}
+                disabled={isSubmitting || !name.trim() || !description.trim() || !projectPath.trim()}
               >
                 {isSubmitting ? 'Creating...' : 'Start Building Spec'}
               </Button>

@@ -112,35 +112,45 @@ export class HistoryService implements IHistoryService {
    * - Supports filters for artifact type, action, date range, and actor
    * - Case-insensitive search
    *
+   * Current implementation note:
+   * This is a stub implementation that returns an empty array. When implementing,
+   * this should load history from the database and apply filters/search in memory.
+   * For production use with large datasets, consider using SQLite FTS5 for
+   * database-level full-text search with proper indexing and ranking.
+   *
    * Future enhancements (when database grows):
    * - Add database-level full-text search indexes (SQLite FTS5)
    * - Implement search ranking/scoring
    * - Add search highlighting
    * - Support advanced query syntax (AND, OR, NOT, phrases)
+   * - Add pagination for large result sets
+   *
+   * Example SQL with FTS5:
+   * ```sql
+   * CREATE VIRTUAL TABLE history_search USING fts5(
+   *   artifact_id, artifact_type, changes, changed_by, content='history'
+   * );
+   * SELECT * FROM history_search WHERE history_search MATCH ?
+   * ```
    */
   async search(
     query: string,
     filters?: HistoryFilters
   ): Promise<HistoryEntry[]> {
-    // For now, we search across all entries in memory
-    // When the database grows, this should be moved to a database query with FTS5
-    // Example SQL with FTS5:
-    // CREATE VIRTUAL TABLE history_search USING fts5(
-    //   artifact_id, artifact_type, changes, changed_by, content='history'
-    // );
-    // SELECT * FROM history_search WHERE history_search MATCH ?
+    // TODO: Implement full search functionality
+    // Steps to implement:
+    // 1. Load history from database with optional projectId filter
+    //    const allHistory = await this.dbService.getAllHistory(projectId);
+    // 2. Apply filters and search logic below
+    // 3. Consider performance implications for large datasets
+    // 4. Add tests for search functionality
 
+    // Stub: Returns empty array until database integration is complete
     const allHistory: HistoryEntry[] = [];
-
-    // TODO: Load all history from database
-    // This should be replaced with a proper database query
-    // For now, returning empty array as we don't have a project context
 
     if (!query && !filters) {
       return allHistory;
     }
-
-    const searchLower = query.toLowerCase();
 
     // Apply filters and search
     return allHistory.filter((entry) => {
@@ -170,6 +180,7 @@ export class HistoryService implements IHistoryService {
 
       // Full-text search if query provided
       if (query) {
+        const searchLower = query.toLowerCase();
         const artifactIdMatch = entry.artifactId.toLowerCase().includes(searchLower);
         const artifactTypeMatch = entry.artifactType.toLowerCase().includes(searchLower);
         const changesMatch = JSON.stringify(entry.changes)

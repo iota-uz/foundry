@@ -16,16 +16,27 @@ interface ModuleListProps {
 export function ModuleList({ modules, features, isLoading }: ModuleListProps) {
   const [isNewModuleDialogOpen, setIsNewModuleDialogOpen] = useState(false);
 
+  // Render dialog once outside conditional logic
+  const dialogElement = (
+    <NewModuleDialog
+      isOpen={isNewModuleDialogOpen}
+      onClose={() => setIsNewModuleDialogOpen(false)}
+    />
+  );
+
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="h-32 bg-bg-secondary border border-border-default rounded-lg animate-pulse"
-          />
-        ))}
-      </div>
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="h-32 bg-bg-secondary border border-border-default rounded-lg animate-pulse"
+            />
+          ))}
+        </div>
+        {dialogElement}
+      </>
     );
   }
 
@@ -41,10 +52,7 @@ export function ModuleList({ modules, features, isLoading }: ModuleListProps) {
             onClick: () => setIsNewModuleDialogOpen(true),
           }}
         />
-        <NewModuleDialog
-          isOpen={isNewModuleDialogOpen}
-          onClose={() => setIsNewModuleDialogOpen(false)}
-        />
+        {dialogElement}
       </>
     );
   }
@@ -56,10 +64,7 @@ export function ModuleList({ modules, features, isLoading }: ModuleListProps) {
           <ModuleCard key={module.id} module={module} features={features} />
         ))}
       </div>
-      <NewModuleDialog
-        isOpen={isNewModuleDialogOpen}
-        onClose={() => setIsNewModuleDialogOpen(false)}
-      />
+      {dialogElement}
     </>
   );
 }
