@@ -4,11 +4,11 @@
 # through a queue-based execution system.
 #
 # Flow:
-# 1. Orchestrator: Uses dispatch CLI to find ready issues
-# 2. Process: Matrix job runs graph workflow for each ready issue
+# 1. Orchestrator: Uses dispatch workflow to find ready issues
+# 2. Process: Matrix job runs issue-processor workflow for each ready issue
 #
 # Supports two source types:
-# - 'label': Fetch issues by label (default)
+# - 'label': Fetch issues by label
 # - 'project': Fetch issues from GitHub Projects V2 by status column
 #
 # Trigger: Manual (workflow_dispatch) only for initial testing
@@ -21,45 +21,11 @@ on:
       source:
         description: 'Issue source type'
         required: false
-        default: 'label'
+        default: 'project'
         type: choice
         options:
           - label
           - project
-      label:
-        description: 'Issue label (for label source)'
-        required: false
-        default: 'queue'
-        type: string
-      project_owner:
-        description: 'Project owner (for project source)'
-        required: false
-        default: ''
-        type: string
-      project_number:
-        description: 'Project number (for project source)'
-        required: false
-        default: ''
-        type: string
-      ready_status:
-        description: 'Status to filter by (for project source)'
-        required: false
-        default: 'Ready'
-        type: string
-      in_progress_status:
-        description: 'Status to set when processing (for project source)'
-        required: false
-        default: 'In Progress'
-        type: string
-      base_branch:
-        description: 'Target branch for PRs'
-        required: false
-        default: 'main'
-        type: choice
-        options:
-          - main
-          - develop
-          - staging
       max_concurrent:
         description: 'Maximum concurrent issues'
         required: false
@@ -71,6 +37,16 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+
+# Hardcoded project configuration
+env:
+  GRAPH_PROJECT_OWNER: iota-uz
+  GRAPH_PROJECT_NUMBER: '14'
+  GRAPH_READY_STATUS: Ready
+  GRAPH_IN_PROGRESS_STATUS: In Progress
+  GRAPH_DONE_STATUS: Done
+  GRAPH_BASE_BRANCH: main
+  GRAPH_LABEL: queue
 
 jobs:
   # ============================================================================
@@ -95,56 +71,31 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Run dispatch to find ready issues
+      - name: Run dispatch workflow
         id: dispatch
-        run: |
-          # Build dispatch command based on source type
-          DISPATCH_CMD="bun run dispatch --source ${{ inputs.source }}"
-
-          if [ "${{ inputs.source }}" = "project" ]; then
-            # Project source: use project-specific options
-            if [ -n "${{ inputs.project_owner }}" ]; then
-              DISPATCH_CMD="$DISPATCH_CMD --project-owner ${{ inputs.project_owner }}"
-            fi
-            if [ -n "${{ inputs.project_number }}" ]; then
-              DISPATCH_CMD="$DISPATCH_CMD --project-number ${{ inputs.project_number }}"
-            fi
-            if [ -n "${{ inputs.ready_status }}" ]; then
-              DISPATCH_CMD="$DISPATCH_CMD --ready-status \"${{ inputs.ready_status }}\""
-            fi
-            if [ -n "${{ inputs.in_progress_status }}" ]; then
-              DISPATCH_CMD="$DISPATCH_CMD --in-progress \"${{ inputs.in_progress_status }}\""
-            fi
-          else
-            # Label source: use label option
-            DISPATCH_CMD="$DISPATCH_CMD --label \"${{ inputs.label }}\""
-          fi
-
-          # Add common options
-          DISPATCH_CMD="$DISPATCH_CMD --max-concurrent ${{ inputs.max_concurrent }} --output matrix.json --verbose"
-
-          echo "Running: $DISPATCH_CMD"
-          eval $DISPATCH_CMD
-
-          # Read matrix and set output
-          if [ -f matrix.json ]; then
-            echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
-          else
-            echo 'matrix={"include":[]}' >> $GITHUB_OUTPUT
-          fi
+        run: bun run graph dispatch.config.ts --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GRAPH_SOURCE: ${{ inputs.source }}
+          GRAPH_MAX_CONCURRENT: ${{ inputs.max_concurrent }}
+          GRAPH_OUTPUT_FILE: matrix.json
 
       - name: Check if there are issues to process
         id: check
         run: |
-          MATRIX='${{ steps.dispatch.outputs.matrix }}'
-          if [ "$MATRIX" = '{"include":[]}' ] || [ -z "$MATRIX" ]; then
-            echo "has_issues=false" >> $GITHUB_OUTPUT
-            echo "No issues ready for processing"
+          if [ -f matrix.json ]; then
+            MATRIX=$(cat matrix.json)
+            if [ "$MATRIX" = '{"include":[]}' ] || [ -z "$MATRIX" ]; then
+              echo "has_issues=false" >> $GITHUB_OUTPUT
+              echo "No issues ready for processing"
+            else
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+              echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+              echo "Found issues to process"
+            fi
           else
-            echo "has_issues=true" >> $GITHUB_OUTPUT
-            echo "Found issues to process"
+            echo "has_issues=false" >> $GITHUB_OUTPUT
+            echo "No matrix file found"
           fi
 
       - name: Upload matrix artifact
@@ -195,28 +146,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run graph workflow for issue
+      - name: Run issue processor workflow
         id: workflow
-        run: |
-          # Build run-issue command
-          RUN_CMD="bun run src/lib/graph/cli/run-issue.ts --issue ${{ matrix.issue_number }} --base-branch ${{ inputs.base_branch }}"
-
-          # Add project configuration if using project source
-          if [ "${{ inputs.source }}" = "project" ]; then
-            if [ -n "${{ inputs.project_owner }}" ]; then
-              RUN_CMD="$RUN_CMD --project-owner ${{ inputs.project_owner }}"
-            fi
-            if [ -n "${{ inputs.project_number }}" ]; then
-              RUN_CMD="$RUN_CMD --project-number ${{ inputs.project_number }}"
-            fi
-          fi
-
-          RUN_CMD="$RUN_CMD --verbose"
-          echo "Running: $RUN_CMD"
-          eval $RUN_CMD
+        run: bun run graph issue-processor.config.ts --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GRAPH_ISSUE_NUMBER: ${{ matrix.issue_number }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
         continue-on-error: true
@@ -273,15 +209,6 @@ jobs:
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Source | \`${{ inputs.source }}\` |" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ inputs.source }}" = "project" ]; then
-            echo "| Project Owner | \`${{ inputs.project_owner }}\` |" >> $GITHUB_STEP_SUMMARY
-            echo "| Project Number | \`${{ inputs.project_number }}\` |" >> $GITHUB_STEP_SUMMARY
-            echo "| Ready Status | \`${{ inputs.ready_status }}\` |" >> $GITHUB_STEP_SUMMARY
-            echo "| In Progress Status | \`${{ inputs.in_progress_status }}\` |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| Label | \`${{ inputs.label }}\` |" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "| Base Branch | \`${{ inputs.base_branch }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Max Concurrent | ${{ inputs.max_concurrent }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Has Issues | ${{ needs.orchestrate.outputs.has_issues }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

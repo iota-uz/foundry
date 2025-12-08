@@ -7,11 +7,11 @@
  *
  * Commands:
  *   run       Execute atomic workflows
- *   dispatch  Run the GitHub Issue DAG dispatcher
+ *   graph     Run graph workflows (dispatch, issue-processor)
  */
 
 import { main as runMain } from './run';
-import { main as dispatchMain } from '../lib/dispatch/cli';
+import { main as graphMain } from '../lib/graph/cli/run';
 
 /**
  * Show main help message.
@@ -27,8 +27,8 @@ COMMANDS
   run         Execute atomic workflows from configuration
               Loads atomic.config.ts and runs the workflow engine
 
-  dispatch    Run the GitHub Issue DAG dispatcher
-              Analyzes GitHub issues and generates execution matrix
+  graph       Run graph workflows with config file
+              Use: foundry graph <config-file> [--verbose]
 
 OPTIONS
   --help, -h  Show this help message
@@ -43,12 +43,15 @@ EXAMPLES
   # Validate config without executing
   foundry run --dry-run
 
-  # Run dispatcher
-  foundry dispatch --owner iota-uz --repo foundry
+  # Run dispatch workflow
+  GRAPH_SOURCE=project GRAPH_PROJECT_NUMBER=14 foundry graph dispatch.config.ts
+
+  # Run issue processor workflow
+  GRAPH_ISSUE_NUMBER=123 foundry graph issue-processor.config.ts
 
 For command-specific help:
   foundry run --help
-  foundry dispatch --help
+  foundry graph --help
 `);
 }
 
@@ -64,8 +67,8 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       await runMain(commandArgs);
       break;
 
-    case 'dispatch':
-      await dispatchMain(commandArgs);
+    case 'graph':
+      await graphMain(commandArgs);
       break;
 
     case '--help':

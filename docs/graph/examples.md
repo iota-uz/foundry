@@ -517,12 +517,27 @@ function countFunctions(content: string): number {
 ## Running Examples
 
 ```bash
-# Run a workflow
-bun run workflow feature-development --request "Add user auth"
+# Run dispatch workflow (finds ready issues)
+GRAPH_SOURCE=project GRAPH_PROJECT_NUMBER=14 bun run graph dispatch.config.ts
 
-# Resume an interrupted workflow
-bun run workflow feature-development
+# Run issue processor workflow
+GRAPH_ISSUE_NUMBER=123 bun run graph issue-processor.config.ts
 
-# Reset and start fresh
-bun run workflow feature-development --reset
+# With verbose logging
+bun run graph issue-processor.config.ts --verbose
+
+# See all environment variables
+bun run graph --help
+```
+
+Create your own workflow config file to run custom workflows:
+
+```typescript
+// my-workflow.config.ts
+export { myWorkflow as default } from './src/workflows/my-workflow';
+```
+
+Then run it:
+```bash
+bun run graph my-workflow.config.ts
 ```
