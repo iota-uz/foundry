@@ -210,7 +210,6 @@ export class LLMNodeRuntime<
       outputSchema,
       temperature,
       maxTokens,
-      reasoningEffort: _reasoningEffort,
       apiKey,
       throwOnError,
       resultKey,

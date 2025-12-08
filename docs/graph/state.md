@@ -13,12 +13,23 @@ The Graph Engine maintains a single state object that flows through the workflow
 ## WorkflowState Structure
 
 ```typescript
+import { WorkflowStatus } from '@sys/graph';
+
 interface WorkflowState<TContext> {
-  currentNode: string;                    // Active FSM node
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  updatedAt: string;                      // ISO timestamp
-  conversationHistory: Message[];         // AI conversation history
-  context: TContext;                      // User-defined data
+  currentNode: string;           // Active FSM node
+  status: WorkflowStatus;        // Workflow execution status (enum)
+  updatedAt: string;             // ISO timestamp
+  conversationHistory: Message[];// AI conversation history
+  context: TContext;             // User-defined data
+}
+
+// WorkflowStatus enum values:
+enum WorkflowStatus {
+  Pending = 'pending',     // Workflow created but not started
+  Running = 'running',     // Workflow is currently executing
+  Completed = 'completed', // Workflow completed successfully
+  Failed = 'failed',       // Workflow failed with an error
+  Paused = 'paused',       // Workflow was paused and can be resumed
 }
 ```
 
@@ -38,29 +49,33 @@ State flows through nodes as a single object:
 │  │   // Auto-populated by node types                           │    │
 │  │   lastCommandResult: { exitCode, stdout, stderr },          │    │
 │  │   lastSlashCommandResult: { success, output, error },       │    │
-│  │   lastAgentResponse: "...",                                 │    │
-│  │   lastProjectUpdate: { success, newStatus, ... }            │    │
+│  │   lastProjectResult: { success, updatedFields, ... },       │    │
+│  │   lastEvalResult: { success, updatedKeys, duration },       │    │
+│  │   lastDynamicAgentResult: { response, usage, ... },         │    │
+│  │   lastDynamicCommandResult: { exitCode, command, ... },     │    │
+│  │   lastHttpResult: { status, data, ... },                    │    │
+│  │   lastLLMResult: { output, rawOutput, usage, ... },         │    │
 │  │ }                                                            │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
                     │
                     ▼
-    ┌───────────────────────────────────┐
-    │           Node Execution           │
-    │                                    │
-    │  1. Receives current state         │
-    │  2. Performs work (AI/command)     │
-    │  3. Returns partial state update   │
-    │  4. Engine merges into state       │
-    └───────────────────────────────────┘
+    ┌───────────────────────────────────────┐
+    │           Node Execution               │
+    │                                        │
+    │  1. Receives current state             │
+    │  2. Performs work (AI/command)         │
+    │  3. Returns partial state update       │
+    │  4. Engine merges into state           │
+    └───────────────────────────────────────┘
                     │
                     ▼
-    ┌───────────────────────────────────┐
-    │         Transition (next)          │
-    │                                    │
-    │  Receives updated state, returns   │
-    │  next node name or 'END'           │
-    └───────────────────────────────────┘
+    ┌───────────────────────────────────────┐
+    │         Transition (then)              │
+    │                                        │
+    │  Receives updated state, returns       │
+    │  next node name or 'END'               │
+    └───────────────────────────────────────┘
 ```
 
 ## Reading State
@@ -68,7 +83,7 @@ State flows through nodes as a single object:
 Access data from previous nodes via `state.context`:
 
 ```typescript
-next: (state) => {
+then: (state) => {
   // Read plan created by PLAN node
   const plan = state.context.plan;
 
@@ -91,17 +106,22 @@ Each node type automatically stores its result:
 
 | Node Type | Result Key | Contains |
 |-----------|------------|----------|
-| `AgentNode` | `lastAgentResponse` | Final agent response text |
-| `CommandNode` | `lastCommandResult` | `exitCode`, `stdout`, `stderr`, `success` |
-| `SlashCommandNode` | `lastSlashCommandResult` | `success`, `output`, `error` |
-| `GitHubProjectNode` | `lastProjectUpdate` | `success`, `newStatus`, `previousStatus` |
+| `AgentNode` | *conversation history* | Agent response stored in `conversationHistory` |
+| `CommandNode` | `lastCommandResult` | `exitCode`, `stdout`, `stderr`, `success`, `duration` |
+| `SlashCommandNode` | `lastSlashCommandResult` | `success`, `output`, `error`, `duration`, `filesAffected` |
+| `GitHubProjectNode` | `lastProjectResult` | `success`, `updatedFields`, `issueNumber`, `repository` |
+| `EvalNode` | `lastEvalResult` | `success`, `updatedKeys`, `duration` |
+| `DynamicAgentNode` | `lastDynamicAgentResult` | `success`, `response`, `model`, `usage`, `duration` |
+| `DynamicCommandNode` | `lastDynamicCommandResult` | `exitCode`, `stdout`, `stderr`, `success`, `command`, `duration` |
+| `HttpNode` | `lastHttpResult` | `success`, `status`, `statusText`, `headers`, `data`, `duration` |
+| `LLMNode` | `lastLLMResult` | `success`, `output`, `rawOutput`, `model`, `usage`, `duration` |
 
 ### Via Custom Tools
 
 AgentNodes can update context through tool results:
 
 ```typescript
-tools: [{
+capabilities: [{
   name: 'save_plan',
   schema: z.object({ tasks: z.array(z.string()) }),
   execute: async (args) => {
@@ -116,7 +136,9 @@ tools: [{
 Define strongly-typed context:
 
 ```typescript
-interface MyContext {
+import { defineNodes, defineWorkflow, StdlibTool } from '@sys/graph';
+
+interface MyContext extends Record<string, unknown> {
   plan?: { tasks: string[] };
   currentTask?: string;
   completedTasks: string[];
@@ -126,20 +148,32 @@ interface MyContext {
   // Auto-populated by nodes
   lastCommandResult?: CommandResult;
   lastSlashCommandResult?: SlashCommandResult;
-  lastAgentResponse?: string;
+  lastEvalResult?: EvalResult;
 }
 
-const workflow = defineWorkflow<MyContext>({
-  id: 'my-workflow',
+const schema = defineNodes<MyContext>()([
+  'PLAN',
+  'IMPLEMENT',
+  'TEST',
+] as const);
 
-  initialState: {
-    context: {
-      completedTasks: [],
-      allTasksDone: false,
-    },
+export default defineWorkflow({
+  id: 'my-workflow',
+  schema,
+  initialContext: {
+    completedTasks: [],
+    allTasksDone: false,
   },
 
-  nodes: { /* ... */ },
+  nodes: [
+    schema.agent('PLAN', {
+      role: 'planner',
+      prompt: 'Create a plan for the task.',
+      capabilities: [StdlibTool.Read],
+      then: 'IMPLEMENT',
+    }),
+    // ... more nodes
+  ],
 });
 ```
 
@@ -189,7 +223,8 @@ engine.reset('my-workflow');
       "exitCode": 0,
       "stdout": "Build successful",
       "stderr": "",
-      "success": true
+      "success": true,
+      "duration": 1234
     }
   }
 }
@@ -201,7 +236,7 @@ engine.reset('my-workflow');
 
 ```typescript
 // Good: explicit types for all expected fields
-interface MyContext {
+interface MyContext extends Record<string, unknown> {
   input: string;
   result?: ProcessResult;
   error?: string;
@@ -216,13 +251,14 @@ interface MyContext {
 ### 2. Initialize Required Fields
 
 ```typescript
-defineWorkflow<MyContext>({
-  initialState: {
-    context: {
-      completedTasks: [],  // Initialize arrays
-      retryCount: 0,       // Initialize counters
-    },
+defineWorkflow({
+  id: 'my-workflow',
+  schema,
+  initialContext: {
+    completedTasks: [],  // Initialize arrays
+    retryCount: 0,       // Initialize counters
   },
+  // ...
 });
 ```
 
@@ -230,22 +266,24 @@ defineWorkflow<MyContext>({
 
 ```typescript
 // Good: specific key names
-nodes.CommandNode({
-  command: 'bun test',
-  resultKey: 'testResult',  // Clear what this contains
-});
+schema.command('BUILD', {
+  command: 'bun build',
+  resultKey: 'buildResult',  // Clear what this contains
+  then: 'TEST',
+}),
 
 // Avoid: generic keys
-nodes.CommandNode({
-  command: 'bun test',
+schema.command('BUILD', {
+  command: 'bun build',
   resultKey: 'result',  // Ambiguous
-});
+  then: 'TEST',
+}),
 ```
 
 ### 4. Handle Missing State
 
 ```typescript
-next: (state) => {
+then: (state) => {
   // Guard against missing data
   const result = state.context.lastCommandResult;
   if (!result) {

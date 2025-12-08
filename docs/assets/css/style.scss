@@ -505,6 +505,13 @@ body {
   #title {
     margin-bottom: var(--space-2xl);
 
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+    }
+
     h1 {
       margin: 0 0 var(--space-md) 0;
       font-size: 2.5rem;
@@ -515,6 +522,10 @@ body {
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+    }
+
+    .title-row h1 {
+      margin-bottom: 0;
     }
 
     p {
@@ -529,6 +540,48 @@ body {
       border: none;
       height: 1px;
       background: linear-gradient(90deg, var(--color-border) 0%, transparent 100%);
+    }
+  }
+
+  .copy-page-button {
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: var(--font-sans);
+
+    &:hover {
+      background: var(--color-bg-hover);
+      color: var(--color-text-primary);
+      border-color: var(--color-border-hover);
+    }
+
+    &.copied {
+      color: var(--color-success);
+      border-color: var(--color-success);
+    }
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    /* Responsive: Hide copy button text on small screens */
+    @media (max-width: 639px) {
+      span {
+        display: none;
+      }
+
+      padding: var(--space-sm);
     }
   }
 

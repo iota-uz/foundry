@@ -55,14 +55,14 @@ export default defineWorkflow({
     schema.agent('PLAN', {
       role: 'architect',
       prompt: 'Analyze the request and output a JSON plan.',
-      capabilities: [StdlibTool.ListFiles, StdlibTool.ReadFile],
+      capabilities: [StdlibTool.Glob, StdlibTool.Read],
       then: 'IMPLEMENT',  // TypeScript validates this!
     }),
 
     schema.agent('IMPLEMENT', {
       role: 'builder',
       prompt: 'Implement the planned tasks.',
-      capabilities: [StdlibTool.WriteFile, StdlibTool.ReadFile, StdlibTool.Bash],
+      capabilities: [StdlibTool.Write, StdlibTool.Read, StdlibTool.Bash],
       then: (state) => state.context.allTasksDone ? 'TEST' : 'IMPLEMENT',
     }),
 
@@ -74,7 +74,7 @@ export default defineWorkflow({
     schema.agent('FIX', {
       role: 'debugger',
       prompt: 'Fix the failing tests.',
-      capabilities: [StdlibTool.ReadFile, StdlibTool.WriteFile],
+      capabilities: [StdlibTool.Read, StdlibTool.Write],
       then: 'TEST',
     }),
 
@@ -122,6 +122,8 @@ Low-level building blocks for dynamic, composable workflows:
 | [EvalNode](primitives#evalnode) | Context transformation | No LLM, pure functions |
 | [DynamicAgentNode](primitives#dynamicagentnode) | Runtime AI config | Dynamic model/prompt |
 | [DynamicCommandNode](primitives#dynamiccommandnode) | Runtime shell config | Dynamic command/env |
+| [HttpNode](nodes#httpnode) | HTTP requests | JSON I/O, all HTTP methods |
+| [LLMNode](nodes#llmnode) | Direct LLM calls | Schema validation, structured output |
 
 ## Documentation
 

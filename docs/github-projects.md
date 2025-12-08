@@ -359,24 +359,24 @@ export default defineWorkflow({
       ...projectConfig,
       issueNumberKey: 'issueNumber', // read from context
       status: 'In Progress',
-      next: 'PLAN',
+      then: 'PLAN',
     }),
 
     PLAN: nodes.AgentNode({
       role: 'planner',
       system: 'Create implementation plan...',
-      next: 'BUILD',
+      then: 'BUILD',
     }),
 
     BUILD: nodes.CommandNode({
       command: 'bun run build',
-      next: 'TEST',
+      then: 'TEST',
     }),
 
     TEST: nodes.SlashCommandNode({
       command: 'test',
       args: 'run all tests',
-      next: 'REVIEW',
+      then: 'REVIEW',
     }),
 
     // Move to In Review when ready for review
@@ -384,7 +384,7 @@ export default defineWorkflow({
       ...projectConfig,
       issueNumberKey: 'issueNumber',
       status: 'In Review',
-      next: 'DONE',
+      then: 'DONE',
     }),
 
     // Mark as Done when complete
@@ -392,7 +392,7 @@ export default defineWorkflow({
       ...projectConfig,
       issueNumberKey: 'issueNumber',
       status: 'Done',
-      next: 'END',
+      then: 'END',
     }),
   },
 });
@@ -427,7 +427,7 @@ nodes.GitHubProjectNode({
   ...projectConfig,
   issueNumberKey: 'currentIssue', // reads from state.context.currentIssue
   status: 'Done',
-  next: 'END',
+  then: 'END',
 })
 ```
 

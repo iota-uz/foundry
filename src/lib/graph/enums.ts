@@ -64,10 +64,12 @@ export enum WorkflowStatus {
  * These are the built-in Claude Code tools that can be referenced by name.
  * Using this enum instead of strings prevents typos and enables autocomplete.
  *
+ * @see https://docs.anthropic.com/en/docs/agent-sdk/typescript - Agent SDK Reference
+ *
  * @example
  * ```typescript
  * schema.agent('PLAN', {
- *   capabilities: [StdlibTool.ReadFile, StdlibTool.ListFiles],
+ *   capabilities: [StdlibTool.Read, StdlibTool.Glob],
  *   // ...
  * })
  * ```
@@ -77,85 +79,69 @@ export enum StdlibTool {
   // File System Tools
   // ============================================================================
 
-  /** List files in a directory */
-  ListFiles = 'list_files',
-
-  /** Read file contents */
-  ReadFile = 'read_file',
+  /** Read files (text, images, PDFs, notebooks) */
+  Read = 'Read',
 
   /** Write content to a file */
-  WriteFile = 'write_file',
+  Write = 'Write',
 
-  /** Edit file with search/replace */
-  EditFile = 'edit_file',
+  /** Perform string replacements in files */
+  Edit = 'Edit',
 
-  /** Delete a file */
-  DeleteFile = 'delete_file',
+  /** File pattern matching with glob patterns */
+  Glob = 'Glob',
 
-  /** Create a directory */
-  CreateDirectory = 'create_directory',
+  /** Code search with ripgrep */
+  Grep = 'Grep',
 
-  // ============================================================================
-  // Code Search & Navigation
-  // ============================================================================
-
-  /** Search code with regex patterns */
-  SearchCode = 'search_code',
-
-  /** Find files by glob pattern */
-  GlobFiles = 'glob_files',
-
-  /** Get file tree structure */
-  FileTree = 'file_tree',
+  /** Edit Jupyter notebook cells */
+  NotebookEdit = 'NotebookEdit',
 
   // ============================================================================
   // Shell & System
   // ============================================================================
 
   /** Execute shell commands */
-  Bash = 'bash',
+  Bash = 'Bash',
 
-  /** Run a command and capture output */
-  RunCommand = 'run_command',
+  /** Retrieve output from background shells */
+  BashOutput = 'BashOutput',
 
-  // ============================================================================
-  // Git Operations
-  // ============================================================================
-
-  /** Get git status */
-  GitStatus = 'git_status',
-
-  /** Get git diff */
-  GitDiff = 'git_diff',
-
-  /** Create git commit */
-  GitCommit = 'git_commit',
-
-  /** Git log history */
-  GitLog = 'git_log',
+  /** Kill a running background shell */
+  KillBash = 'KillBash',
 
   // ============================================================================
   // Web & Network
   // ============================================================================
 
-  /** Fetch URL content */
-  WebFetch = 'web_fetch',
+  /** Fetch and process URL content */
+  WebFetch = 'WebFetch',
 
   /** Web search */
-  WebSearch = 'web_search',
+  WebSearch = 'WebSearch',
 
   // ============================================================================
-  // Code Intelligence
+  // Agent & Workflow
   // ============================================================================
 
-  /** Get symbol definitions */
-  GetDefinitions = 'get_definitions',
+  /** Launch subagents for complex tasks */
+  Task = 'Task',
 
-  /** Get symbol references */
-  GetReferences = 'get_references',
+  /** Task list management */
+  TodoWrite = 'TodoWrite',
 
-  /** Get hover information */
-  GetHoverInfo = 'get_hover_info',
+  /** Exit planning mode */
+  ExitPlanMode = 'ExitPlanMode',
+
+  // ============================================================================
+  // MCP Integration
+  // ============================================================================
+
+  /** List available MCP resources */
+  ListMcpResources = 'ListMcpResources',
+
+  /** Read a specific MCP resource */
+  ReadMcpResource = 'ReadMcpResource',
 }
 
 /**
@@ -183,12 +169,25 @@ export const MODEL_IDS: Record<AgentModel, string> = {
 };
 
 /**
- * Reserved node name for workflow termination.
- * All workflows implicitly have this as a valid transition target.
+ * Special node transitions for workflow control flow.
+ * These are always valid transition targets regardless of schema.
  */
-export const END_NODE = 'END' as const;
+export enum SpecialNode {
+  /** Workflow terminates successfully */
+  End = 'END',
+
+  /** Workflow terminates with error state */
+  Error = 'ERROR',
+}
 
 /**
- * Type for the END node constant.
+ * @deprecated Use SpecialNode.End instead
+ * Reserved node name for workflow termination.
  */
-export type EndNode = typeof END_NODE;
+export const END_NODE = SpecialNode.End;
+
+/**
+ * @deprecated Use SpecialNode instead
+ * Type for special node constants.
+ */
+export type EndNode = SpecialNode;
