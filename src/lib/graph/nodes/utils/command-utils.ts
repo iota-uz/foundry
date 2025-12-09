@@ -12,10 +12,22 @@ export interface CommandExecutionResult {
 }
 
 /**
- * Executes a shell command using Bun.spawn.
+ * Command specification - either a shell string or an argument array.
+ *
+ * - String: Executed via shell (sh -c), supports pipes, redirects, etc.
+ * - Array: Executed directly without shell interpretation (safer for user input)
+ */
+export type CommandSpec = string | string[];
+
+/**
+ * Executes a command using Bun.spawn.
+ *
+ * @param command - Either a shell string or an array of arguments
+ *   - String: Passed to shell (sh -c) for execution, supports pipes/redirects
+ *   - Array: Executed directly without shell interpretation (safer for user input)
  */
 export async function executeCommand(
-  command: string,
+  command: CommandSpec,
   options: {
     cwd?: string;
     env?: Record<string, string>;
@@ -24,8 +36,10 @@ export async function executeCommand(
 ): Promise<CommandExecutionResult> {
   const { cwd, env, timeout = 300000 } = options;
 
-  // Split command into parts for spawn
-  const parts = parseCommand(command);
+  // Determine command parts based on type
+  const parts = Array.isArray(command)
+    ? command // Array: execute directly without shell
+    : parseCommand(command); // String: parse and potentially wrap in shell
 
   // Create the subprocess
   const proc = spawn({

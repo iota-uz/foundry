@@ -16,7 +16,7 @@ import type {
   GraphContext,
   Dynamic,
 } from '../../types';
-import { executeCommand } from '../utils/command-utils';
+import { executeCommand, type CommandSpec } from '../utils/command-utils';
 import { resolveDynamic } from '../utils/dynamic-utils';
 
 /**
@@ -48,18 +48,24 @@ export interface DynamicCommandResult {
 export interface DynamicCommandNodeConfig<TContext extends Record<string, unknown>>
   extends BaseNodeConfig<TContext> {
   /**
-   * Shell command to execute. Can be static or dynamic.
+   * Command to execute. Can be static or dynamic.
+   *
+   * - String: Executed via shell (sh -c), supports pipes, redirects, etc.
+   * - Array: Executed directly without shell interpretation (safer for user input)
    *
    * @example
    * ```typescript
-   * // Static
-   * command: 'bun test'
+   * // Static shell string
+   * command: 'bun test | head -10'
    *
-   * // Dynamic from context
+   * // Dynamic from context (shell string)
    * command: (state) => state.context.currentTask.command
+   *
+   * // Array form - safer for user input (no shell injection)
+   * command: (state) => ['gh', 'pr', 'create', '--title', state.context.title]
    * ```
    */
-  command: Dynamic<string, TContext>;
+  command: Dynamic<CommandSpec, TContext>;
 
   /**
    * Working directory for the command.
@@ -145,7 +151,9 @@ export class DynamicCommandNodeRuntime<TContext extends Record<string, unknown>>
       ? resolveDynamic(this.config.timeout, state)
       : 300000;
 
-    context.logger.info(`[DynamicCommandNode] Executing: ${command}`);
+    // Create display string for logging (handles both string and array)
+    const displayCommand = Array.isArray(command) ? command.join(' ') : command;
+    context.logger.info(`[DynamicCommandNode] Executing: ${displayCommand}`);
 
     const startTime = Date.now();
 
@@ -159,7 +167,7 @@ export class DynamicCommandNodeRuntime<TContext extends Record<string, unknown>>
 
       const commandResult: DynamicCommandResult = {
         ...result,
-        command,
+        command: displayCommand,
         duration,
       };
 
@@ -171,7 +179,7 @@ export class DynamicCommandNodeRuntime<TContext extends Record<string, unknown>>
       if (throwOnError && !result.success) {
         throw new NodeExecutionError(
           `Command failed with exit code ${result.exitCode}: ${result.stderr}`,
-          command,
+          displayCommand,
           this.nodeType,
           undefined,
           { exitCode: result.exitCode, stderr: result.stderr }
@@ -189,7 +197,7 @@ export class DynamicCommandNodeRuntime<TContext extends Record<string, unknown>>
           context: contextUpdate,
         },
         metadata: {
-          command,
+          command: displayCommand,
           exitCode: result.exitCode,
           duration,
         },
@@ -205,10 +213,10 @@ export class DynamicCommandNodeRuntime<TContext extends Record<string, unknown>>
       const duration = Date.now() - startTime;
       throw new NodeExecutionError(
         `Command execution failed: ${err.message}`,
-        command,
+        displayCommand,
         this.nodeType,
         err,
-        { command, cwd, duration }
+        { command: displayCommand, cwd, duration }
       );
     }
   }

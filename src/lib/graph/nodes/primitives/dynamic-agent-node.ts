@@ -205,11 +205,7 @@ export class DynamicAgentNodeRuntime<TContext extends Record<string, unknown>>
       ? resolveDynamic(this.config.system, state)
       : 'You are a helpful AI assistant. Complete the task described in the user message.';
     const tools = this.config.tools ? resolveDynamic(this.config.tools, state) : [];
-    // TODO: Implement multi-turn agent loops using maxTurns parameter (see line 252)
-    const _maxTurns = this.config.maxTurns
-      ? resolveDynamic(this.config.maxTurns, state)
-      : 10;
-    void _maxTurns; // Suppress unused warning until multi-turn is implemented
+    // TODO: config.maxTurns is defined but not yet implemented (multi-turn agent loops)
     const temperature = this.config.temperature
       ? resolveDynamic(this.config.temperature, state)
       : 0;
@@ -249,8 +245,6 @@ export class DynamicAgentNodeRuntime<TContext extends Record<string, unknown>>
           `[DynamicAgentNode] Tools available: ${tools.length} (tool execution requires Agent SDK integration)`
         );
       }
-
-      // TODO: Implement multi-turn agent loops using maxTurns parameter
 
       const response = await client.messages.create(requestParams);
       const duration = Date.now() - startTime;

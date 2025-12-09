@@ -174,7 +174,6 @@ export {
   loadConfig,
   validateTransitions,
   validateConfigSchema,
-  validateRuntimeTransition as validateRuntimeTransitionLegacy,
   resolveTransition,
 } from './config-loader';
 export type { LoadConfigOptions } from './config-loader';
@@ -227,6 +226,7 @@ export type {
   // CommandNode
   CommandNodeConfig as CommandNodeRuntimeConfig,
   CommandResult,
+  CommandSpec,
   // SlashCommandNode
   SlashCommandNodeConfig as SlashCommandNodeRuntimeConfig,
   SlashCommand,

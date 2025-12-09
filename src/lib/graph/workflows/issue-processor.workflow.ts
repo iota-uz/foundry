@@ -663,17 +663,17 @@ gh pr edit ${prNumber} --repo ${repository} --body-file /tmp/pr-body-${issueNumb
         const tasks = state.context.tasks || [];
         const currentIndex = state.context.currentTaskIndex;
 
-        // Mark current task as completed
-        if (tasks[currentIndex]) {
-          tasks[currentIndex].completed = true;
-        }
+        // Mark current task as completed (immutable update)
+        const updatedTasks = tasks.map((task, idx) =>
+          idx === currentIndex ? { ...task, completed: true } : task
+        );
 
         // Check if there are more tasks
         const nextIndex = currentIndex + 1;
         const hasMoreTasks = nextIndex < tasks.length;
 
         return {
-          tasks,
+          tasks: updatedTasks,
           currentTaskIndex: hasMoreTasks ? nextIndex : currentIndex,
           allTasksComplete: !hasMoreTasks,
           fixAttempts: 0, // Reset for next task
