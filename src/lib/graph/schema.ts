@@ -33,6 +33,10 @@ import {
   SpecialNode,
   END_NODE,
 } from './enums';
+import type { CommandSpec } from './nodes/utils/command-utils';
+
+// Re-export command spec type for convenience
+export type { CommandSpec };
 
 // Re-export enums for convenience
 export { NodeType, StdlibTool, AgentModel, WorkflowStatus, SpecialNode, END_NODE };
@@ -357,8 +361,12 @@ export interface DynamicCommandNodeConfig<
   TNodeNames extends string,
   TContext extends Record<string, unknown>
 > {
-  /** Command (static or dynamic) */
-  command: Dynamic<string, TContext>;
+  /**
+   * Command to execute (static or dynamic).
+   * - String: Executed via shell (sh -c), supports pipes, redirects, etc.
+   * - Array: Executed directly without shell interpretation (safer for user input)
+   */
+  command: Dynamic<CommandSpec, TContext>;
 
   /** Working directory (static or dynamic) */
   cwd?: Dynamic<string, TContext>;
@@ -381,7 +389,7 @@ export interface DynamicCommandNodeDef<
   TContext extends Record<string, unknown>
 > extends BaseNodeDef<TNodeNames, TContext> {
   type: NodeType.DynamicCommand;
-  command: Dynamic<string, TContext>;
+  command: Dynamic<CommandSpec, TContext>;
   cwd?: Dynamic<string, TContext>;
   env?: Dynamic<Record<string, string>, TContext>;
   timeout?: Dynamic<number, TContext>;

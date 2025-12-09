@@ -16,20 +16,32 @@ import {
   DynamicCommandNodeRuntime,
   type BaseNode,
   type NodeExecutionResult,
+  type BaseNodeConfig,
+} from '../nodes';
+import type {
+  AgentNodeConfig as AgentRuntimeConfig,
+  CommandNodeConfig as CommandRuntimeConfig,
+  SlashCommandNodeConfig as SlashCommandRuntimeConfig,
+  EvalNodeConfig as EvalRuntimeConfig,
+  DynamicAgentNodeConfig as DynamicAgentRuntimeConfig,
+  DynamicCommandNodeConfig as DynamicCommandRuntimeConfig,
 } from '../nodes';
 
 /**
  * Adapter that wraps a BaseNode to conform to the GraphNode interface.
  * The GraphEngine expects GraphNode, but runtime nodes extend BaseNode.
+ *
+ * Note: Uses BaseNodeConfig<TContext> as the config type parameter because
+ * the adapter needs to hold different node types (Agent, Command, Eval, etc.)
+ * which each have different config shapes. This is a legitimate use of a
+ * base type to enable polymorphism across node types.
  */
 class NodeAdapter<TContext extends Record<string, unknown>>
   implements GraphNode<BaseState & { context: TContext }> {
   public readonly name: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private readonly runtime: BaseNode<TContext, any>;
+  private readonly runtime: BaseNode<TContext, BaseNodeConfig<TContext>>;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(name: string, runtime: BaseNode<TContext, any>) {
+  constructor(name: string, runtime: BaseNode<TContext, BaseNodeConfig<TContext>>) {
     this.name = name;
     this.runtime = runtime;
   }
@@ -103,80 +115,77 @@ function createNodeAdapter<
       // Map schema properties to runtime properties:
       // schema.prompt -> runtime.system
       // schema.capabilities -> runtime.tools
-      // Build config without undefined values
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config: any = {
+      const config: AgentRuntimeConfig<TContext> = {
         role: nodeDef.role,
         system: nodeDef.prompt, // Schema uses 'prompt', runtime uses 'system'
         next: transition,
+        ...(nodeDef.capabilities !== undefined && { tools: nodeDef.capabilities }),
+        ...(nodeDef.maxTurns !== undefined && { maxTurns: nodeDef.maxTurns }),
       };
-      if (nodeDef.capabilities !== undefined) config.tools = nodeDef.capabilities;
-      if (nodeDef.maxTurns !== undefined) config.maxTurns = nodeDef.maxTurns;
 
       const runtime = new AgentNodeRuntime<TContext>(config);
       return new NodeAdapter(nodeDef.name, runtime);
     }
 
     case NodeType.Command: {
-      // Build config without undefined values
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config: any = {
+      const config: CommandRuntimeConfig<TContext> = {
         command: nodeDef.command,
         next: transition,
+        ...(nodeDef.cwd !== undefined && { cwd: nodeDef.cwd }),
+        ...(nodeDef.env !== undefined && { env: nodeDef.env }),
+        ...(nodeDef.timeout !== undefined && { timeout: nodeDef.timeout }),
+        ...(nodeDef.throwOnError !== undefined && { throwOnError: nodeDef.throwOnError }),
       };
-      if (nodeDef.cwd !== undefined) config.cwd = nodeDef.cwd;
-      if (nodeDef.env !== undefined) config.env = nodeDef.env;
-      if (nodeDef.timeout !== undefined) config.timeout = nodeDef.timeout;
-      if (nodeDef.throwOnError !== undefined) config.throwOnError = nodeDef.throwOnError;
 
       const runtime = new CommandNodeRuntime<TContext>(config);
       return new NodeAdapter(nodeDef.name, runtime);
     }
 
     case NodeType.SlashCommand: {
-      const runtime = new SlashCommandNodeRuntime<TContext>({
+      const config: SlashCommandRuntimeConfig<TContext> = {
         command: nodeDef.command,
         args: nodeDef.args,
         next: transition,
-      });
+      };
+
+      const runtime = new SlashCommandNodeRuntime<TContext>(config);
       return new NodeAdapter(nodeDef.name, runtime);
     }
 
     case NodeType.Eval: {
-      const runtime = new EvalNodeRuntime<TContext>({
+      const config: EvalRuntimeConfig<TContext> = {
         fn: nodeDef.update,
         next: transition,
-      });
+      };
+
+      const runtime = new EvalNodeRuntime<TContext>(config);
       return new NodeAdapter(nodeDef.name, runtime);
     }
 
     case NodeType.DynamicAgent: {
-      // Build config without undefined values
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config: any = {
+      // Map schema.capabilities -> runtime.tools
+      const config: DynamicAgentRuntimeConfig<TContext> = {
         model: nodeDef.model,
         prompt: nodeDef.prompt,
         next: transition,
+        ...(nodeDef.system !== undefined && { system: nodeDef.system }),
+        ...(nodeDef.capabilities !== undefined && { tools: nodeDef.capabilities }),
+        ...(nodeDef.maxTurns !== undefined && { maxTurns: nodeDef.maxTurns }),
+        ...(nodeDef.temperature !== undefined && { temperature: nodeDef.temperature }),
       };
-      if (nodeDef.system !== undefined) config.system = nodeDef.system;
-      if (nodeDef.capabilities !== undefined) config.tools = nodeDef.capabilities;
-      if (nodeDef.maxTurns !== undefined) config.maxTurns = nodeDef.maxTurns;
-      if (nodeDef.temperature !== undefined) config.temperature = nodeDef.temperature;
 
       const runtime = new DynamicAgentNodeRuntime<TContext>(config);
       return new NodeAdapter(nodeDef.name, runtime);
     }
 
     case NodeType.DynamicCommand: {
-      // Build config without undefined values
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config: any = {
+      const config: DynamicCommandRuntimeConfig<TContext> = {
         command: nodeDef.command,
         next: transition,
+        ...(nodeDef.cwd !== undefined && { cwd: nodeDef.cwd }),
+        ...(nodeDef.env !== undefined && { env: nodeDef.env }),
+        ...(nodeDef.timeout !== undefined && { timeout: nodeDef.timeout }),
       };
-      if (nodeDef.cwd !== undefined) config.cwd = nodeDef.cwd;
-      if (nodeDef.env !== undefined) config.env = nodeDef.env;
-      if (nodeDef.timeout !== undefined) config.timeout = nodeDef.timeout;
 
       const runtime = new DynamicCommandNodeRuntime<TContext>(config);
       return new NodeAdapter(nodeDef.name, runtime);
