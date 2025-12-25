@@ -46,8 +46,8 @@ export function WorkflowSelector({ value, onChange, error }: WorkflowSelectorPro
       try {
         const response = await fetch('/api/workflows');
         if (response.ok) {
-          const { data } = await response.json() as { data: Workflow[] };
-          setWorkflows(data);
+          const { workflows } = await response.json() as { workflows: Workflow[] };
+          setWorkflows(workflows ?? []);
         }
       } catch {
         // Silent fail - will show empty state

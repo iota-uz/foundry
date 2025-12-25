@@ -21,10 +21,6 @@ import {
 import { useProjectStore } from '@/store/project.store';
 import { parseGitHubProjectUrl } from '@/lib/projects/github-url-parser';
 
-// ============================================================================
-// Wizard Steps Configuration
-// ============================================================================
-
 const STEPS: WizardStep[] = [
   {
     id: 'basic',
@@ -38,35 +34,22 @@ const STEPS: WizardStep[] = [
   },
 ];
 
-// ============================================================================
-// Form State Type
-// ============================================================================
-
 interface FormState {
   name: string;
   githubToken: string;
   projectUrl: string;
 }
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
 export default function CreateProjectPage() {
   const router = useRouter();
   const { createProject, isLoading } = useProjectStore();
 
-  // Current step
   const [currentStep, setCurrentStep] = useState(0);
-
-  // Form state
   const [formState, setFormState] = useState<FormState>({
     name: '',
     githubToken: '',
     projectUrl: '',
   });
-
-  // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isGitHubValid, setIsGitHubValid] = useState(false);
 

@@ -12,8 +12,9 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, BoltIcon } from '@heroicons/react/24/outline';
 import { Breadcrumbs } from '@/components/layout';
 import { KanbanBoard, RepoFilter, SyncButton, IssueDetailPanel } from '@/components/projects';
 import { useKanbanStore } from '@/store/kanban.store';
@@ -139,8 +140,8 @@ export default function ProjectBoardPage() {
             </div>
           </div>
 
-          {/* Right side: Filters and sync */}
-          <div className="flex items-center gap-4">
+          {/* Right side: Filters, automations, and sync */}
+          <div className="flex items-center gap-3">
             {/* Repo filter */}
             {availableRepos.length > 0 && (
               <RepoFilter
@@ -149,6 +150,15 @@ export default function ProjectBoardPage() {
                 onSelectionChange={setRepoFilter}
               />
             )}
+
+            {/* Automations link */}
+            <Link
+              href={`/projects/${projectId}/automations`}
+              className="flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover border border-border-default hover:border-border-hover transition-all duration-150"
+            >
+              <BoltIcon className="w-4 h-4" />
+              <span>Automations</span>
+            </Link>
 
             {/* Sync button */}
             <SyncButton

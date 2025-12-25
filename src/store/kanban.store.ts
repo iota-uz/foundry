@@ -43,14 +43,30 @@ export interface KanbanColumn {
   position: number;
 }
 
-export interface BoardData {
-  columns: KanbanColumn[];
-  issues: KanbanIssue[];
+export interface BoardApiResponse {
   project: {
     id: string;
     name: string;
+    description: string | null;
     lastSyncedAt: string | null;
   };
+  statuses: string[];
+  issues: Record<string, Array<{
+    id: string;
+    githubIssueId: string;
+    owner: string;
+    repo: string;
+    issueNumber: number;
+    title: string;
+    body: string;
+    state: 'OPEN' | 'CLOSED';
+    labels: string[];
+    assignees: string[];
+    hasPlan: boolean;
+    lastExecutionStatus?: string;
+  }>>;
+  repos: Array<{ id: string; owner: string; repo: string }>;
+  lastSyncedAt: string | null;
 }
 
 // ============================================================================
@@ -116,6 +132,17 @@ const initialState = {
   error: null,
 };
 
+// Helper to get color for status
+function getStatusColor(status: string): string {
+  const statusLower = status.toLowerCase();
+  if (statusLower.includes('done') || statusLower.includes('complete')) return '22c55e';
+  if (statusLower.includes('progress') || statusLower.includes('doing')) return '3b82f6';
+  if (statusLower.includes('review')) return 'a855f7';
+  if (statusLower.includes('blocked')) return 'ef4444';
+  if (statusLower.includes('backlog') || statusLower.includes('todo')) return '6b7280';
+  return '6b7280';
+}
+
 export const useKanbanStore = create<KanbanState>()(
   devtools(
     (set, get) => ({
@@ -132,17 +159,43 @@ export const useKanbanStore = create<KanbanState>()(
             throw new Error(data.error || 'Failed to fetch board');
           }
 
-          const { data } = await response.json() as { data: BoardData };
+          const data = await response.json() as BoardApiResponse;
 
-          // Extract unique repos from issues
+          // Convert statuses to columns
+          const columns: KanbanColumn[] = data.statuses.map((status, index) => ({
+            id: status.toLowerCase().replace(/\s+/g, '-'),
+            name: status,
+            color: getStatusColor(status),
+            position: index,
+          }));
+
+          // Flatten issues from grouped object to array
+          const issues: KanbanIssue[] = [];
           const repoSet = new Set<string>();
-          data.issues.forEach((issue) => {
-            repoSet.add(`${issue.owner}/${issue.repo}`);
-          });
+
+          for (const [status, statusIssues] of Object.entries(data.issues)) {
+            for (const issue of statusIssues) {
+              issues.push({
+                id: issue.id,
+                githubIssueId: issue.githubIssueId,
+                number: issue.issueNumber,
+                title: issue.title,
+                body: issue.body,
+                status,
+                owner: issue.owner,
+                repo: issue.repo,
+                labels: issue.labels.map((name) => ({ name, color: '6b7280' })),
+                assignees: issue.assignees,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              });
+              repoSet.add(`${issue.owner}/${issue.repo}`);
+            }
+          }
 
           set({
-            columns: data.columns.sort((a, b) => a.position - b.position),
-            issues: data.issues,
+            columns,
+            issues,
             projectName: data.project.name,
             lastSyncedAt: data.project.lastSyncedAt,
             availableRepos: Array.from(repoSet).sort(),

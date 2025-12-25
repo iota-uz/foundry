@@ -4,7 +4,6 @@
 
 export { ProjectCard } from './project-card';
 export { GitHubTokenInput } from './github-token-input';
-export { RepoList, type RepoItem } from './repo-list';
 
 // Wizard components
 export {

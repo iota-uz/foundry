@@ -10,10 +10,6 @@
 import React from 'react';
 import { Input } from '@/components/shared';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 interface StepBasicInfoProps {
   name: string;
   onNameChange: (name: string) => void;
@@ -21,10 +17,6 @@ interface StepBasicInfoProps {
     name?: string | undefined;
   };
 }
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export function StepBasicInfo({
   name,

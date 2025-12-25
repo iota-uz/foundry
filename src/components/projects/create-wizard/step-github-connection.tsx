@@ -13,10 +13,6 @@ import { Input } from '@/components/shared';
 import { GitHubTokenInput } from '../github-token-input';
 import { parseGitHubProjectUrl } from '@/lib/projects/github-url-parser';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 interface StepGitHubConnectionProps {
   token: string;
   projectUrl: string;
@@ -29,9 +25,13 @@ interface StepGitHubConnectionProps {
   };
 }
 
-// ============================================================================
-// Component
-// ============================================================================
+type ValidationStatus = 'idle' | 'validating' | 'valid' | 'invalid';
+
+interface ParsedProject {
+  owner: string;
+  projectNumber: number;
+  type: 'user' | 'org';
+}
 
 export function StepGitHubConnection({
   token,
@@ -41,25 +41,26 @@ export function StepGitHubConnection({
   onValidationChange,
   errors,
 }: StepGitHubConnectionProps) {
-  const [validationStatus, setValidationStatus] = useState<
-    'idle' | 'validating' | 'valid' | 'invalid'
-  >('idle');
-  const [validationMessage, setValidationMessage] = useState<string>('');
-  const [parsedProject, setParsedProject] = useState<{ owner: string; projectNumber: number; type: string } | null>(null);
+  const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
+  const [tokenMessage, setTokenMessage] = useState('');
+  const [urlMessage, setUrlMessage] = useState('');
+  const [parsedProject, setParsedProject] = useState<ParsedProject | null>(null);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Validate GitHub connection
   const validateConnection = useCallback(async () => {
     if (!token || !projectUrl) {
       setValidationStatus('idle');
-      setValidationMessage('');
+      setTokenMessage('');
+      setUrlMessage('');
       setParsedProject(null);
       onValidationChange(false);
       return;
     }
 
     setValidationStatus('validating');
-    setValidationMessage('');
+    setTokenMessage('');
+    setUrlMessage('');
 
     try {
       // Parse the project URL
@@ -67,7 +68,7 @@ export function StepGitHubConnection({
 
       if (!parsed) {
         setValidationStatus('invalid');
-        setValidationMessage('Invalid GitHub project URL format');
+        setUrlMessage('Invalid GitHub project URL format');
         setParsedProject(null);
         onValidationChange(false);
         return;
@@ -76,19 +77,19 @@ export function StepGitHubConnection({
       // Basic token format check
       if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
         setValidationStatus('invalid');
-        setValidationMessage('Invalid token format. Expected ghp_* or github_pat_*');
+        setTokenMessage('Invalid token format. Expected ghp_* or github_pat_*');
         setParsedProject(parsed);
         onValidationChange(false);
         return;
       }
 
       setValidationStatus('valid');
-      setValidationMessage('Configuration valid. Connection will be verified on creation.');
+      setTokenMessage('Token format valid');
       setParsedProject(parsed);
       onValidationChange(true);
     } catch {
       setValidationStatus('invalid');
-      setValidationMessage('Failed to validate connection');
+      setTokenMessage('Failed to validate connection');
       setParsedProject(null);
       onValidationChange(false);
     }
@@ -122,7 +123,7 @@ export function StepGitHubConnection({
         value={token}
         onChange={onTokenChange}
         validationStatus={validationStatus}
-        validationMessage={validationMessage}
+        validationMessage={tokenMessage}
         error={errors?.token}
       />
 
@@ -133,7 +134,7 @@ export function StepGitHubConnection({
           value={projectUrl}
           onChange={(e) => onProjectUrlChange(e.target.value)}
           placeholder="https://github.com/users/username/projects/1"
-          error={errors?.projectUrl}
+          error={errors?.projectUrl || urlMessage}
         />
 
         {/* Show parsed values as helper text */}

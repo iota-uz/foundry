@@ -14,10 +14,6 @@
 import React from 'react';
 import { CheckIcon } from '@heroicons/react/24/outline';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface WizardStep {
   id: string;
   title: string;
@@ -34,10 +30,6 @@ interface WizardShellProps {
   isLastStep?: boolean;
   isSubmitting?: boolean;
 }
-
-// ============================================================================
-// Step Indicator
-// ============================================================================
 
 function StepIndicator({
   steps,
@@ -133,10 +125,6 @@ function StepIndicator({
     </div>
   );
 }
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export function WizardShell({
   steps,

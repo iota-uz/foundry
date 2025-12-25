@@ -172,19 +172,39 @@ export class ProjectsClient {
 
   /**
    * Fetch project details by owner and number
+   *
+   * Tries organization first (more common), then user.
+   * Queries are done separately because GitHub returns errors
+   * for non-existent entities rather than null.
    */
   private async fetchProject(): Promise<Project> {
+    const owner = this.config.projectOwner;
+    const number = this.config.projectNumber;
+
+    // Try organization first (more common for projects)
+    const orgProject = await this.fetchProjectFromOrg(owner, number);
+    if (orgProject) {
+      return orgProject;
+    }
+
+    // Try user
+    const userProject = await this.fetchProjectFromUser(owner, number);
+    if (userProject) {
+      return userProject;
+    }
+
+    throw new ProjectsError(
+      `Project not found: ${owner}#${number}. Verify the owner exists and the project number is correct.`,
+      'PROJECT_NOT_FOUND'
+    );
+  }
+
+  /**
+   * Fetch project from organization
+   */
+  private async fetchProjectFromOrg(owner: string, number: number): Promise<Project | null> {
     const query = `
       query($owner: String!, $number: Int!) {
-        user(login: $owner) {
-          projectV2(number: $number) {
-            id
-            title
-            number
-            url
-            closed
-          }
-        }
         organization(login: $owner) {
           projectV2(number: $number) {
             id
@@ -197,27 +217,48 @@ export class ProjectsClient {
       }
     `;
 
-    interface ProjectResponse {
-      user: { projectV2: Project | null } | null;
+    interface OrgProjectResponse {
       organization: { projectV2: Project | null } | null;
     }
 
-    const data = await this.graphql<ProjectResponse>(query, {
-      owner: this.config.projectOwner,
-      number: this.config.projectNumber,
-    });
+    try {
+      const data = await this.graphql<OrgProjectResponse>(query, { owner, number });
+      return data.organization?.projectV2 ?? null;
+    } catch {
+      // Organization doesn't exist or no access - try user
+      return null;
+    }
+  }
 
-    // Project can be owned by user or organization
-    const project = data.user?.projectV2 ?? data.organization?.projectV2;
+  /**
+   * Fetch project from user
+   */
+  private async fetchProjectFromUser(owner: string, number: number): Promise<Project | null> {
+    const query = `
+      query($owner: String!, $number: Int!) {
+        user(login: $owner) {
+          projectV2(number: $number) {
+            id
+            title
+            number
+            url
+            closed
+          }
+        }
+      }
+    `;
 
-    if (!project) {
-      throw new ProjectsError(
-        `Project not found: ${this.config.projectOwner}#${this.config.projectNumber}`,
-        'PROJECT_NOT_FOUND'
-      );
+    interface UserProjectResponse {
+      user: { projectV2: Project | null } | null;
     }
 
-    return project;
+    try {
+      const data = await this.graphql<UserProjectResponse>(query, { owner, number });
+      return data.user?.projectV2 ?? null;
+    } catch {
+      // User doesn't exist or no access
+      return null;
+    }
   }
 
   /**

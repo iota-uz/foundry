@@ -113,8 +113,8 @@ export const useProjectStore = create<ProjectState>()(
             throw new Error(data.error || 'Failed to fetch projects');
           }
 
-          const { data } = await response.json() as { data: Project[] };
-          set({ projects: data ?? [], isLoading: false });
+          const { projects } = await response.json() as { projects: Project[] };
+          set({ projects: projects ?? [], isLoading: false });
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Failed to fetch projects',
@@ -134,8 +134,8 @@ export const useProjectStore = create<ProjectState>()(
             throw new Error(data.error || 'Failed to fetch project');
           }
 
-          const { data } = await response.json() as { data: Project };
-          set({ currentProject: data, isLoading: false });
+          const project = await response.json() as Project;
+          set({ currentProject: project, isLoading: false });
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Failed to fetch project',
@@ -160,7 +160,7 @@ export const useProjectStore = create<ProjectState>()(
             throw new Error(result.error || 'Failed to create project');
           }
 
-          const { data: project } = await response.json() as { data: Project };
+          const project = await response.json() as Project;
 
           // Add repos if provided
           if (data.repos && data.repos.length > 0) {
@@ -175,7 +175,7 @@ export const useProjectStore = create<ProjectState>()(
 
           // Refresh project with repos
           const refreshResponse = await fetch(`/api/projects/${project.id}`);
-          const { data: refreshedProject } = await refreshResponse.json() as { data: Project };
+          const refreshedProject = await refreshResponse.json() as Project;
 
           set((state) => ({
             projects: [...state.projects, refreshedProject],
@@ -209,7 +209,7 @@ export const useProjectStore = create<ProjectState>()(
             throw new Error(result.error || 'Failed to update project');
           }
 
-          const { data: project } = await response.json() as { data: Project };
+          const project = await response.json() as Project;
 
           set((state) => ({
             projects: state.projects.map((p) => (p.id === id ? project : p)),
