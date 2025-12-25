@@ -23,9 +23,9 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   /** Label text */
   label?: string;
   /** Error message */
-  error?: string;
+  error?: string | undefined;
   /** Helper text (shown when no error) */
-  helperText?: string;
+  helperText?: string | undefined;
   /** Icon on the left side */
   leftIcon?: React.ReactNode;
   /** Icon on the right side */

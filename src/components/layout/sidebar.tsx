@@ -14,7 +14,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BoltIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import {
+  BoltIcon,
+  ChartBarIcon,
+  RectangleStackIcon,
+} from '@heroicons/react/24/outline';
 import { useUIStore } from '@/store';
 
 // =============================================================================
@@ -38,6 +42,12 @@ const navItems: NavItem[] = [
     href: '/',
     icon: BoltIcon,
     shortcut: 'W',
+  },
+  {
+    name: 'Projects',
+    href: '/projects',
+    icon: RectangleStackIcon,
+    shortcut: 'P',
   },
   {
     name: 'Visualizations',
@@ -67,7 +77,10 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === '/'
+              ? pathname === '/'
+              : pathname === item.href || pathname?.startsWith(`${item.href}/`);
           const Icon = item.icon;
 
           return (
