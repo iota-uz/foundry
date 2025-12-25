@@ -205,7 +205,7 @@ export function GraphQLViewer({
             onClick={() => setLayoutDirection('TB')}
             className="
               p-2 text-text-primary hover:text-accent-primary
-              transition-colors
+              transition-colors cursor-pointer
               border-b border-border-default
             "
             title="Vertical layout"
@@ -216,7 +216,7 @@ export function GraphQLViewer({
             onClick={() => setLayoutDirection('LR')}
             className="
               p-2 text-text-primary hover:text-accent-primary
-              transition-colors
+              transition-colors cursor-pointer
             "
             title="Horizontal layout"
           >

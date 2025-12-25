@@ -249,7 +249,7 @@ function WorkflowCard({ workflow, onDelete }: WorkflowCardProps) {
         <Link
           href={`/workflows/${workflow.id}`}
           className={`
-            p-1.5 rounded-md
+            p-1.5 rounded-md cursor-pointer
             text-accent-success hover:bg-accent-success/10
             transition-colors
           `}

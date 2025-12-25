@@ -216,7 +216,7 @@ export function WorkflowToolbar() {
             <span className="max-w-[150px] truncate">{error}</span>
             <button
               onClick={clearError}
-              className="underline hover:no-underline"
+              className="underline hover:no-underline cursor-pointer"
             >
               Dismiss
             </button>

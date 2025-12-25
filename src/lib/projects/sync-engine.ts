@@ -79,6 +79,7 @@ export class SyncEngine {
         valid: false,
         errors: [error instanceof Error ? error.message : String(error)],
         warnings: [],
+        statusOptions: undefined,
       };
     }
   }

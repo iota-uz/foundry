@@ -205,7 +205,7 @@ export function GitPanel({
         <h3 className="font-semibold text-text-primary">Git</h3>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-bg-tertiary rounded transition-colors"
+          className="p-1 hover:bg-bg-tertiary rounded transition-colors cursor-pointer"
         >
           <XMarkIcon className="h-5 w-5 text-text-secondary" />
         </button>
@@ -242,7 +242,7 @@ export function GitPanel({
             onClick={() =>
               setState((prev) => ({ ...prev, isExpanded: !prev.isExpanded }))
             }
-            className="flex items-center justify-between w-full mb-2"
+            className="flex items-center justify-between w-full mb-2 cursor-pointer"
           >
             <h4 className="text-sm font-semibold text-text-primary">
               Changes ({state.changes.length})

@@ -103,7 +103,7 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
                   e.preventDefault();
                 }
               }}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-accent-primary text-accent-primary'
                   : 'border-transparent text-text-secondary hover:text-text-primary'

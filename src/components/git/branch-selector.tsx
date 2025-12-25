@@ -59,7 +59,7 @@ export function BranchSelector({
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isLoading || isChecking}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-bg-tertiary hover:bg-bg-secondary transition-colors text-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-bg-tertiary hover:bg-bg-secondary transition-colors text-text-primary disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         <CodeBracketIcon className="h-4 w-4" />
         <span className="font-medium text-sm">{currentBranch}</span>
@@ -84,7 +84,7 @@ export function BranchSelector({
                     onClick={() => handleSelectBranch(branch)}
                     disabled={isChecking}
                     className={`
-                      w-full px-4 py-2.5 text-left text-sm transition-colors text-text-primary
+                      w-full px-4 py-2.5 text-left text-sm transition-colors text-text-primary cursor-pointer
                       ${
                         branch === currentBranch
                           ? 'bg-accent-primary/10 border-l-2 border-accent-primary'
@@ -138,7 +138,7 @@ export function BranchSelector({
                 <button
                   onClick={handleCreateBranch}
                   disabled={isCreating || !newBranchName.trim()}
-                  className="p-1.5 bg-accent-primary hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="p-1.5 bg-accent-primary hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   <PlusIcon className="h-4 w-4" />
                 </button>

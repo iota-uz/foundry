@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       githubProjectNumber: result.githubProjectNumber,
       name: result.name,
       description: result.description ?? null,
-      syncIntervalMinutes: result.syncIntervalMinutes,
+      syncIntervalMinutes: result.syncIntervalMinutes ?? 5,
       lastSyncedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),

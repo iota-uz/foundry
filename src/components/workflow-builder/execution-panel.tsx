@@ -271,7 +271,7 @@ export function ExecutionPanel({ isOpen, onClose }: ExecutionPanelProps) {
                   key={level}
                   onClick={() => setLogFilter(level)}
                   className={`
-                    px-2 py-1 text-xs font-medium rounded
+                    px-2 py-1 text-xs font-medium rounded cursor-pointer
                     transition-colors duration-150
                     ${logFilter === level
                       ? 'bg-bg-secondary text-text-primary'
@@ -287,7 +287,7 @@ export function ExecutionPanel({ isOpen, onClose }: ExecutionPanelProps) {
             {/* Copy button */}
             <button
               onClick={copyLogs}
-              className="p-1.5 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
+              className="p-1.5 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors cursor-pointer"
               title="Copy logs"
             >
               <DocumentDuplicateIcon className="w-4 h-4" />

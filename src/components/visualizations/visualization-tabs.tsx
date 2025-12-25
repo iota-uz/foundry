@@ -41,6 +41,7 @@ export function VisualizationTabs({
               border-b-2 transition-colors
               whitespace-nowrap
               flex items-center gap-2
+              cursor-pointer
               ${
                 activeTab === tab.id
                   ? 'border-accent-primary text-accent-primary'
