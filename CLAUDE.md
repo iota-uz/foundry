@@ -110,9 +110,10 @@ Small tasks: direct tools, no agent. Medium/large single-concern: single agent.
 
 ## 2.2 Model Selection
 
-- `haiku` - Routine tasks: type errors, simple research, straightforward implementations
-- `sonnet` - Complex tasks: refactoring, planning, complex implementations (default choice)
-- `opus` - Exceptionally complex tasks: deep reasoning, architectural decisions, novel problem-solving
+- `opus` + `frontend-design` skill - **UI work**: new components, new pages, visual design (always use skill)
+- `opus` - **Debugging**: root cause analysis, complex bug investigation
+- `sonnet` - **Backend work**: API routes, database, Graph Engine, refactoring, planning (default choice)
+- `haiku` - **Routine tasks only**: large-scale renames, type errors, simple fixes
 
 ## 2.3 Sequencing Rules
 
@@ -124,8 +125,10 @@ Agent execution syntax: `&&` sequential, `&` parallel
 
 **Examples:**
 
-Bug: `debugger(sonnet)` to investigate → then `editor(haiku)` && `refactoring-expert(sonnet)`
-Feature: `editor(haiku)` && `refactoring-expert(sonnet)`
+Bug: `debugger(opus)` → `editor(sonnet)` && `refactoring-expert(sonnet)`
+Backend feature: `editor(sonnet)` && `refactoring-expert(sonnet)`
+UI feature: `frontend-design(opus)` → `refactoring-expert(sonnet)`
+Routine: `editor(haiku)` for renames, simple fixes
 
 ## 2.4 Planning Process
 
