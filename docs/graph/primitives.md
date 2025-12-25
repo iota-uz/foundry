@@ -204,12 +204,13 @@ Shell command with configuration resolved at runtime.
 - Working directories that vary per task
 - Environment variables from context
 - Dynamic timeouts
+- Injection-safe execution with user input
 
 ### Configuration
 
 ```typescript
 schema.dynamicCommand('RUN_SCRIPT', {
-  // Command: static or dynamic
+  // Command: static or dynamic (string or array)
   command: (state) => state.context.currentTask.command,
 
   // Working directory: static or dynamic
@@ -227,6 +228,20 @@ schema.dynamicCommand('RUN_SCRIPT', {
   then: 'CHECK_RESULT',
 })
 ```
+
+### Command Formats
+
+Commands support both string and array forms:
+
+```typescript
+// String: shell execution (supports pipes, redirects)
+command: (state) => `bun test ${state.context.module}`
+
+// Array: direct execution (safer for user input)
+command: (state) => ['gh', 'pr', 'create', '--title', state.context.title]
+```
+
+**Use array form when including user-provided values to prevent injection.**
 
 ### Result Storage
 

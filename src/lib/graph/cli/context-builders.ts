@@ -8,14 +8,15 @@
 import type { IssueContext } from '../workflows/issue-processor.workflow';
 import type { DispatchContext } from '../../dispatch/dispatch-workflow';
 import type { IssueSourceType } from '../nodes/dispatch/fetch-issues-node';
+import { ENV, DEFAULTS } from '../constants';
 
 /**
  * Parse GITHUB_REPOSITORY env var into owner/repo.
  */
 function parseRepository(): { owner: string; repo: string; repository: string } {
-  const ghRepo = process.env['GITHUB_REPOSITORY'];
+  const ghRepo = process.env[ENV.GITHUB_REPOSITORY];
   if (!ghRepo) {
-    throw new Error('GITHUB_REPOSITORY environment variable is required');
+    throw new Error(`${ENV.GITHUB_REPOSITORY} environment variable is required`);
   }
 
   const parts = ghRepo.split('/');
@@ -76,25 +77,25 @@ function getEnvNumber(name: string): number | undefined {
  */
 export function buildDispatchContext(): DispatchContext {
   const { owner, repo } = parseRepository();
-  const token = getRequiredEnv('GITHUB_TOKEN');
-  const sourceType = (getEnv('GRAPH_SOURCE', 'label') as IssueSourceType);
+  const token = getRequiredEnv(ENV.GITHUB_TOKEN);
+  const sourceType = (getEnv(ENV.GRAPH_SOURCE, DEFAULTS.SOURCE) as IssueSourceType);
 
   const context: DispatchContext = {
     sourceType,
     token,
     owner,
     repo,
-    readyStatus: getEnv('GRAPH_READY_STATUS', 'Ready'),
-    inProgressStatus: getEnv('GRAPH_IN_PROGRESS_STATUS', 'In Progress'),
-    priorityField: getEnv('GRAPH_PRIORITY_FIELD', 'Priority'),
-    label: getEnv('GRAPH_LABEL', 'queue'),
+    readyStatus: getEnv(ENV.GRAPH_READY_STATUS, DEFAULTS.READY_STATUS),
+    inProgressStatus: getEnv(ENV.GRAPH_IN_PROGRESS_STATUS, DEFAULTS.IN_PROGRESS_STATUS),
+    priorityField: getEnv(ENV.GRAPH_PRIORITY_FIELD, DEFAULTS.PRIORITY_FIELD),
+    label: getEnv(ENV.GRAPH_LABEL, DEFAULTS.LABEL),
   };
 
   // Add optional project config
-  const projectOwner = process.env['GRAPH_PROJECT_OWNER'];
-  const projectNumber = getEnvNumber('GRAPH_PROJECT_NUMBER');
-  const maxConcurrent = getEnvNumber('GRAPH_MAX_CONCURRENT');
-  const dryRun = process.env['GRAPH_DRY_RUN'] === 'true';
+  const projectOwner = process.env[ENV.GRAPH_PROJECT_OWNER];
+  const projectNumber = getEnvNumber(ENV.GRAPH_PROJECT_NUMBER);
+  const maxConcurrent = getEnvNumber(ENV.GRAPH_MAX_CONCURRENT);
+  const dryRun = process.env[ENV.GRAPH_DRY_RUN] === 'true';
 
   if (projectOwner) context.projectOwner = projectOwner;
   if (projectNumber) context.projectNumber = projectNumber;
@@ -104,7 +105,7 @@ export function buildDispatchContext(): DispatchContext {
   // Validate project source config
   if (sourceType === 'project') {
     if (!projectNumber) {
-      throw new Error('GRAPH_PROJECT_NUMBER is required for project source');
+      throw new Error(`${ENV.GRAPH_PROJECT_NUMBER} is required for project source`);
     }
   }
 
@@ -128,10 +129,10 @@ export function buildDispatchContext(): DispatchContext {
  */
 export function buildIssueProcessorContext(): IssueContext {
   const { repository } = parseRepository();
-  const issueNumber = getEnvNumber('GRAPH_ISSUE_NUMBER');
+  const issueNumber = getEnvNumber(ENV.GRAPH_ISSUE_NUMBER);
 
   if (!issueNumber) {
-    throw new Error('GRAPH_ISSUE_NUMBER environment variable is required');
+    throw new Error(`${ENV.GRAPH_ISSUE_NUMBER} environment variable is required`);
   }
 
   const context: IssueContext = {
@@ -139,20 +140,20 @@ export function buildIssueProcessorContext(): IssueContext {
     issueTitle: '', // Will be populated by workflow
     issueBody: '', // Will be populated by workflow
     repository,
-    baseBranch: getEnv('GRAPH_BASE_BRANCH', 'main'),
+    baseBranch: getEnv(ENV.GRAPH_BASE_BRANCH, DEFAULTS.BASE_BRANCH),
     currentTaskIndex: 0,
     testsPassed: false,
     allTasksComplete: false,
     fixAttempts: 0,
-    maxFixAttempts: 3,
+    maxFixAttempts: DEFAULTS.MAX_FIX_ATTEMPTS,
     completedNodes: [],
     failedNodes: [],
   };
 
   // Add optional project config
-  const projectOwner = process.env['GRAPH_PROJECT_OWNER'];
-  const projectNumber = getEnvNumber('GRAPH_PROJECT_NUMBER');
-  const doneStatus = process.env['GRAPH_DONE_STATUS'];
+  const projectOwner = process.env[ENV.GRAPH_PROJECT_OWNER];
+  const projectNumber = getEnvNumber(ENV.GRAPH_PROJECT_NUMBER);
+  const doneStatus = process.env[ENV.GRAPH_DONE_STATUS];
   const actionsRunUrl = buildActionsRunUrl();
 
   if (projectOwner) context.projectOwner = projectOwner;
@@ -167,9 +168,9 @@ export function buildIssueProcessorContext(): IssueContext {
  * Build GitHub Actions run URL from environment.
  */
 function buildActionsRunUrl(): string | undefined {
-  const runId = process.env['GITHUB_RUN_ID'];
-  const serverUrl = process.env['GITHUB_SERVER_URL'];
-  const repository = process.env['GITHUB_REPOSITORY'];
+  const runId = process.env[ENV.GITHUB_RUN_ID];
+  const serverUrl = process.env[ENV.GITHUB_SERVER_URL];
+  const repository = process.env[ENV.GITHUB_REPOSITORY];
 
   if (runId && serverUrl && repository) {
     return `${serverUrl}/${repository}/actions/runs/${runId}`;
@@ -186,10 +187,10 @@ export function getRuntimeConfig(): {
   verbose: boolean;
   outputFile: string | undefined;
 } {
-  const outputFile = process.env['GRAPH_OUTPUT_FILE'];
+  const outputFile = process.env[ENV.GRAPH_OUTPUT_FILE];
   return {
-    stateDir: getEnv('GRAPH_STATE_DIR', '.graph-state'),
-    verbose: process.env['GRAPH_VERBOSE'] === 'true',
+    stateDir: getEnv(ENV.GRAPH_STATE_DIR, DEFAULTS.STATE_DIR),
+    verbose: process.env[ENV.GRAPH_VERBOSE] === 'true',
     outputFile,
   };
 }

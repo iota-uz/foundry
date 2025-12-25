@@ -94,6 +94,7 @@ export {
   CommandNodeRuntime,
   type CommandNodeConfig,
   type CommandResult,
+  type CommandSpec,
 } from './general/command-node';
 
 export {

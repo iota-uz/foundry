@@ -15,7 +15,10 @@ import type {
   WorkflowState,
   GraphContext,
 } from '../../types';
-import { executeCommand } from '../utils/command-utils';
+import { executeCommand, type CommandSpec } from '../utils/command-utils';
+
+// Re-export for external consumers
+export type { CommandSpec };
 
 /**
  * Result of a shell command execution.
@@ -43,10 +46,21 @@ export interface CommandResult {
 export interface CommandNodeConfig<TContext extends Record<string, unknown>>
   extends BaseNodeConfig<TContext> {
   /**
-   * Shell command to execute.
-   * Can include shell syntax (pipes, redirects, etc.)
+   * Command to execute.
+   *
+   * - String: Executed via shell (sh -c), supports pipes, redirects, etc.
+   * - Array: Executed directly without shell interpretation (safer for user input)
+   *
+   * @example
+   * ```typescript
+   * // Shell string - use for static commands with shell features
+   * command: 'git status | head -10'
+   *
+   * // Array - use when command includes user input (prevents injection)
+   * command: ['gh', 'pr', 'create', '--title', userTitle]
+   * ```
    */
-  command: string;
+  command: CommandSpec;
 
   /**
    * Working directory for the command.
@@ -125,7 +139,8 @@ export class CommandNodeRuntime<TContext extends Record<string, unknown>>
       resultKey,
     } = this.config;
 
-    context.logger.info(`[CommandNode] Executing: ${command}`);
+    const displayCommand = Array.isArray(command) ? command.join(' ') : command;
+    context.logger.info(`[CommandNode] Executing: ${displayCommand}`);
 
     const startTime = Date.now();
 
@@ -150,7 +165,7 @@ export class CommandNodeRuntime<TContext extends Record<string, unknown>>
       if (throwOnError && !result.success) {
         throw new NodeExecutionError(
           `Command failed with exit code ${result.exitCode}: ${result.stderr}`,
-          command,
+          displayCommand,
           this.nodeType,
           undefined,
           { exitCode: result.exitCode, stderr: result.stderr }
@@ -183,10 +198,10 @@ export class CommandNodeRuntime<TContext extends Record<string, unknown>>
       const duration = Date.now() - startTime;
       throw new NodeExecutionError(
         `Command execution failed: ${err.message}`,
-        command,
+        displayCommand,
         this.nodeType,
         err,
-        { command, cwd, duration }
+        { command: displayCommand, cwd, duration }
       );
     }
   }

@@ -9,6 +9,7 @@ import type { WorkflowConfig, WorkflowState, NodeDef } from './schema';
 import type { LoadedConfig } from './types';
 import { ConfigValidationError } from './types';
 import { END_NODE } from './enums';
+import { validateRuntimeTransition } from './validation';
 
 /**
  * Options for loading a workflow config.
@@ -348,34 +349,6 @@ export async function loadConfig<
 }
 
 /**
- * Validates a transition at runtime.
- * This is used by the engine to validate dynamic transitions during execution.
- *
- * @param transition - The transition value (result of calling the then function)
- * @param validNodeNames - Set of valid node names
- * @param currentNode - Name of the current node (for error messages)
- * @throws Error if the transition is invalid
- */
-export function validateRuntimeTransition(
-  transition: string,
-  validNodeNames: Set<string>,
-  currentNode: string
-): void {
-  if (typeof transition !== 'string') {
-    throw new Error(
-      `Node "${currentNode}" then() returned ${typeof transition}, expected string`
-    );
-  }
-  if (!validNodeNames.has(transition)) {
-    const available = Array.from(validNodeNames).join(', ');
-    throw new Error(
-      `Node "${currentNode}" then() returned invalid target "${transition}". ` +
-        `Valid targets are: ${available}`
-    );
-  }
-}
-
-/**
  * Transition type for resolveTransition function.
  */
 type TransitionFn<TContext extends Record<string, unknown>> =
@@ -416,8 +389,8 @@ export function resolveTransition<TContext extends Record<string, unknown>>(
     nextNode = transition;
   }
 
-  // Validate the result
-  validateRuntimeTransition(nextNode, validNodeNames, currentNode);
+  // Validate the result (convert Set to Array for validation function)
+  validateRuntimeTransition(nextNode, [...validNodeNames], currentNode);
 
   return nextNode;
 }

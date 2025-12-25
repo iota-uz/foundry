@@ -15,6 +15,7 @@ import {
 import { createNodeRuntimes, NodeAdapter } from './utils';
 import { SetDoneStatusNodeRuntime } from '../nodes';
 import { runDispatchWorkflow, type DispatchWorkflowConfig } from '../../dispatch/dispatch-workflow';
+import { ENV, WORKFLOW_ID } from '../constants';
 import {
   formatResultSummary,
   writeMatrixToFile,
@@ -170,7 +171,7 @@ async function runDispatch(verbose: boolean): Promise<void> {
   }
 
   // Set GitHub Actions output
-  if (process.env['GITHUB_ACTIONS'] === 'true') {
+  if (process.env[ENV.GITHUB_ACTIONS] === 'true') {
     await setGitHubActionsOutput(result.matrix);
   }
 
@@ -182,19 +183,22 @@ async function runDispatch(verbose: boolean): Promise<void> {
 
 /**
  * Run the issue processor workflow using the GraphEngine.
+ *
+ * Note: Uses WorkflowConfig<string, Record<string, unknown>> because the
+ * actual workflow types are determined at runtime by the dynamically loaded
+ * config file. This is a generic CLI runner that handles any workflow.
  */
 async function runIssueProcessor(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  workflow: WorkflowConfig<any, any>,
+  workflow: WorkflowConfig<string, Record<string, unknown>>,
   verbose: boolean
 ): Promise<void> {
   const context = buildIssueProcessorContext() as IssueContext;
   const runtimeConfig = getRuntimeConfig();
 
   // Get API key
-  const apiKey = process.env['ANTHROPIC_API_KEY'];
+  const apiKey = process.env[ENV.ANTHROPIC_API_KEY];
   if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY environment variable is required');
+    throw new Error(`${ENV.ANTHROPIC_API_KEY} environment variable is required`);
   }
 
   // Parse repository for gh CLI
@@ -260,15 +264,23 @@ async function runIssueProcessor(
   // Set environment variable for REPORT node
   process.env['ISSUE_NUMBER'] = String(context.issueNumber);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const finalState = await engine.run(`issue-${context.issueNumber}`, state as any);
+  // Cast is necessary because workflow context type is determined at runtime
+  // by the dynamically loaded workflow configuration
+  const finalState = await engine.run(
+    `issue-${context.issueNumber}`,
+    state as Parameters<typeof engine.run>[1]
+  );
 
   console.log('\n=== WORKFLOW COMPLETE ===');
   console.log('Final Status:', finalState.status);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ctx = finalState.context as any;
-  console.log('Tasks Completed:', ctx.tasks?.filter((t: { completed: boolean }) => t.completed).length || 0);
-  console.log('Total Tasks:', ctx.tasks?.length || 0);
+
+  // Access tasks from the final context - type is workflow-specific
+  type TaskContext = { tasks?: Array<{ completed: boolean }> };
+  const ctx = finalState.context as TaskContext;
+  const completedCount = ctx.tasks?.filter((t) => t.completed).length ?? 0;
+  const totalCount = ctx.tasks?.length ?? 0;
+  console.log('Tasks Completed:', completedCount);
+  console.log('Total Tasks:', totalCount);
 }
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
@@ -289,7 +301,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   const configPath = path.resolve(args.configPath);
 
   // Check verbose from env or args
-  const verbose = args.verbose || process.env['GRAPH_VERBOSE'] === 'true';
+  const verbose = args.verbose || process.env[ENV.GRAPH_VERBOSE] === 'true';
 
   if (verbose) {
     console.log('Configuration:');
@@ -299,9 +311,11 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
 
   try {
     // Dynamic import the workflow config
+    // Type is WorkflowConfig<string, Record<string, unknown>> because specific
+    // workflow types are unknown at compile time - they're determined by the
+    // user's config file loaded at runtime
     const workflowModule = await import(configPath);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const workflow = workflowModule.default as WorkflowConfig<any, any>;
+    const workflow = workflowModule.default as WorkflowConfig<string, Record<string, unknown>>;
 
     if (!workflow || !workflow.id) {
       throw new Error(`Invalid workflow config: ${configPath} (must export default workflow)`);
@@ -313,16 +327,18 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
 
     // Route to appropriate workflow runner
     switch (workflow.id) {
-      case 'dispatch':
+      case WORKFLOW_ID.DISPATCH:
         await runDispatch(verbose);
         break;
 
-      case 'issue-processor':
+      case WORKFLOW_ID.ISSUE_PROCESSOR:
         await runIssueProcessor(workflow, verbose);
         break;
 
       default:
-        throw new Error(`Unknown workflow ID: ${workflow.id}. Supported: dispatch, issue-processor`);
+        throw new Error(
+          `Unknown workflow ID: ${workflow.id}. Supported: ${WORKFLOW_ID.DISPATCH}, ${WORKFLOW_ID.ISSUE_PROCESSOR}`
+        );
     }
   } catch (error) {
     const err = error as Error;
