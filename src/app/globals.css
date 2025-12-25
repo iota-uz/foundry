@@ -84,3 +84,24 @@ body {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
+
+/* Input field utility class for workflow builder */
+.input-field {
+  @apply w-full px-3 py-2 rounded-lg;
+  @apply bg-bg-tertiary border border-border-default;
+  @apply text-text-primary placeholder:text-text-tertiary;
+  @apply focus:outline-none focus:ring-1 focus:ring-blue-500;
+}
+
+/* React Flow customizations */
+.react-flow__node {
+  cursor: pointer;
+}
+
+.react-flow__controls-button {
+  @apply bg-bg-secondary border-border-default text-text-primary;
+}
+
+.react-flow__controls-button:hover {
+  @apply bg-bg-tertiary;
+}

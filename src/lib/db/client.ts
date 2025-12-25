@@ -1,38 +1,40 @@
 /**
- * SQLite database client using bun:sqlite
+ * PostgreSQL database client using Drizzle ORM
+ *
+ * Replaces the previous SQLite implementation.
+ * Uses the `postgres` package for Bun compatibility.
  */
 
-import { Database } from 'bun:sqlite';
-import fs from 'fs';
-import path from 'path';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from './schema';
 
-let db: Database | null = null;
+let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+let queryClient: ReturnType<typeof postgres> | null = null;
 
 /**
  * Get the database instance (singleton)
+ *
+ * @returns Drizzle database instance with schema
  */
-export function getDatabase(dbPath?: string): Database {
+export function getDatabase() {
   if (db) {
     return db;
   }
 
-  const finalPath = dbPath || getDefaultDbPath();
-
-  // Ensure directory exists
-  const dir = path.dirname(finalPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error(
+      'DATABASE_URL environment variable is not set. ' +
+        'Run `bun db:up` to start PostgreSQL and set DATABASE_URL=postgres://foundry:foundry@localhost:5432/foundry'
+    );
   }
 
-  // Create database connection
-  db = new Database(finalPath);
+  // Create postgres client
+  queryClient = postgres(connectionString);
 
-  // Enable WAL mode for better concurrent access
-  db.run('PRAGMA journal_mode = WAL');
-  db.run('PRAGMA foreign_keys = ON');
-
-  // Run migrations
-  runMigrations(db);
+  // Create Drizzle instance with schema for type safety
+  db = drizzle(queryClient, { schema });
 
   return db;
 }
@@ -40,116 +42,35 @@ export function getDatabase(dbPath?: string): Database {
 /**
  * Close the database connection
  */
-export function closeDatabase(): void {
-  if (db) {
-    db.close();
+export async function closeDatabase(): Promise<void> {
+  if (queryClient) {
+    await queryClient.end();
+    queryClient = null;
     db = null;
   }
 }
 
 /**
- * Get default database path
+ * Get the raw postgres client for advanced queries
  */
-function getDefaultDbPath(): string {
-  // Look for .foundry directory in current working directory
-  const cwd = process.cwd();
-  const foundryDir = path.join(cwd, '.foundry');
-
-  if (fs.existsSync(foundryDir)) {
-    return path.join(foundryDir, 'foundry.db');
+export function getQueryClient() {
+  if (!queryClient) {
+    getDatabase(); // Initialize if not already
   }
-
-  // Fallback to temp directory for testing
-  return path.join(cwd, '.foundry', 'foundry.db');
-}
-
-/**
- * Run database migrations
- */
-function runMigrations(database: Database): void {
-  // Create migrations table if it doesn't exist
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS migrations (
-      id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL,
-      applied_at TEXT NOT NULL
-    )
-  `);
-
-  // Get applied migrations
-  const appliedMigrations = database
-    .prepare('SELECT name FROM migrations')
-    .all() as { name: string }[];
-
-  const appliedNames = new Set(appliedMigrations.map((m) => m.name));
-
-  // Get migration files
-  const migrationsDir = path.join(__dirname, 'migrations');
-  if (!fs.existsSync(migrationsDir)) {
-    return;
-  }
-
-  const migrationFiles = fs
-    .readdirSync(migrationsDir)
-    .filter((f) => f.endsWith('.sql'))
-    .sort();
-
-  // Apply pending migrations
-  for (const file of migrationFiles) {
-    const name = file.replace('.sql', '');
-
-    if (appliedNames.has(name)) {
-      continue;
-    }
-
-    console.log(`Applying migration: ${name}`);
-
-    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
-
-    // Run migration in transaction
-    const migrate = database.transaction(() => {
-      database.exec(sql);
-      database
-        .prepare('INSERT INTO migrations (name, applied_at) VALUES (?, ?)')
-        .run(name, new Date().toISOString());
-    });
-
-    migrate();
-
-    console.log(`Migration applied: ${name}`);
-  }
+  return queryClient!;
 }
 
 /**
  * Execute a query within a transaction
  */
-export function transaction<T>(
-  fn: (db: Database) => T,
-  dbInstance?: Database
-): T {
-  const database = dbInstance || getDatabase();
-  const txn = database.transaction(fn);
-  return txn(database);
+export async function transaction<T>(
+  fn: (tx: Parameters<Parameters<ReturnType<typeof getDatabase>['transaction']>[0]>[0]) => Promise<T>
+): Promise<T> {
+  const database = getDatabase();
+  return database.transaction(fn);
 }
 
 /**
- * Reset database (for testing only)
+ * Database instance type for type inference
  */
-export function resetDatabase(dbPath?: string): void {
-  closeDatabase();
-
-  const finalPath = dbPath || getDefaultDbPath();
-  if (fs.existsSync(finalPath)) {
-    fs.unlinkSync(finalPath);
-  }
-
-  // Remove WAL files
-  if (fs.existsSync(`${finalPath}-shm`)) {
-    fs.unlinkSync(`${finalPath}-shm`);
-  }
-  if (fs.existsSync(`${finalPath}-wal`)) {
-    fs.unlinkSync(`${finalPath}-wal`);
-  }
-
-  getDatabase(finalPath);
-}
+export type Database = ReturnType<typeof getDatabase>;

@@ -16,11 +16,19 @@
     "test": "bun test",
     "graph": "bun src/lib/graph/cli/run.ts",
     "dispatch": "bun src/lib/graph/cli/run.ts dispatch.config.ts",
-    "issue-processor": "bun src/lib/graph/cli/run.ts issue-processor.config.ts"
+    "issue-processor": "bun src/lib/graph/cli/run.ts issue-processor.config.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.0",
     "@anthropic-ai/sdk": "^0.27.0",
+    "drizzle-orm": "^0.38.0",
+    "postgres": "^3.4.0",
     "@dagrejs/dagre": "^2.0.0",
     "@dagrejs/graphlib": "^2.2.4",
     "@dbml/core": "^3.11.0",
@@ -47,6 +55,7 @@
     "zustand": "^4.4.0"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.30.0",
     "@happy-dom/global-registrator": "^17.0.0",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/react": "^16.0.0",

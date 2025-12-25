@@ -14,9 +14,6 @@ import { Modal } from '@/components/shared/modal';
 import { Toast } from '@/components/shared/toast';
 import { Skeleton } from '@/components/shared/skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
-import { ProgressIndicator } from '@/components/qa/progress-indicator';
-import { RecommendationBadge } from '@/components/qa/recommendation-badge';
-import { KeyboardHints } from '@/components/qa/keyboard-hints';
 
 export default function UILibraryPage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -29,7 +26,6 @@ export default function UILibraryPage() {
     { id: 'buttons', label: 'Buttons' },
     { id: 'inputs', label: 'Inputs' },
     { id: 'feedback', label: 'Feedback' },
-    { id: 'qa-components', label: 'Q&A Components' },
   ];
 
   return (
@@ -275,100 +271,6 @@ export default function UILibraryPage() {
     label: 'Create Item',
     onClick: () => console.log('Create clicked')
   }}
-/>`} />
-            </ComponentSection>
-          </div>
-        )}
-
-        {/* Q&A Components Section */}
-        {selectedTab === 'qa-components' && (
-          <div className="space-y-8">
-            <ComponentSection
-              title="Progress Indicator"
-              description="Phase progress with steps"
-            >
-              <div className="space-y-4">
-                <ProgressIndicator
-                  current={3}
-                  total={8}
-                  label="CPO Phase"
-                  variant="default"
-                />
-                <ProgressIndicator
-                  current={5}
-                  total={8}
-                  label="Clarify Phase"
-                  variant="warning"
-                />
-                <ProgressIndicator
-                  current={8}
-                  total={8}
-                  label="CTO Phase - Complete"
-                  variant="success"
-                />
-              </div>
-
-              <CodeBlock code={`<ProgressIndicator
-  current={3}
-  total={8}
-  label="CPO Phase"
-  variant="default"
-/>`} />
-            </ComponentSection>
-
-            <ComponentSection
-              title="Recommendation Badge"
-              description="AI recommendation indicator"
-            >
-              <div className="space-y-2">
-                <RecommendationBadge
-                  recommendation={{
-                    recommendedOptionId: 'option-1',
-                    confidence: 'high',
-                    reasoning: 'This option follows industry best practices and reduces complexity',
-                    source: 'best_practice',
-                  }}
-                />
-                <RecommendationBadge
-                  recommendation={{
-                    recommendedOptionId: 'option-2',
-                    confidence: 'medium',
-                    reasoning: 'Context-based recommendation with moderate confidence',
-                    source: 'context_inference',
-                    caveats: ['Requires additional validation', 'May need customization'],
-                  }}
-                />
-              </div>
-
-              <CodeBlock code={`<RecommendationBadge
-  recommendation={{
-    recommendedOptionId: 'option-1',
-    confidence: 'high',
-    reasoning: 'Follows best practices',
-    source: 'best_practice'
-  }}
-/>`} />
-            </ComponentSection>
-
-            <ComponentSection
-              title="Keyboard Hints"
-              description="Keyboard shortcut indicators"
-            >
-              <KeyboardHints
-                questionType="single_choice"
-                optionCount={5}
-                showSkip={true}
-                showExplainer={true}
-                showRecommendation={true}
-                compact={false}
-                visible={true}
-              />
-
-              <CodeBlock code={`<KeyboardHints
-  questionType="single_choice"
-  optionCount={5}
-  showSkip={true}
-  showExplainer={true}
 />`} />
             </ComponentSection>
           </div>

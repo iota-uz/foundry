@@ -8,7 +8,7 @@ import React, { Fragment, useState, useEffect } from 'react';
 import { Combobox, Dialog, Transition } from '@headlessui/react';
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid';
 import { useRouter } from 'next/navigation';
-import { useUIStore, useProjectStore } from '@/store';
+import { useUIStore } from '@/store';
 
 interface Command {
   id: string;
@@ -20,27 +20,20 @@ interface Command {
 export function CommandPalette() {
   const router = useRouter();
   const { commandPaletteOpen, toggleCommandPalette } = useUIStore();
-  const { modules, features } = useProjectStore();
   const [query, setQuery] = useState('');
 
   // Build command list
   const commands: Command[] = [
     {
-      id: 'dashboard',
-      name: 'Go to Dashboard',
-      description: 'View project overview',
+      id: 'workflows',
+      name: 'Go to Workflows',
+      description: 'View all workflows',
       action: () => router.push('/'),
-    },
-    {
-      id: 'modules',
-      name: 'Go to Modules',
-      description: 'View all modules',
-      action: () => router.push('/modules'),
     },
     {
       id: 'visualizations',
       name: 'Go to Visualizations',
-      description: 'View schemas and diagrams',
+      description: 'View execution diagrams',
       action: () => router.push('/visualizations'),
     },
     {
@@ -49,26 +42,6 @@ export function CommandPalette() {
       description: 'View component gallery',
       action: () => router.push('/ui-library'),
     },
-    {
-      id: 'settings',
-      name: 'Go to Settings',
-      description: 'Project settings',
-      action: () => router.push('/settings'),
-    },
-    // Add module navigation
-    ...modules.map((module) => ({
-      id: `module-${module.id}`,
-      name: module.name,
-      description: `Go to ${module.name} module`,
-      action: () => router.push(`/modules/${module.id}`),
-    })),
-    // Add feature navigation
-    ...features.map((feature) => ({
-      id: `feature-${feature.id}`,
-      name: feature.name,
-      description: `Go to ${feature.name} feature`,
-      action: () => router.push(`/features/${feature.id}`),
-    })),
   ];
 
   const filteredCommands =
@@ -99,10 +72,7 @@ export function CommandPalette() {
 
   return (
     <Transition show={commandPaletteOpen} as={Fragment}>
-      <Dialog
-        onClose={toggleCommandPalette}
-        className="relative z-50"
-      >
+      <Dialog onClose={toggleCommandPalette} className="relative z-50">
         {/* Backdrop */}
         <Transition.Child
           as={Fragment}
@@ -141,18 +111,13 @@ export function CommandPalette() {
                 </div>
 
                 {filteredCommands.length > 0 && (
-                  <Combobox.Options
-                    static
-                    className="max-h-96 overflow-y-auto py-2"
-                  >
+                  <Combobox.Options static className="max-h-96 overflow-y-auto py-2">
                     {filteredCommands.map((command) => (
                       <Combobox.Option
                         key={command.id}
                         value={command}
                         className={({ active }) =>
-                          `px-4 py-2 cursor-pointer ${
-                            active ? 'bg-bg-tertiary' : ''
-                          }`
+                          `px-4 py-2 cursor-pointer ${active ? 'bg-bg-tertiary' : ''}`
                         }
                       >
                         <div>
