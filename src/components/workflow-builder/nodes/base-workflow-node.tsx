@@ -1,107 +1,32 @@
 /**
  * Base Workflow Node Component
  *
- * Custom React Flow node that renders workflow nodes with:
- * - Type-specific icons and colors
- * - Selection highlighting
- * - Execution status indicators
- * - Connection handles
+ * Production-grade React Flow node with Linear/Vercel-inspired styling.
+ * Features:
+ * - Centralized node colors from design system
+ * - Larger handles (16px) with hover scale
+ * - Subtle border animation for running state (not pulse)
+ * - Better selection state with glow
+ * - Type badge with contrasting style
  */
 
 'use client';
 
 import React, { memo } from 'react';
-import { Handle, Position, type Node } from '@xyflow/react';
-import {
-  CpuChipIcon,
-  CommandLineIcon,
-  BoltIcon,
-  CodeBracketIcon,
-  GlobeAltIcon,
-  ChatBubbleLeftRightIcon,
-  CogIcon,
-  PlayCircleIcon,
-} from '@heroicons/react/24/outline';
-import { NodeType } from '@/lib/graph/enums';
+import { Handle, Position } from '@xyflow/react';
+import { getNodeColor, getStatusColor } from '@/lib/design-system';
 import type { WorkflowNodeData } from '@/store/workflow-builder.store';
 import { useWorkflowExecutionStore } from '@/store';
 
-// Custom NodeProps type for our workflow nodes
+// ============================================================================
+// Types
+// ============================================================================
+
 interface WorkflowNodeProps {
   id: string;
   data: WorkflowNodeData;
   selected?: boolean;
 }
-
-export type WorkflowNodeType = Node<WorkflowNodeData>;
-
-// ============================================================================
-// Node Type Configuration
-// ============================================================================
-
-interface NodeTypeConfig {
-  icon: React.ElementType;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-}
-
-const nodeTypeConfigs: Record<NodeType, NodeTypeConfig> = {
-  [NodeType.Agent]: {
-    icon: CpuChipIcon,
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/50',
-  },
-  [NodeType.Command]: {
-    icon: CommandLineIcon,
-    color: 'text-green-400',
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500/50',
-  },
-  [NodeType.SlashCommand]: {
-    icon: BoltIcon,
-    color: 'text-yellow-400',
-    bgColor: 'bg-yellow-500/10',
-    borderColor: 'border-yellow-500/50',
-  },
-  [NodeType.Eval]: {
-    icon: CodeBracketIcon,
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/50',
-  },
-  [NodeType.Http]: {
-    icon: GlobeAltIcon,
-    color: 'text-cyan-400',
-    bgColor: 'bg-cyan-500/10',
-    borderColor: 'border-cyan-500/50',
-  },
-  [NodeType.Llm]: {
-    icon: ChatBubbleLeftRightIcon,
-    color: 'text-pink-400',
-    bgColor: 'bg-pink-500/10',
-    borderColor: 'border-pink-500/50',
-  },
-  [NodeType.DynamicAgent]: {
-    icon: CogIcon,
-    color: 'text-orange-400',
-    bgColor: 'bg-orange-500/10',
-    borderColor: 'border-orange-500/50',
-  },
-  [NodeType.DynamicCommand]: {
-    icon: PlayCircleIcon,
-    color: 'text-red-400',
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500/50',
-  },
-  [NodeType.GitHubProject]: {
-    icon: CodeBracketIcon,
-    color: 'text-gray-400',
-    bgColor: 'bg-gray-500/10',
-    borderColor: 'border-gray-500/50',
-  },
-};
 
 // ============================================================================
 // Component
@@ -111,78 +36,119 @@ function BaseWorkflowNode({ id, data, selected }: WorkflowNodeProps) {
   const nodeState = useWorkflowExecutionStore((s) => s.nodeStates[id]);
   const currentNodeId = useWorkflowExecutionStore((s) => s.currentNodeId);
 
-  const config = nodeTypeConfigs[data.nodeType] ?? nodeTypeConfigs[NodeType.Command];
-  const Icon = config.icon;
+  const colorConfig = getNodeColor(data.nodeType);
+  const Icon = colorConfig.icon;
 
   const isRunning = currentNodeId === id || nodeState?.status === 'running';
   const isCompleted = nodeState?.status === 'completed';
   const isFailed = nodeState?.status === 'failed';
 
-  // Status-based styling
-  let statusBorder = '';
-  let statusGlow = '';
-  if (isRunning) {
-    statusBorder = 'border-yellow-400';
-    statusGlow = 'shadow-lg shadow-yellow-400/30';
-  } else if (isCompleted) {
-    statusBorder = 'border-green-400';
-  } else if (isFailed) {
-    statusBorder = 'border-red-400';
-  }
+  // Get status color config
+  const statusConfig = isRunning
+    ? getStatusColor('running')
+    : isCompleted
+      ? getStatusColor('completed')
+      : isFailed
+        ? getStatusColor('failed')
+        : null;
 
   return (
     <div
       className={`
-        relative min-w-[180px] rounded-lg border-2 transition-all duration-200
-        ${config.bgColor} ${statusBorder || config.borderColor}
-        ${selected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900' : ''}
-        ${statusGlow}
-        ${isRunning ? 'animate-pulse' : ''}
+        group relative min-w-[200px] rounded-lg
+        bg-bg-secondary border-2
+        transition-all duration-200
+        ${
+          isRunning
+            ? 'border-accent-warning animate-border-pulse'
+            : isCompleted
+              ? 'border-accent-success'
+              : isFailed
+                ? 'border-accent-error'
+                : selected
+                  ? 'border-accent-primary shadow-lg shadow-accent-primary/20'
+                  : colorConfig.borderColor
+        }
+        ${selected ? 'ring-1 ring-accent-primary/30 ring-offset-1 ring-offset-bg-primary' : ''}
       `}
     >
       {/* Input Handle */}
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-gray-400 !border-2 !border-gray-600 hover:!bg-blue-400 transition-colors"
+        className={`
+          !w-4 !h-4 !-top-2
+          !bg-bg-tertiary !border-2 !border-border-default
+          hover:!bg-accent-primary hover:!border-accent-primary hover:!scale-125
+          transition-all duration-150
+        `}
       />
 
       {/* Node Content */}
       <div className="p-3">
         {/* Header */}
-        <div className="flex items-center gap-2 mb-2">
-          <div className={`p-1.5 rounded ${config.bgColor}`}>
-            <Icon className={`w-4 h-4 ${config.color}`} />
+        <div className="flex items-center gap-2.5 mb-2">
+          {/* Icon container */}
+          <div
+            className={`
+              flex items-center justify-center
+              w-8 h-8 rounded-md
+              ${colorConfig.bgColor}
+            `}
+          >
+            <Icon className={`w-4 h-4 ${colorConfig.textColor}`} />
           </div>
-          <span className="text-sm font-medium text-gray-200 truncate">
+
+          {/* Label */}
+          <span className="text-sm font-medium text-text-primary truncate flex-1">
             {data.label}
           </span>
+
+          {/* Running indicator */}
+          {isRunning && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-accent-warning animate-pulse-subtle" />
+            </div>
+          )}
         </div>
 
-        {/* Type Badge */}
-        <div className="flex items-center gap-1">
-          <span className={`text-xs px-2 py-0.5 rounded ${config.bgColor} ${config.color}`}>
+        {/* Type Badge & Status */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Type badge */}
+          <span
+            className={`
+              inline-flex items-center
+              text-[10px] font-medium uppercase tracking-wide
+              px-1.5 py-0.5 rounded
+              ${colorConfig.bgColor} ${colorConfig.textColor}
+            `}
+          >
             {data.nodeType}
           </span>
 
-          {/* Status indicator */}
-          {nodeState && (
+          {/* Status badge */}
+          {statusConfig && (
             <span
               className={`
-                text-xs px-2 py-0.5 rounded
-                ${isRunning ? 'bg-yellow-500/20 text-yellow-400' : ''}
-                ${isCompleted ? 'bg-green-500/20 text-green-400' : ''}
-                ${isFailed ? 'bg-red-500/20 text-red-400' : ''}
+                inline-flex items-center gap-1
+                text-[10px] font-medium
+                px-1.5 py-0.5 rounded
+                ${statusConfig.bgColor} ${statusConfig.textColor}
               `}
             >
-              {nodeState.status}
+              {isRunning && (
+                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+              )}
+              {nodeState?.status}
             </span>
           )}
         </div>
 
-        {/* Preview of config (truncated) */}
-        <div className="mt-2 text-xs text-gray-400 truncate">
-          {getConfigPreview(data)}
+        {/* Config Preview */}
+        <div className="mt-2.5 pt-2 border-t border-border-subtle">
+          <p className="text-xs text-text-tertiary truncate leading-relaxed">
+            {getConfigPreview(data)}
+          </p>
         </div>
       </div>
 
@@ -190,33 +156,47 @@ function BaseWorkflowNode({ id, data, selected }: WorkflowNodeProps) {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-gray-400 !border-2 !border-gray-600 hover:!bg-blue-400 transition-colors"
+        className={`
+          !w-4 !h-4 !-bottom-2
+          !bg-bg-tertiary !border-2 !border-border-default
+          hover:!bg-accent-primary hover:!border-accent-primary hover:!scale-125
+          transition-all duration-150
+        `}
       />
     </div>
   );
 }
 
-/**
- * Get a preview string for the node configuration
- */
+// ============================================================================
+// Config Preview Helper
+// ============================================================================
+
 function getConfigPreview(data: WorkflowNodeData): string {
   const config = data.config;
+  const maxLength = 60;
+
+  const truncate = (str: string) =>
+    str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
 
   switch (config.type) {
     case 'agent':
-      return config.prompt.slice(0, 50) + (config.prompt.length > 50 ? '...' : '');
+      return truncate(config.prompt || 'No prompt configured');
     case 'command':
-      return config.command.slice(0, 50) + (config.command.length > 50 ? '...' : '');
+      return truncate(config.command || 'No command configured');
     case 'slash-command':
-      return `/${config.command} ${config.args}`.slice(0, 50);
+      return truncate(`/${config.command} ${config.args || ''}`);
     case 'eval':
-      return config.code.split('\n')[0]?.slice(0, 50) ?? '';
+      return truncate(config.code?.split('\n')[0] || 'No code configured');
     case 'http':
-      return `${config.method} ${config.url}`.slice(0, 50);
+      return truncate(`${config.method} ${config.url || ''}`);
     case 'llm':
-      return config.prompt.slice(0, 50) + (config.prompt.length > 50 ? '...' : '');
+      return truncate(config.prompt || 'No prompt configured');
+    case 'dynamic-agent':
+      return 'Dynamic configuration at runtime';
+    case 'dynamic-command':
+      return 'Dynamic command at runtime';
     default:
-      return '';
+      return 'Configure this node';
   }
 }
 

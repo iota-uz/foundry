@@ -7,3 +7,6 @@
 export * from './workflows';
 export * from './workflow-executions';
 export * from './execution-logs';
+export * from './projects';
+export * from './automations';
+export * from './issue-metadata';

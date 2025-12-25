@@ -1,8 +1,12 @@
 /**
  * Workflow Canvas
  *
- * Main React Flow canvas for the workflow builder.
- * Handles node drag-and-drop, connections, and interaction.
+ * Production-grade React Flow canvas with Linear/Vercel-inspired styling.
+ * Features:
+ * - Centralized node colors for MiniMap
+ * - Minimal empty state without backdrop blur
+ * - Clean grid background
+ * - Styled controls
  */
 
 'use client';
@@ -29,6 +33,7 @@ import '@xyflow/react/dist/style.css';
 import { useWorkflowBuilderStore } from '@/store';
 import type { WorkflowNodeData } from '@/store/workflow-builder.store';
 import { NodeType } from '@/lib/graph/enums';
+import { getNodeHexColor } from '@/lib/design-system';
 import { WorkflowNode } from './nodes/base-workflow-node';
 import { WorkflowEdge } from './edges/workflow-edge';
 
@@ -52,19 +57,16 @@ export function WorkflowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
-  const {
-    nodes,
-    edges,
-    setNodes,
-    setEdges,
-    addNode,
-    selectNode,
-  } = useWorkflowBuilderStore();
+  const { nodes, edges, setNodes, setEdges, addNode, selectNode } =
+    useWorkflowBuilderStore();
 
   // Handle node changes (position, selection, etc.)
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      const updatedNodes = applyNodeChanges(changes, nodes) as Node<WorkflowNodeData>[];
+      const updatedNodes = applyNodeChanges(
+        changes,
+        nodes
+      ) as Node<WorkflowNodeData>[];
       setNodes(updatedNodes);
     },
     [nodes, setNodes]
@@ -83,10 +85,7 @@ export function WorkflowCanvas() {
     (connection) => {
       if (connection.source && connection.target) {
         setEdges(
-          addEdge(
-            { ...connection, type: 'workflowEdge' },
-            edges
-          )
+          addEdge({ ...connection, type: 'workflowEdge' }, edges)
         );
       }
     },
@@ -135,8 +134,14 @@ export function WorkflowCanvas() {
     [screenToFlowPosition, addNode, selectNode]
   );
 
+  // MiniMap node color using centralized design system
+  const getNodeColorForMiniMap = useCallback((node: Node) => {
+    const nodeType = node.data?.nodeType as NodeType | undefined;
+    return getNodeHexColor(nodeType ?? NodeType.Command);
+  }, []);
+
   return (
-    <div ref={reactFlowWrapper} className="flex-1 h-full">
+    <div ref={reactFlowWrapper} className="flex-1 h-full relative">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -151,7 +156,7 @@ export function WorkflowCanvas() {
         onDrop={onDrop}
         fitView
         snapToGrid
-        snapGrid={[15, 15]}
+        snapGrid={[16, 16]}
         defaultEdgeOptions={{
           type: 'workflowEdge',
           animated: false,
@@ -159,41 +164,53 @@ export function WorkflowCanvas() {
         proOptions={{ hideAttribution: true }}
         className="bg-bg-primary"
       >
-        <Background color="#333" gap={15} />
-        <Controls className="!bg-bg-secondary !border-border-default" />
+        {/* Grid background */}
+        <Background
+          color="var(--color-border-subtle)"
+          gap={16}
+          size={1}
+        />
+
+        {/* Controls */}
+        <Controls
+          className="!bg-bg-secondary !border-border-default !rounded-lg !shadow-lg"
+          showInteractive={false}
+        />
+
+        {/* MiniMap */}
         <MiniMap
-          className="!bg-bg-secondary !border-border-default"
-          nodeColor={(node) => {
-            const nodeType = node.data?.nodeType as NodeType | undefined;
-            switch (nodeType) {
-              case NodeType.Agent:
-                return '#a855f7';
-              case NodeType.Command:
-                return '#22c55e';
-              case NodeType.SlashCommand:
-                return '#eab308';
-              case NodeType.Eval:
-                return '#3b82f6';
-              case NodeType.Http:
-                return '#06b6d4';
-              case NodeType.Llm:
-                return '#ec4899';
-              default:
-                return '#6b7280';
-            }
-          }}
+          className="!bg-bg-secondary !border-border-default !rounded-lg"
+          nodeColor={getNodeColorForMiniMap}
+          maskColor="rgba(0, 0, 0, 0.7)"
+          pannable
+          zoomable
         />
       </ReactFlow>
 
-      {/* Empty state */}
+      {/* Empty state - minimal design */}
       {nodes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center p-8 rounded-lg bg-bg-secondary/80 backdrop-blur">
-            <p className="text-lg text-text-secondary mb-2">
-              Drag nodes from the library to get started
+          <div className="text-center max-w-xs">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-bg-tertiary border border-border-subtle flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-text-tertiary"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-text-secondary mb-1">
+              Start building your workflow
             </p>
-            <p className="text-sm text-text-tertiary">
-              Connect nodes to define your workflow execution order
+            <p className="text-xs text-text-tertiary">
+              Drag nodes from the library to add them here
             </p>
           </div>
         </div>

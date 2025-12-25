@@ -1,107 +1,729 @@
 @import "tailwindcss";
 
+/* =============================================================================
+   FOUNDRY DESIGN SYSTEM
+   Modern Minimal Dark Theme - Inspired by Linear/Vercel
+
+   Design Principles:
+   - Subtle borders (#2a2a2a or #333), not prominent
+   - Minimal shadows, border-based depth
+   - 150ms transitions with ease-out
+   - Muted hover states
+   - Color used sparingly (monochrome base)
+   - 4px increment spacing
+   ============================================================================= */
+
 @theme {
   /* Font */
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Background colors */
-  --color-bg-primary: #0f0f0f;
-  --color-bg-secondary: #1a1a1a;
-  --color-bg-tertiary: #262626;
+  /* =========================================================================
+     COLORS - Core Palette
+     ========================================================================= */
 
-  /* Text colors */
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #a3a3a3;
-  --color-text-tertiary: #737373;
+  /* Background colors - 3-tier hierarchy */
+  --color-bg-primary: #09090b;
+  --color-bg-secondary: #131316;
+  --color-bg-tertiary: #1c1c21;
+  --color-bg-elevated: #222228;
+
+  /* Interactive states */
+  --color-bg-hover: #1f1f24;
+  --color-bg-active: #27272d;
+  --color-bg-selected: #2563eb15;
+
+  /* Text colors - 3-tier hierarchy */
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-tertiary: #71717a;
+  --color-text-muted: #52525b;
 
   /* Accent colors */
   --color-accent-primary: #3b82f6;
-  --color-accent-success: #22c55e;
+  --color-accent-primary-hover: #2563eb;
+  --color-accent-success: #10b981;
+  --color-accent-success-dim: #10b98140;
   --color-accent-warning: #f59e0b;
+  --color-accent-warning-dim: #f59e0b40;
   --color-accent-error: #ef4444;
+  --color-accent-error-dim: #ef444440;
 
   /* Border colors */
-  --color-border-default: #333333;
+  --color-border-default: #27272a;
+  --color-border-subtle: #1f1f23;
+  --color-border-hover: #3f3f46;
   --color-border-focus: #3b82f6;
+
+  /* =========================================================================
+     NODE TYPE COLORS - Single source of truth
+     ========================================================================= */
+  --color-node-agent: #a855f7;
+  --color-node-command: #22c55e;
+  --color-node-slash-command: #eab308;
+  --color-node-eval: #3b82f6;
+  --color-node-http: #06b6d4;
+  --color-node-llm: #ec4899;
+  --color-node-dynamic-agent: #f97316;
+  --color-node-dynamic-command: #ef4444;
+  --color-node-github-project: #8b5cf6;
+
+  /* =========================================================================
+     TYPOGRAPHY SCALE
+     ========================================================================= */
+  --font-size-xs: 0.75rem;     /* 12px */
+  --font-size-sm: 0.8125rem;   /* 13px */
+  --font-size-base: 0.875rem;  /* 14px */
+  --font-size-lg: 1rem;        /* 16px */
+  --font-size-xl: 1.125rem;    /* 18px */
+  --font-size-2xl: 1.25rem;    /* 20px */
+
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.01em;
+
+  /* =========================================================================
+     SPACING SCALE (4px increments)
+     ========================================================================= */
+  --spacing-0: 0;
+  --spacing-0-5: 0.125rem;  /* 2px */
+  --spacing-1: 0.25rem;     /* 4px */
+  --spacing-1-5: 0.375rem;  /* 6px */
+  --spacing-2: 0.5rem;      /* 8px */
+  --spacing-2-5: 0.625rem;  /* 10px */
+  --spacing-3: 0.75rem;     /* 12px */
+  --spacing-4: 1rem;        /* 16px */
+  --spacing-5: 1.25rem;     /* 20px */
+  --spacing-6: 1.5rem;      /* 24px */
+  --spacing-8: 2rem;        /* 32px */
+  --spacing-10: 2.5rem;     /* 40px */
+  --spacing-12: 3rem;       /* 48px */
+  --spacing-16: 4rem;       /* 64px */
+
+  /* =========================================================================
+     BORDER RADIUS
+     ========================================================================= */
+  --radius-sm: 0.25rem;    /* 4px */
+  --radius-md: 0.375rem;   /* 6px - Linear style */
+  --radius-lg: 0.5rem;     /* 8px */
+  --radius-xl: 0.75rem;    /* 12px */
+  --radius-2xl: 1rem;      /* 16px */
+  --radius-full: 9999px;
+
+  /* =========================================================================
+     TRANSITIONS
+     ========================================================================= */
+  --duration-instant: 50ms;
+  --duration-fast: 100ms;
+  --duration-base: 150ms;
+  --duration-slow: 200ms;
+  --duration-slower: 300ms;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* =========================================================================
+     SHADOWS (minimal, subtle)
+     ========================================================================= */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.5);
+
+  /* Glow effects for status states */
+  --shadow-glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
+  --shadow-glow-green: 0 0 20px rgba(16, 185, 129, 0.3);
+  --shadow-glow-yellow: 0 0 20px rgba(245, 158, 11, 0.3);
+  --shadow-glow-red: 0 0 20px rgba(239, 68, 68, 0.3);
+
+  /* =========================================================================
+     Z-INDEX SCALE
+     ========================================================================= */
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-fixed: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-tooltip: 70;
+  --z-toast: 80;
 }
 
+/* =============================================================================
+   CSS CUSTOM PROPERTIES (for use in components)
+   ============================================================================= */
+
 :root {
-  /* CSS custom properties for use in components */
+  /* Background */
   --bg-primary: var(--color-bg-primary);
   --bg-secondary: var(--color-bg-secondary);
   --bg-tertiary: var(--color-bg-tertiary);
+  --bg-elevated: var(--color-bg-elevated);
+  --bg-hover: var(--color-bg-hover);
+  --bg-active: var(--color-bg-active);
+  --bg-selected: var(--color-bg-selected);
 
+  /* Text */
   --text-primary: var(--color-text-primary);
   --text-secondary: var(--color-text-secondary);
   --text-tertiary: var(--color-text-tertiary);
+  --text-muted: var(--color-text-muted);
 
+  /* Accent */
   --accent-primary: var(--color-accent-primary);
+  --accent-primary-hover: var(--color-accent-primary-hover);
   --accent-success: var(--color-accent-success);
   --accent-warning: var(--color-accent-warning);
   --accent-error: var(--color-accent-error);
 
+  /* Borders */
   --border-default: var(--color-border-default);
+  --border-subtle: var(--color-border-subtle);
+  --border-hover: var(--color-border-hover);
   --border-focus: var(--color-border-focus);
+
+  /* Node colors */
+  --node-agent: var(--color-node-agent);
+  --node-command: var(--color-node-command);
+  --node-slash-command: var(--color-node-slash-command);
+  --node-eval: var(--color-node-eval);
+  --node-http: var(--color-node-http);
+  --node-llm: var(--color-node-llm);
+  --node-dynamic-agent: var(--color-node-dynamic-agent);
+  --node-dynamic-command: var(--color-node-dynamic-command);
+  --node-github-project: var(--color-node-github-project);
 }
+
+/* =============================================================================
+   BASE STYLES
+   ============================================================================= */
 
 html {
   @apply antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   @apply bg-bg-primary text-text-primary;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-tight);
   margin: 0;
   padding: 0;
   overflow: hidden;
 }
 
-/* Scrollbar styling for dark theme */
+/* =============================================================================
+   SCROLLBAR STYLING
+   ============================================================================= */
+
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--bg-tertiary) var(--bg-secondary);
+  scrollbar-color: var(--bg-tertiary) transparent;
 }
 
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 *::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
   background: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: var(--radius-full);
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: #333333;
+  background: var(--border-hover);
 }
 
-/* Focus visible outline for accessibility */
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* =============================================================================
+   FOCUS STYLES
+   ============================================================================= */
+
+*:focus {
+  outline: none;
+}
+
 *:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 
-/* Input field utility class for workflow builder */
-.input-field {
-  @apply w-full px-3 py-2 rounded-lg;
-  @apply bg-bg-tertiary border border-border-default;
-  @apply text-text-primary placeholder:text-text-tertiary;
-  @apply focus:outline-none focus:ring-1 focus:ring-blue-500;
+/* Focus ring utility class */
+.focus-ring {
+  @apply outline-none;
+  @apply focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary;
 }
 
-/* React Flow customizations */
+/* Subtle focus ring for inline elements */
+.focus-ring-inset {
+  @apply outline-none;
+  @apply focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-inset;
+}
+
+/* =============================================================================
+   ANIMATION KEYFRAMES
+   ============================================================================= */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    box-shadow: 0 0 0 4px currentColor;
+  }
+}
+
+@keyframes border-pulse {
+  0%, 100% {
+    border-color: var(--accent-warning);
+  }
+  50% {
+    border-color: var(--color-accent-warning-dim);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes status-dot-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+}
+
+/* Animation utility classes */
+.animate-fade-in {
+  animation: fade-in var(--duration-base) var(--ease-out);
+}
+
+.animate-fade-out {
+  animation: fade-out var(--duration-base) var(--ease-in);
+}
+
+.animate-slide-in-from-top {
+  animation: slide-in-from-top var(--duration-slow) var(--ease-out);
+}
+
+.animate-slide-in-from-bottom {
+  animation: slide-in-from-bottom var(--duration-slow) var(--ease-out);
+}
+
+.animate-slide-in-from-right {
+  animation: slide-in-from-right var(--duration-slow) var(--ease-out);
+}
+
+.animate-slide-in-from-left {
+  animation: slide-in-from-left var(--duration-slow) var(--ease-out);
+}
+
+.animate-scale-in {
+  animation: scale-in var(--duration-slow) var(--ease-out);
+}
+
+.animate-scale-out {
+  animation: scale-out var(--duration-base) var(--ease-in);
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s var(--ease-in-out) infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 0%,
+    var(--bg-elevated) 50%,
+    var(--bg-tertiary) 100%
+  );
+  background-size: 200% 100%;
+}
+
+.animate-status-dot {
+  animation: status-dot-pulse 2s var(--ease-in-out) infinite;
+}
+
+.animate-border-pulse {
+  animation: border-pulse 2s var(--ease-in-out) infinite;
+}
+
+/* =============================================================================
+   INPUT FIELD UTILITY
+   ============================================================================= */
+
+.input-field {
+  @apply w-full h-9 px-3;
+  @apply bg-bg-secondary text-text-primary;
+  @apply border border-border-default rounded-md;
+  @apply placeholder:text-text-tertiary;
+  @apply transition-all;
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-out);
+}
+
+.input-field:hover:not(:disabled) {
+  @apply border-border-hover;
+}
+
+.input-field:focus {
+  @apply outline-none ring-1 ring-accent-primary border-accent-primary;
+}
+
+.input-field:disabled {
+  @apply opacity-50 cursor-not-allowed bg-bg-tertiary;
+}
+
+.input-field-error {
+  @apply border-accent-error;
+}
+
+.input-field-error:focus {
+  @apply ring-accent-error border-accent-error;
+}
+
+/* =============================================================================
+   INTERACTIVE SURFACE UTILITY
+   ============================================================================= */
+
+.interactive-surface {
+  @apply transition-all;
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-out);
+}
+
+.interactive-surface:hover {
+  @apply bg-bg-hover;
+}
+
+.interactive-surface:active {
+  @apply bg-bg-active;
+}
+
+/* =============================================================================
+   SECTION DIVIDER
+   ============================================================================= */
+
+.section-divider {
+  @apply w-full h-px bg-border-subtle;
+}
+
+/* =============================================================================
+   GLASS PANEL (for overlays, modals)
+   ============================================================================= */
+
+.glass-panel {
+  @apply bg-bg-secondary/95 backdrop-blur-xl;
+  @apply border border-border-default;
+  @apply shadow-xl;
+}
+
+/* =============================================================================
+   STATUS INDICATORS
+   ============================================================================= */
+
+.status-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-dot-pending {
+  @apply bg-text-tertiary;
+}
+
+.status-dot-running {
+  @apply bg-accent-warning;
+  animation: status-dot-pulse 2s var(--ease-in-out) infinite;
+}
+
+.status-dot-completed {
+  @apply bg-accent-success;
+}
+
+.status-dot-failed {
+  @apply bg-accent-error;
+}
+
+.status-dot-paused {
+  @apply bg-accent-warning;
+}
+
+/* =============================================================================
+   KEYBOARD SHORTCUT BADGE
+   ============================================================================= */
+
+.kbd {
+  @apply inline-flex items-center justify-center;
+  @apply px-1.5 py-0.5;
+  @apply text-xs font-medium text-text-tertiary;
+  @apply bg-bg-tertiary border border-border-default;
+  @apply rounded;
+  font-family: var(--font-sans);
+  min-width: 1.25rem;
+}
+
+/* =============================================================================
+   REACT FLOW CUSTOMIZATIONS
+   ============================================================================= */
+
 .react-flow__node {
   cursor: pointer;
 }
 
+/* Node entrance animation */
+.react-flow__node[data-entering="true"] {
+  animation: scale-in var(--duration-slow) var(--ease-out);
+}
+
+/* Improved handles */
+.react-flow__handle {
+  @apply transition-all;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.3);
+}
+
+.react-flow__handle.connecting {
+  @apply bg-accent-primary;
+}
+
+/* Controls styling */
+.react-flow__controls {
+  @apply bg-bg-secondary border border-border-default rounded-lg overflow-hidden;
+  box-shadow: var(--shadow-md);
+}
+
 .react-flow__controls-button {
-  @apply bg-bg-secondary border-border-default text-text-primary;
+  @apply bg-bg-secondary border-none text-text-secondary;
+  @apply transition-all;
+  transition-duration: var(--duration-fast);
 }
 
 .react-flow__controls-button:hover {
-  @apply bg-bg-tertiary;
+  @apply bg-bg-hover text-text-primary;
+}
+
+.react-flow__controls-button svg {
+  @apply fill-current;
+}
+
+/* MiniMap styling */
+.react-flow__minimap {
+  @apply bg-bg-secondary border border-border-default rounded-lg overflow-hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.react-flow__minimap-mask {
+  fill: var(--bg-primary);
+  fill-opacity: 0.9;
+}
+
+/* Edge styling */
+.react-flow__edge-path {
+  @apply transition-all;
+  transition-duration: var(--duration-base);
+}
+
+/* Background grid */
+.react-flow__background {
+  background-color: var(--bg-primary);
+}
+
+/* Selection box */
+.react-flow__selection {
+  @apply bg-accent-primary/10 border border-accent-primary;
+}
+
+/* =============================================================================
+   UTILITY CLASSES
+   ============================================================================= */
+
+/* Truncate with ellipsis */
+.truncate-2-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.truncate-3-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Text selection */
+::selection {
+  @apply bg-accent-primary/30 text-text-primary;
+}
+
+/* Disabled state overlay */
+.disabled-overlay {
+  @apply relative;
+}
+
+.disabled-overlay::after {
+  content: "";
+  @apply absolute inset-0 bg-bg-primary/60 cursor-not-allowed;
 }

@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { ZodError, type ZodSchema } from 'zod';
 
 export * from './workflow.schemas';
+export * from './project.schemas';
 
 /**
  * Validation error response

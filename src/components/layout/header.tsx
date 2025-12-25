@@ -1,53 +1,84 @@
 /**
- * Header component with title, search, and actions
+ * Header Component
+ *
+ * Production-grade header with Linear/Vercel-inspired styling.
+ * Features:
+ * - Compact h-12 height
+ * - Refined sidebar toggle with subtle hover
+ * - Pill-shaped search trigger with ⌘K keyboard badge
+ * - Clean minimal aesthetic
  */
 
 'use client';
 
 import React from 'react';
-import {
-  MagnifyingGlassIcon,
-  Bars3Icon,
-} from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import { useUIStore } from '@/store';
+
+// =============================================================================
+// Component
+// =============================================================================
 
 export function Header() {
   const { toggleSidebar, toggleCommandPalette } = useUIStore();
 
   return (
-    <header className="flex items-center gap-4 px-6 py-3 bg-bg-secondary border-b border-border-default">
+    <header
+      className={`
+        flex items-center h-12 px-4
+        bg-bg-secondary border-b border-border-default
+      `}
+    >
       {/* Sidebar toggle */}
       <button
         onClick={toggleSidebar}
-        className="p-2 text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors"
+        className={`
+          p-2 -ml-2 rounded-md
+          text-text-tertiary hover:text-text-primary
+          hover:bg-bg-hover
+          transition-all duration-150
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary
+        `}
         aria-label="Toggle sidebar"
       >
         <Bars3Icon className="h-5 w-5" />
       </button>
 
-      {/* Title */}
-      <div className="flex items-center gap-2">
-        <h1 className="text-lg font-semibold text-text-primary">Foundry</h1>
+      {/* Logo / Title */}
+      <div className="flex items-center gap-2 ml-2">
+        <span className="text-sm font-semibold text-text-primary tracking-tight">
+          Foundry
+        </span>
       </div>
 
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Search button (opens command palette) */}
+      {/* Search trigger (opens command palette) */}
       <button
         onClick={toggleCommandPalette}
-        className="
-          flex items-center gap-2 px-3 py-1.5
-          text-sm text-text-secondary
-          bg-bg-tertiary hover:bg-[#333333]
-          border border-border-default
-          rounded-md transition-colors
-        "
+        className={`
+          flex items-center gap-2 h-8 px-3
+          text-sm text-text-tertiary
+          bg-bg-tertiary hover:bg-bg-hover
+          border border-border-default hover:border-border-hover
+          rounded-lg
+          transition-all duration-150
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary
+        `}
       >
         <MagnifyingGlassIcon className="h-4 w-4" />
-        <span>Search</span>
-        <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-bg-primary border border-border-default rounded">
-          ⌘K
+        <span className="hidden sm:inline">Search...</span>
+        <kbd
+          className={`
+            hidden sm:flex items-center gap-0.5
+            px-1.5 py-0.5 ml-2
+            text-[10px] font-medium text-text-tertiary
+            bg-bg-primary border border-border-subtle
+            rounded
+          `}
+        >
+          <span className="text-xs">⌘</span>K
         </kbd>
       </button>
     </header>
