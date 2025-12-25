@@ -7,6 +7,7 @@ import { ZodError, type ZodSchema } from 'zod';
 
 export * from './workflow.schemas';
 export * from './project.schemas';
+export * from './automation.schemas';
 
 /**
  * Validation error response

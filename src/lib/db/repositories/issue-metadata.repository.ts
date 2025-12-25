@@ -205,6 +205,25 @@ export async function createExecution(
 }
 
 /**
+ * Update an execution record
+ */
+export async function updateExecution(
+  id: string,
+  data: Partial<NewIssueExecution>
+): Promise<IssueExecution> {
+  const db = getDatabase();
+  const [execution] = await db
+    .update(issueExecutions)
+    .set(data)
+    .where(eq(issueExecutions.id, id))
+    .returning();
+  if (!execution) {
+    throw new Error('Execution not found');
+  }
+  return execution;
+}
+
+/**
  * Complete an execution with result
  */
 export async function completeExecution(

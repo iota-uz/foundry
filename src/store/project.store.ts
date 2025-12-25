@@ -38,12 +38,12 @@ export interface Project {
 
 export interface CreateProjectData {
   name: string;
-  description?: string;
+  description?: string | undefined;
   githubToken: string;
   githubProjectOwner: string;
   githubProjectNumber: number;
-  syncIntervalMinutes?: number;
-  repos?: { owner: string; repo: string }[];
+  syncIntervalMinutes?: number | undefined;
+  repos?: { owner: string; repo: string }[] | undefined;
 }
 
 export interface UpdateProjectData {
@@ -114,7 +114,7 @@ export const useProjectStore = create<ProjectState>()(
           }
 
           const { data } = await response.json() as { data: Project[] };
-          set({ projects: data, isLoading: false });
+          set({ projects: data ?? [], isLoading: false });
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Failed to fetch projects',

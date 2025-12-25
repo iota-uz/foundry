@@ -10,7 +10,7 @@ import type { ProjectsConfig, ProjectValidation, ProjectItemWithFields } from '@
 import type { Project } from '@/lib/db/schema';
 import {
   upsertIssueMetadata,
-  listIssueMetadata,
+  getIssueMetadataByIssue,
   updateCurrentStatus,
   type IssueMetadata,
 } from '@/lib/db/repositories/issue-metadata.repository';
@@ -285,11 +285,7 @@ export class SyncEngine {
     repo: string,
     issueNumber: number
   ): Promise<IssueMetadata | undefined> {
-    // Use listIssueMetadata and filter since we don't have getIssueMetadataByIssue exported
-    const allMetadata = await listIssueMetadata(projectId);
-    return allMetadata.find(
-      (m) => m.owner === owner && m.repo === repo && m.issueNumber === issueNumber
-    );
+    return getIssueMetadataByIssue(projectId, owner, repo, issueNumber);
   }
 }
 

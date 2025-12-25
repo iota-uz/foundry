@@ -212,22 +212,44 @@ export function getStatusColor(status: ExecutionStatus): StatusColorConfig {
 }
 
 // =============================================================================
-// Date/Time Formatting
+// Kanban/Project Status Colors
 // =============================================================================
 
-/**
- * Format a date as relative time (e.g., "2m ago", "3h ago").
- */
-export function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+export interface KanbanStatusColorConfig {
+  bg: string;
+  text: string;
+  border: string;
+  glow: string;
 }
+
+const KANBAN_STATUS_COLORS: Record<string, KanbanStatusColorConfig> = {
+  'todo': { bg: 'bg-gray-500/10', text: 'text-gray-400', border: 'border-gray-500/30', glow: 'shadow-gray-500/20' },
+  'backlog': { bg: 'bg-gray-500/10', text: 'text-gray-400', border: 'border-gray-500/30', glow: 'shadow-gray-500/20' },
+  'in progress': { bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/30', glow: 'shadow-yellow-500/20' },
+  'in review': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30', glow: 'shadow-purple-500/20' },
+  'review': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30', glow: 'shadow-purple-500/20' },
+  'done': { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/20' },
+  'closed': { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/20' },
+};
+
+const DEFAULT_KANBAN_STATUS: KanbanStatusColorConfig = {
+  bg: 'bg-blue-500/10',
+  text: 'text-blue-400',
+  border: 'border-blue-500/30',
+  glow: 'shadow-blue-500/20',
+};
+
+/**
+ * Get color configuration for a Kanban/GitHub Project status.
+ * Status is normalized to lowercase for matching.
+ */
+export function getKanbanStatusColor(status: string): KanbanStatusColorConfig {
+  const normalized = status.toLowerCase().trim();
+  return KANBAN_STATUS_COLORS[normalized] ?? DEFAULT_KANBAN_STATUS;
+}
+
+// =============================================================================
+// Date/Time Formatting (re-exported from utils)
+// =============================================================================
+
+export { formatRelativeTime } from '@/lib/utils/date';

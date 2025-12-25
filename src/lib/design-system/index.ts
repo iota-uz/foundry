@@ -10,8 +10,10 @@ export {
   getNodeColor,
   getNodeHexColor,
   getStatusColor,
+  getKanbanStatusColor,
   formatRelativeTime,
   type NodeColorConfig,
   type ExecutionStatus,
   type StatusColorConfig,
+  type KanbanStatusColorConfig,
 } from './node-colors';
