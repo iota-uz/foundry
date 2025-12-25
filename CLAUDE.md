@@ -8,24 +8,25 @@ Clarify user input / requirements before starting or while investigating when un
 Make as few decisions for the user as possible, present them with options instead, don't assume anything.
 
 **Context:**
-@docs/specification/index.md
+@docs/graph/index.md
+@docs/workflow-builder/index.md
 
 # 1. PROJECT CONTEXT
 
 ## 1.1 Business Overview
 
-CLI-based technical specification constructor that launches a local web interface for iteratively building and refining
-software requirements through AI-driven Q&A. Transforms vague product ideas into detailed technical specifications.
+Visual workflow builder for AI-powered software development pipelines. Build, visualize, and execute multi-step
+AI workflows with a drag-and-drop interface powered by React Flow and an FSM execution engine.
 
-**Target User:** Tech Lead / Architect with 5+ years experience
+**Target User:** Developers and tech leads building AI automation pipelines
 
 ## 1.2 Core Domains
 
-- **Q&A Phases**: CPO (product/business) → Clarify (ambiguity detection) → CTO (technical)
-- **Artifacts**: Features, DBML schemas, OpenAPI/GraphQL specs, UI mockups
-- **Visualizations**: Data flow diagrams, API docs, schema viewers, component gallery
-- **Reverse Engineering**: Analyze existing codebases to generate specs
-- **Git Integration**: Branch, commit, push/pull within the UI
+- **Visual Workflow Builder**: React Flow-based drag-and-drop canvas for node construction
+- **Graph Engine**: FSM-based workflow execution with checkpoint/resume
+- **Node Library**: Pre-built nodes (Agent, Command, HTTP, LLM, Eval, etc.)
+- **Real-Time Execution**: SSE-based live progress monitoring
+- **GitHub Integration**: Dispatch workflows via Actions, update GitHub Projects
 
 ## 1.3 Technology Stack
 
@@ -37,46 +38,61 @@ software requirements through AI-driven Q&A. Transforms vague product ideas into
 | State | Zustand |
 | AI | Claude Agent SDK |
 | Diagrams | React Flow |
-| API Docs | Scalar |
-| Storage | File System + SQLite |
+| Database | PostgreSQL + Drizzle ORM |
+| Real-Time | Server-Sent Events (SSE) |
 
 ## 1.4 Architecture Overview
 
-- **CLI + Web**: CLI launches local Next.js server
-- **File-first**: Specs stored as YAML files (human-readable, good Git diffs)
-- **SQLite**: History and state (queryable, transactional)
-- **Agent Hierarchy**:
-  ```
-  Orchestrator Agent
-  ├── CPO Agent (product/business questions)
-  ├── Clarify Agent (ambiguity detection)
-  ├── CTO Agent (technical decisions)
-  └── RE Agent (reverse engineering/code analysis)
-  ```
+```
+Visual Workflow Builder (React Flow)
+         │
+         ▼
+Schema Converter (React Flow ↔ GraphEngine)
+         │
+         ▼
+Graph Engine (FSM execution)
+         │
+    ┌────┴────┐
+    ▼         ▼
+PostgreSQL  Claude API
+(Drizzle)   (Agent SDK)
+```
 
 ## 1.5 Code Organization
 
 ```
 foundry/
-├── CLAUDE.md                 # This file - project context for AI
+├── CLAUDE.md                       # This file - project context for AI
 ├── .claude/
-│   └── guides/               # Reusable knowledge guides
-├── docs/                     # Public documentation (GitHub Pages)
-│   └── specification/        # Main specification
-│       ├── index.md          # Spec overview and links
-│       ├── business.md       # Business requirements
-│       ├── technical.md      # Architecture and stack
-│       ├── api-schema.md     # API definitions
-│       ├── data-model.md     # File and database schemas
-│       ├── ux.md             # UI design
-│       ├── qa-flow.md        # AI Q&A flow details
-│       ├── features/         # Feature documentation
-│       └── research/         # Research documents
-├── src/                      # Source code
-└── .foundry/                 # Generated spec files (for target projects)
+│   └── guides/                     # Reusable knowledge guides
+├── docs/                           # Public documentation (GitHub Pages)
+│   ├── index.md                    # Home page
+│   ├── graph/                      # Graph engine documentation
+│   ├── workflow-builder/           # Visual builder documentation
+│   ├── dispatch.md                 # GitHub dispatch integration
+│   ├── github-projects.md          # GitHub Projects integration
+│   └── _retired/                   # Retired spec-building docs
+├── src/
+│   ├── app/                        # Next.js pages and API routes
+│   │   ├── api/workflows/          # Workflow CRUD + execution APIs
+│   │   └── workflows/              # Workflow editor pages
+│   ├── components/
+│   │   ├── workflow-builder/       # Visual builder components
+│   │   ├── layout/                 # App shell
+│   │   └── shared/                 # Reusable UI components
+│   ├── lib/
+│   │   ├── graph/                  # FSM execution engine
+│   │   ├── workflow-builder/       # Schema converter, validation
+│   │   ├── db/                     # Drizzle ORM, repositories
+│   │   ├── dispatch/               # GitHub dispatch integration
+│   │   └── github-projects/        # GitHub Projects client
+│   └── store/                      # Zustand stores
+│       ├── workflow-builder.store.ts
+│       └── workflow-execution.store.ts
+└── _retired/                       # Retired spec-building source code
 ```
 
-**See:** `docs/specification/index.md` for full specification overview.
+**See:** `docs/graph/index.md` for Graph Engine docs, `docs/workflow-builder/index.md` for builder UI docs.
 
 # 2. PLAN MODE
 
@@ -86,9 +102,9 @@ foundry/
 
 Concern-based splitting (large scope only):
 
-- Frontend (React components, pages, state)
-- Backend (API routes, file system, SQLite)
-- AI Integration (Claude Agent SDK, prompts)
+- Frontend (React Flow canvas, config panels, state)
+- Backend (API routes, database, execution)
+- Graph Engine (node types, transitions, state management)
 
 Small tasks: direct tools, no agent. Medium/large single-concern: single agent.
 
@@ -123,11 +139,12 @@ Feature: `editor(haiku)` && `refactoring-expert(sonnet)`
 **Direct Tools:** Known files, simple patterns, quick lookups
 **`Explore` Agent:** Uncertain scope, complex research, understanding systems
 
-**Spec guides (read when planning implementation):**
+**Key documentation (read when planning implementation):**
 
-docs/specification/technical.md
-docs/specification/data-model.md
-docs/specification/qa-flow.md
+- docs/graph/index.md - Graph Engine overview
+- docs/graph/nodes.md - Node types and configuration
+- docs/graph/architecture.md - Core design concepts
+- docs/workflow-builder/index.md - Visual builder architecture
 
 # 3. IMPLEMENTATION
 
@@ -139,23 +156,40 @@ bun dev                       # Start development server (hot reload)
 bun build                     # Production build
 bun start                     # Start production server
 
+# Database
+docker compose up -d postgres # Start PostgreSQL
+bun db:push                   # Push schema to database
+bun db:studio                 # Open Drizzle Studio
+
 # Code Quality & Testing
 bun lint                      # Run ESLint
 bun typecheck                 # Run TypeScript type checking
 bun test                      # Run tests
 bun test --watch              # Run tests in watch mode
-
-# CLI Commands (Planned)
-foundry init                  # Initialize new project
-foundry dev                   # Start development server
-foundry serve                 # Start production server
-foundry open [path]           # Open existing project
 ```
 
 ## 3.2 Code Rules
 
 - Use `// TODO` comments for unimplemented parts or future enhancements
 - Run `bun lint` before committing to catch unused code
-- Use YAML for all spec files (not JSON)
-- Features use human-readable slugs scoped per module
-- Bidirectional refs: Features link to schemas/APIs/components and vice versa
+- Keep node configurations type-safe via discriminated unions
+- Use Drizzle ORM for all database operations
+- Stream execution updates via SSE, not polling
+
+## 3.3 Key Patterns
+
+### Adding a New Node Type
+
+1. Add enum value to `src/lib/graph/enums.ts` → `NodeType`
+2. Create node executor in `src/lib/graph/nodes/`
+3. Add config type to `src/store/workflow-builder.store.ts`
+4. Add config form to `src/components/workflow-builder/node-config-panel.tsx`
+5. Update schema converter in `src/lib/workflow-builder/schema-converter.ts`
+6. Document in `docs/graph/nodes.md`
+
+### Adding an API Route
+
+1. Create route in `src/app/api/workflows/`
+2. Use repository functions from `src/lib/db/repositories/`
+3. Handle errors with proper HTTP status codes
+4. Update API docs in `docs/workflow-builder/index.md`

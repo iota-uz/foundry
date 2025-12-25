@@ -1,6 +1,6 @@
 # Foundry Documentation Site Configuration
 title: Foundry
-description: CLI-based technical specification constructor with AI-driven Q&A
+description: Visual workflow builder for AI-powered software development pipelines
 author: Foundry Team
 email: your-email@domain.com
 
@@ -26,14 +26,14 @@ repository: iota-uz/foundry
 navigation:
   - title: Home
     url: /
-  - title: Getting Started
-    url: /getting-started/
-  - title: Specification
-    url: /specification/
-  - title: Features
-    url: /features/
-  - title: Research
-    url: /research/
+  - title: Graph Engine
+    url: /graph/
+  - title: Workflow Builder
+    url: /workflow-builder/
+  - title: Dispatch
+    url: /dispatch/
+  - title: GitHub Projects
+    url: /github-projects/
 
 # Search settings
 search_enabled: true
@@ -56,3 +56,4 @@ exclude:
   - vendor/cache/
   - vendor/gems/
   - vendor/ruby/
+  - _retired/

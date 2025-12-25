@@ -2,43 +2,50 @@
 layout: default
 title: Home
 nav_order: 1
-description: 'Foundry - CLI-based technical specification constructor with AI-driven Q&A'
+description: 'Foundry - Visual workflow builder for AI-powered software development pipelines'
 permalink: /
 ---
 
 # Foundry
 
-**CLI-based technical specification constructor with AI-driven Q&A**
+**Visual workflow builder for AI-powered software development pipelines**
 
-Transform vague product ideas into detailed technical specifications through an interactive, workflow-based process. Foundry guides you through three AI-powered phases (CPO → Clarify → CTO) to produce comprehensive documentation including database schemas, API definitions, UI mockups, and more.
+Build, visualize, and execute multi-step AI workflows with a drag-and-drop interface. Foundry combines a React Flow-based visual editor with a powerful FSM execution engine to orchestrate Claude-powered automation pipelines.
 
 ---
 
 ## Key Features
 
-### 🔄 Workflow-Based Execution
+### 🎨 Visual Workflow Builder
 
-Deterministic step sequences with bounded LLM calls. Complete CPO (product/business), Clarify (ambiguity detection), and CTO (technical) phases with full checkpoint/resume capability.
+Drag-and-drop workflow construction with React Flow. Connect nodes visually, configure them in real-time, and see your automation pipeline come to life.
 
-### 🎯 Topic-Driven Q&A
+### ⚡ FSM-Based Execution
 
-AI generates conversational questions within predefined topic constraints. Get 15-25 questions per phase across 8 structured topics.
+Deterministic state machine execution with checkpoint/resume capability. Pause workflows, inspect state, and resume from any node.
 
-### ⚡ Auto-Generated Artifacts
+### 🤖 AI-Powered Nodes
 
-Schema, API, and Component generators trigger automatically after relevant topics are completed. Get instant DBML schemas, OpenAPI/GraphQL specs, and UI component galleries.
+Integrate Claude Agent SDK directly into your workflows. Agent nodes can use tools, execute multi-turn conversations, and make intelligent decisions.
 
-### 🔍 Reverse Engineering
+### 🔄 Real-Time Visualization
 
-Analyze existing codebases to extract and document specifications. Language-agnostic, AI-driven analysis of your existing projects.
+Watch your workflows execute in real-time with animated node states, live logs, and execution progress tracking via Server-Sent Events.
 
-### 📊 Visual-First Approach
+### 📊 Rich Node Library
 
-Interactive diagrams powered by React Flow. View data flow diagrams, schema visualizations, API documentation, and component galleries.
+Pre-built nodes for common operations:
+- **Agent** - Claude-powered AI execution with tool access
+- **Command** - Shell command execution
+- **Slash Command** - Claude Code operations (/commit, /test, etc.)
+- **HTTP** - REST API calls
+- **LLM** - Direct Claude API calls with structured output
+- **Eval** - JavaScript context transformation
+- **GitHub Project** - GitHub Projects V2 status updates
 
-### 🔄 Git Integration
+### 🔗 GitHub Integration
 
-Branch, commit, push, and pull specifications directly from the UI. Full version control integration for your technical specs.
+Dispatch workflows via GitHub Actions, update GitHub Projects, and automate your development pipeline.
 
 ---
 
@@ -54,9 +61,13 @@ cd foundry
 # Install dependencies
 bun install
 
+# Set up database
+docker compose up -d postgres
+bun db:push
+
 # Set up environment variables
 cp .env.example .env.local
-# Edit .env.local and add your Anthropic API key
+# Edit .env.local and add your Anthropic API key and DATABASE_URL
 ```
 
 ### Development
@@ -68,133 +79,121 @@ bun dev
 # Visit http://localhost:3000
 ```
 
-### Your First Specification
+### Your First Workflow
 
 1. **Launch Foundry** - Run `bun dev` and open your browser
-2. **Start New Spec** - Select "New Specification" mode
-3. **CPO Phase** - Answer product and business questions
-4. **Clarify Phase** - Automatically detects and resolves ambiguities
-5. **CTO Phase** - Define technical architecture and data models
-6. **Review Artifacts** - Explore generated schemas, APIs, and UI components
-7. **Commit to Git** - Save your specification with version control
+2. **Create Workflow** - Click "New Workflow" on the home page
+3. **Add Nodes** - Drag nodes from the left sidebar onto the canvas
+4. **Connect Nodes** - Draw edges between nodes to define flow
+5. **Configure Nodes** - Click nodes to configure in the right panel
+6. **Execute** - Click "Run" to start workflow execution
+7. **Monitor** - Watch real-time progress in the Execution panel
 
 ---
 
 ## Architecture Overview
 
 ```
-┌─────────────────┐
-│   CLI Launcher  │
-│   (Bun/npx)     │
-└────────┬────────┘
-         │
-         ▼
 ┌─────────────────────────────────────┐
-│     Next.js Web Interface           │
-│  ┌──────────┐  ┌──────────────┐    │
-│  │ Q&A UI   │  │ Visualizations│    │
-│  │ (React)  │  │ (React Flow)  │    │
-│  └──────────┘  └──────────────┘    │
-└────────┬─────────────────┬──────────┘
-         │                 │
-         ▼                 ▼
-┌─────────────────┐  ┌──────────────┐
-│  File System    │  │   SQLite     │
-│  (YAML specs)   │  │  (History)   │
-└─────────────────┘  └──────────────┘
-         │
-         ▼
+│     Visual Workflow Builder         │
+│  ┌──────────────┐  ┌─────────────┐ │
+│  │ React Flow   │  │ Node Config │ │
+│  │ Canvas       │  │ Panel       │ │
+│  └──────────────┘  └─────────────┘ │
+└────────────────┬────────────────────┘
+                 │
+                 ▼
 ┌─────────────────────────────────────┐
-│     Claude AI (Anthropic SDK)       │
-│  ┌──────────┐  ┌──────────────┐    │
-│  │ CPO      │  │ CTO          │    │
-│  │ Workflow │  │ Workflow     │    │
-│  └──────────┘  └──────────────┘    │
-└─────────────────────────────────────┘
+│        Graph Engine (FSM)           │
+│  ┌──────────────┐  ┌─────────────┐ │
+│  │ State        │  │ Node        │ │
+│  │ Manager      │  │ Executors   │ │
+│  └──────────────┘  └─────────────┘ │
+└────────────────┬────────────────────┘
+                 │
+        ┌────────┴────────┐
+        ▼                 ▼
+┌───────────────┐  ┌───────────────┐
+│  PostgreSQL   │  │  Claude API   │
+│  (Drizzle)    │  │  (Agent SDK)  │
+└───────────────┘  └───────────────┘
 ```
 
 ---
 
 ## Technology Stack
 
-| Layer                | Technology                    |
-| -------------------- | ----------------------------- |
-| **Runtime**          | Bun                           |
-| **Framework**        | Next.js 14+ (App Router)      |
-| **UI Library**       | React 18+                     |
-| **Styling**          | Tailwind CSS v4 + Headless UI |
-| **State Management** | Zustand                       |
-| **AI Integration**   | Claude Agent SDK (Anthropic)  |
-| **Diagrams**         | React Flow                    |
-| **API Docs**         | Scalar                        |
-| **Database**         | SQLite (better-sqlite3)       |
-| **File Format**      | YAML (specifications)         |
+| Layer              | Technology                    |
+| ------------------ | ----------------------------- |
+| **Runtime**        | Bun                           |
+| **Framework**      | Next.js 14+ (App Router)      |
+| **UI Library**     | React 18+                     |
+| **Styling**        | Tailwind CSS v4 + Headless UI |
+| **State**          | Zustand                       |
+| **Diagrams**       | React Flow                    |
+| **AI**             | Claude Agent SDK (Anthropic)  |
+| **Database**       | PostgreSQL + Drizzle ORM      |
+| **Real-time**      | Server-Sent Events (SSE)      |
 
 ---
 
 ## Documentation
 
-### Getting Started
-
-- [Installation Guide](./getting-started/) - Setup and configuration
-- [First Project Tutorial](./getting-started/) - Build your first spec
-
 ### Core Concepts
 
-- [Workflow Phases](./guides/) - Understanding CPO, Clarify, and CTO
-- [Artifacts](./guides/) - Working with generated schemas and APIs
-- [Reverse Engineering](./guides/) - Analyzing existing codebases
+- [Graph Engine](./graph/) - FSM-based workflow execution
+- [Architecture](./graph/architecture) - Core design concepts
+- [Node Types](./graph/nodes) - Built-in node catalog
+- [Primitives](./graph/primitives) - Low-level building blocks
+- [State Management](./graph/state) - Checkpoint and resume
+- [Transitions](./graph/transitions) - Routing between nodes
 
-### Technical Reference
+### Integration
 
-- [Full Specification](./specification/) - Complete technical documentation
-- [API Schema](./specification/api-schema.html) - REST API endpoints
-- [Data Model](./specification/data-model.html) - File structure and database
-- [Features](./specification/features/) - Feature documentation
+- [GitHub Dispatch](./dispatch) - Trigger workflows via GitHub Actions
+- [GitHub Projects](./github-projects) - Status updates and automation
 
-### Research
+### Reference
 
-- [Claude Agent SDK](./specification/research/claude-agent-sdk.html) - AI integration patterns
-- [React Flow](./specification/research/react-flow.html) - Diagram implementation
-- [Spec-Driven Development](./specification/research/spec-driven-development.html) - Methodology
+- [API Reference](./graph/api) - Type-safe workflow API
+- [Custom Nodes](./graph/custom-nodes) - Creating your own nodes
+- [Examples](./graph/examples) - Full workflow examples
 
 ---
 
 ## Use Cases
 
-### 📋 New Project Specification
+### 🔄 CI/CD Automation
 
-Starting a new project? Define your entire system architecture through guided Q&A. Get database schemas, API contracts, and UI component specs in under an hour.
+Orchestrate complex deployment pipelines with AI-powered decision making. Run tests, analyze results, and decide next steps automatically.
 
-### 📚 Documentation for Legacy Code
+### 🐛 Intelligent Bug Fixing
 
-Inherited an undocumented codebase? Reverse-engineer it into a structured specification with AI assistance. Extract schemas, APIs, and component patterns automatically.
+Create workflows that analyze failing tests, generate fixes with Claude, and verify the solution before committing.
 
-### ✨ Feature Addition
+### 📝 Code Review Pipelines
 
-Adding a new feature to an existing project? See how it integrates with your current architecture, view dependency graphs, and maintain consistency.
+Build automated code review workflows that analyze PRs, check for patterns, and provide structured feedback.
 
----
+### 🚀 Feature Development
 
-## Target Users
-
-**Tech Leads & Architects** with 5+ years of experience who:
-
-- Define technical direction for projects
-- Need consistent specification formats
-- Value efficiency over hand-holding
-- Work on multiple projects simultaneously
+Define multi-step feature implementation workflows: plan → implement → test → fix → commit.
 
 ---
 
-## Key Differentiators
+## Node Types at a Glance
 
-- **Visual-first approach** with interactive diagrams
-- **Automatic ambiguity detection** via Clarify workflow
-- **Project constitution** for consistent AI decisions
-- **Event-driven hooks** for automated validation
-- **Lessons learned** feedback loop
-- **Step-level retry** without restarting entire workflows
+| Node | Purpose | AI-Powered |
+|------|---------|------------|
+| Agent | Multi-turn AI execution with tools | ✅ |
+| Command | Shell command execution | ❌ |
+| SlashCommand | Claude Code operations | ✅ |
+| HTTP | REST API calls | ❌ |
+| LLM | Direct Claude API calls | ✅ |
+| Eval | JavaScript transformation | ❌ |
+| GitHubProject | Project status updates | ❌ |
+| DynamicAgent | Runtime AI configuration | ✅ |
+| DynamicCommand | Runtime command configuration | ❌ |
 
 ---
 
@@ -216,8 +215,8 @@ MIT License - see LICENSE file for details
 
 - [GitHub Repository](https://github.com/iota-uz/foundry)
 - [Issues & Bug Reports](https://github.com/iota-uz/foundry/issues)
-- [Full Specification](./specification/)
+- [Graph Engine Docs](./graph/)
 
 ---
 
-**Ready to build better specifications?** [Get Started →](./getting-started/)
+**Ready to build AI-powered workflows?** [Get Started →](./graph/)
