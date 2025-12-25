@@ -10,6 +10,7 @@ import {
   updateExecution,
 } from '@/lib/db/repositories/workflow.repository';
 import { WorkflowStatus } from '@/lib/graph/enums';
+import { validateUuid, isValidationError } from '@/lib/validation';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -21,9 +22,13 @@ interface RouteParams {
 export async function POST(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
+    const validId = validateUuid(id);
+    if (isValidationError(validId)) {
+      return validId;
+    }
 
     // Get current execution
-    const execution = await getExecution(id);
+    const execution = await getExecution(validId);
     if (!execution) {
       return NextResponse.json(
         { error: 'Execution not found' },
@@ -41,7 +46,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     }
 
     // Update status to failed (cancelled)
-    const updated = await updateExecution(id, {
+    const updated = await updateExecution(validId, {
       status: WorkflowStatus.Failed,
       lastError: 'Execution cancelled by user',
       completedAt: new Date(),

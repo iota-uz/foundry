@@ -6,6 +6,7 @@
 
 import { NextResponse } from 'next/server';
 import { getExecution } from '@/lib/db/repositories/workflow.repository';
+import { validateUuid, isValidationError } from '@/lib/validation';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -17,7 +18,12 @@ interface RouteParams {
 export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const execution = await getExecution(id);
+    const validId = validateUuid(id);
+    if (isValidationError(validId)) {
+      return validId;
+    }
+
+    const execution = await getExecution(validId);
 
     if (!execution) {
       return NextResponse.json(

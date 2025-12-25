@@ -10,6 +10,7 @@ import {
   subscribeToExecution,
   unsubscribeFromExecution,
 } from '@/lib/workflow-builder/execution-events';
+import { validateUuid, isValidationError } from '@/lib/validation';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -20,9 +21,16 @@ interface RouteParams {
  */
 export async function GET(_request: Request, { params }: RouteParams) {
   const { id } = await params;
+  const validId = validateUuid(id);
+  if (isValidationError(validId)) {
+    return new Response(JSON.stringify({ error: 'Invalid UUID format' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   // Verify execution exists
-  const execution = await getExecution(id);
+  const execution = await getExecution(validId);
   if (!execution) {
     return new Response(JSON.stringify({ error: 'Execution not found' }), {
       status: 404,
@@ -37,7 +45,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       controllerRef = controller;
-      subscribeToExecution(id, controller);
+      subscribeToExecution(validId, controller);
 
       // Send initial state
       const initialEvent = {
@@ -65,7 +73,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     },
     cancel() {
       if (controllerRef) {
-        unsubscribeFromExecution(id, controllerRef);
+        unsubscribeFromExecution(validId, controllerRef);
       }
     },
   });

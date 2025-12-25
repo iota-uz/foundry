@@ -13,6 +13,7 @@ import {
 } from '@/lib/db/repositories/workflow.repository';
 import { WorkflowStatus } from '@/lib/graph/enums';
 import { runWorkflow } from '@/lib/workflow-builder/workflow-runner';
+import { validateUuid, isValidationError } from '@/lib/validation';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -24,9 +25,13 @@ interface RouteParams {
 export async function POST(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
+    const validId = validateUuid(id);
+    if (isValidationError(validId)) {
+      return validId;
+    }
 
     // Verify workflow exists
-    const workflow = await getWorkflow(id);
+    const workflow = await getWorkflow(validId);
     if (!workflow) {
       return NextResponse.json(
         { error: 'Workflow not found' },
@@ -46,7 +51,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
 
     // Create execution record
     const execution = await createExecution({
-      workflowId: id,
+      workflowId: validId,
       status: WorkflowStatus.Running,
       currentNode: firstNode.id,
       context: (workflow.initialContext as Record<string, unknown>) ?? {},
@@ -57,7 +62,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     // Run workflow asynchronously (don't await - let it run in background)
     runWorkflow({
       executionId: execution.id,
-      workflowId: id,
+      workflowId: validId,
       workflowName: workflow.name,
       nodes: nodes,
       edges: workflow.edges as Edge[],

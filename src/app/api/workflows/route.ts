@@ -10,7 +10,11 @@ import {
   listWorkflows,
   createWorkflow,
 } from '@/lib/db/repositories/workflow.repository';
-import type { WorkflowNodeData, WorkflowEdgeData } from '@/lib/db/schema';
+import {
+  validateBody,
+  isValidationError,
+  createWorkflowSchema,
+} from '@/lib/validation';
 
 /**
  * List all workflows
@@ -33,20 +37,17 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as {
-      name: string;
-      description?: string;
-      nodes: WorkflowNodeData[];
-      edges: WorkflowEdgeData[];
-      initialContext?: Record<string, unknown>;
-    };
+    const result = await validateBody(request, createWorkflowSchema);
+    if (isValidationError(result)) {
+      return result;
+    }
 
     const workflow = await createWorkflow({
-      name: body.name,
-      description: body.description ?? null,
-      nodes: body.nodes,
-      edges: body.edges,
-      initialContext: body.initialContext ?? null,
+      name: result.name,
+      description: result.description ?? null,
+      nodes: result.nodes as { id: string; type: string; position: { x: number; y: number }; data: Record<string, unknown> }[],
+      edges: result.edges as { id: string; source: string; target: string; sourceHandle?: string; targetHandle?: string; data?: Record<string, unknown> }[],
+      initialContext: result.initialContext ?? null,
     });
 
     return NextResponse.json(workflow, { status: 201 });
