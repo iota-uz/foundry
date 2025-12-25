@@ -231,6 +231,24 @@ body {
   overflow: hidden;
 }
 
+/* Ensure all interactive elements have pointer cursor */
+button,
+[role="button"],
+[type="button"],
+[type="submit"],
+[type="reset"],
+a[href],
+label[for],
+select,
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* =============================================================================
    SCROLLBAR STYLING
    ============================================================================= */
@@ -535,7 +553,7 @@ body {
    ============================================================================= */
 
 .interactive-surface {
-  @apply transition-all;
+  @apply transition-all cursor-pointer;
   transition-duration: var(--duration-base);
   transition-timing-function: var(--ease-out);
 }
