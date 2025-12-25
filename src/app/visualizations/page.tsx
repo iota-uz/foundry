@@ -1,25 +1,40 @@
 /**
- * Visualizations page - temporarily simplified during workflow builder migration
+ * Visualizations Page
  *
- * TODO: Rebuild with workflow-specific visualizations (execution graphs, node states, etc.)
+ * Dashboard for workflow execution insights and analytics.
+ * Features:
+ * - Execution overview with stats
+ * - Workflow graph viewer
+ * - Node performance analytics
  */
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Breadcrumbs } from '@/components/layout';
-import { EmptyState } from '@/components/shared';
+import {
+  WorkflowVisualizationTabs,
+  ExecutionOverview,
+  WorkflowGraphViewer,
+  NodeAnalytics,
+  type VisualizationTab,
+} from '@/components/visualizations';
 
 export default function VisualizationsPage() {
+  const [activeTab, setActiveTab] = useState<VisualizationTab>('overview');
+
   return (
     <div className="flex flex-col h-screen bg-bg-primary">
       <Breadcrumbs items={[{ label: 'Visualizations' }]} />
 
-      <div className="flex-1 flex items-center justify-center">
-        <EmptyState
-          title="Visualizations"
-          description="Workflow execution visualizations coming soon. This page will show real-time workflow state, execution history, and node status diagrams."
-        />
+      {/* Tab Navigation */}
+      <WorkflowVisualizationTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-auto">
+        {activeTab === 'overview' && <ExecutionOverview />}
+        {activeTab === 'graph' && <WorkflowGraphViewer />}
+        {activeTab === 'analytics' && <NodeAnalytics />}
       </div>
     </div>
   );
