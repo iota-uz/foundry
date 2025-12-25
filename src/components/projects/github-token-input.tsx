@@ -29,8 +29,8 @@ interface GitHubTokenInputProps {
   value: string;
   onChange: (value: string) => void;
   validationStatus?: 'idle' | 'validating' | 'valid' | 'invalid';
-  validationMessage?: string;
-  error?: string;
+  validationMessage?: string | undefined;
+  error?: string | undefined;
   disabled?: boolean;
 }
 
