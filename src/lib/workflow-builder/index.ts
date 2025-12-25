@@ -7,3 +7,4 @@
 export * from './schema-converter';
 export * from './validation';
 export * from './execution-events';
+export * from './workflow-runner';

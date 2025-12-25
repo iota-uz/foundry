@@ -5,11 +5,14 @@
  */
 
 import { NextResponse } from 'next/server';
+import type { Node, Edge } from '@xyflow/react';
+import type { WorkflowNodeData } from '@/store/workflow-builder.store';
 import {
   getWorkflow,
   createExecution,
 } from '@/lib/db/repositories/workflow.repository';
 import { WorkflowStatus } from '@/lib/graph/enums';
+import { runWorkflow } from '@/lib/workflow-builder/workflow-runner';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -32,7 +35,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     }
 
     // Get the first node as entry point
-    const nodes = workflow.nodes as { id: string }[];
+    const nodes = workflow.nodes as Node<WorkflowNodeData>[];
     const firstNode = nodes[0];
     if (!firstNode) {
       return NextResponse.json(
@@ -51,9 +54,17 @@ export async function POST(_request: Request, { params }: RouteParams) {
       conversationHistory: [],
     });
 
-    // TODO: Actually run the workflow using GraphEngine
-    // For now, we just create the execution record
-    // The actual execution would be triggered here and run asynchronously
+    // Run workflow asynchronously (don't await - let it run in background)
+    runWorkflow({
+      executionId: execution.id,
+      workflowId: id,
+      workflowName: workflow.name,
+      nodes: nodes,
+      edges: workflow.edges as Edge[],
+      initialContext: (workflow.initialContext as Record<string, unknown>) ?? {},
+    }).catch((error) => {
+      console.error('Workflow execution error:', error);
+    });
 
     return NextResponse.json({
       executionId: execution.id,
