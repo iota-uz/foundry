@@ -36,12 +36,6 @@ export function CommandPalette() {
       description: 'View execution diagrams',
       action: () => router.push('/visualizations'),
     },
-    {
-      id: 'ui-library',
-      name: 'Go to UI Library',
-      description: 'View component gallery',
-      action: () => router.push('/ui-library'),
-    },
   ];
 
   const filteredCommands =

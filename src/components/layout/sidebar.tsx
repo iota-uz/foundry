@@ -10,7 +10,6 @@ import { usePathname } from 'next/navigation';
 import {
   BoltIcon,
   ChartBarIcon,
-  CodeBracketSquareIcon,
 } from '@heroicons/react/24/outline';
 import { useUIStore } from '@/store';
 
@@ -23,7 +22,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: 'Workflows', href: '/', icon: BoltIcon },
   { name: 'Visualizations', href: '/visualizations', icon: ChartBarIcon },
-  { name: 'UI Library', href: '/ui-library', icon: CodeBracketSquareIcon },
 ];
 
 export function Sidebar() {
