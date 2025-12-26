@@ -20,6 +20,7 @@ import {
   ArrowLeftIcon,
   ExclamationCircleIcon,
   XMarkIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { useWorkflowBuilderStore, useWorkflowExecutionStore } from '@/store';
 import {
@@ -28,6 +29,7 @@ import {
   NodeConfigPanel,
   ExecutionPanel,
   ExecutionHistory,
+  EnvironmentConfig,
 } from '@/components/workflow-builder';
 import { WorkflowStatus } from '@/lib/graph/enums';
 import { Button, Skeleton } from '@/components/shared';
@@ -36,7 +38,7 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-type RightDrawerView = 'config' | 'execution' | 'history' | null;
+type RightDrawerView = 'config' | 'execution' | 'history' | 'settings' | null;
 
 // ============================================================================
 // Loading Skeleton
@@ -165,13 +167,15 @@ export default function WorkflowEditorPage({ params }: PageProps) {
   return (
     <ReactFlowProvider>
       <div className="flex flex-col h-full bg-bg-primary">
-        {/* Toolbar with execution/history buttons */}
+        {/* Toolbar with execution/history/settings buttons */}
         <WorkflowToolbar
           onExecutionClick={() => setRightDrawerView(rightDrawerView === 'execution' ? null : 'execution')}
           onHistoryClick={() => setRightDrawerView(rightDrawerView === 'history' ? null : 'history')}
+          onSettingsClick={() => setRightDrawerView(rightDrawerView === 'settings' ? null : 'settings')}
           isExecuting={isExecuting}
           executionActive={rightDrawerView === 'execution'}
           historyActive={rightDrawerView === 'history'}
+          settingsActive={rightDrawerView === 'settings'}
         />
 
         {/* Main content area */}
@@ -219,6 +223,12 @@ export default function WorkflowEditorPage({ params }: PageProps) {
                       <span className="text-xs font-medium text-text-primary">History</span>
                     </>
                   )}
+                  {rightDrawerView === 'settings' && (
+                    <>
+                      <Cog6ToothIcon className="w-4 h-4 text-text-tertiary" />
+                      <span className="text-xs font-medium text-text-primary">Settings</span>
+                    </>
+                  )}
                   {rightDrawerView === 'config' && (
                     <span className="text-xs font-medium text-text-primary">Node Config</span>
                   )}
@@ -253,6 +263,9 @@ export default function WorkflowEditorPage({ params }: PageProps) {
                       }}
                     />
                   </div>
+                )}
+                {rightDrawerView === 'settings' && (
+                  <EnvironmentConfig workflowId={id} />
                 )}
               </div>
             </div>

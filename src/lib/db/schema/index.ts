@@ -12,3 +12,4 @@ export * from './automations';
 export * from './issue-metadata';
 export * from './users';
 export * from './github-credentials';
+export * from './workflow-secrets';

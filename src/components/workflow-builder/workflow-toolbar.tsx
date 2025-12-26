@@ -25,6 +25,7 @@ import {
   ClockIcon,
   PencilIcon,
   XMarkIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { useWorkflowBuilderStore, useWorkflowExecutionStore } from '@/store';
@@ -40,9 +41,11 @@ import { Button } from '@/components/shared/button';
 interface WorkflowToolbarProps {
   onExecutionClick?: () => void;
   onHistoryClick?: () => void;
+  onSettingsClick?: () => void;
   isExecuting?: boolean;
   executionActive?: boolean;
   historyActive?: boolean;
+  settingsActive?: boolean;
 }
 
 // ============================================================================
@@ -118,9 +121,11 @@ function Tooltip({
 export function WorkflowToolbar({
   onExecutionClick,
   onHistoryClick,
+  onSettingsClick,
   isExecuting: isExecutingProp,
   executionActive = false,
   historyActive = false,
+  settingsActive = false,
 }: WorkflowToolbarProps) {
   const {
     nodes,
@@ -430,7 +435,7 @@ export function WorkflowToolbar({
           ================================================================ */}
       <div className="flex items-center gap-3">
         {/* Panel Toggle Buttons */}
-        {(onExecutionClick !== undefined || onHistoryClick !== undefined) && (
+        {(onExecutionClick !== undefined || onHistoryClick !== undefined || onSettingsClick !== undefined) && (
           <div
             className="
               flex items-center
@@ -499,6 +504,33 @@ export function WorkflowToolbar({
                 >
                   <ClockIcon className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">History</span>
+                </button>
+              </Tooltip>
+            )}
+
+            {onHistoryClick !== undefined &&
+              onSettingsClick !== undefined && (
+                <div className="w-px h-4 bg-border-subtle" />
+              )}
+
+            {onSettingsClick !== undefined && (
+              <Tooltip content="Workflow settings">
+                <button
+                  onClick={onSettingsClick}
+                  className={`
+                    flex items-center gap-1.5 px-2.5 h-7 rounded-md
+                    text-xs font-medium
+                    transition-all duration-150
+                    cursor-pointer
+                    ${
+                      settingsActive
+                        ? 'bg-bg-tertiary text-text-primary shadow-sm'
+                        : 'text-text-tertiary hover:text-text-secondary hover:bg-bg-hover/50'
+                    }
+                  `}
+                >
+                  <Cog6ToothIcon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Settings</span>
                 </button>
               </Tooltip>
             )}
