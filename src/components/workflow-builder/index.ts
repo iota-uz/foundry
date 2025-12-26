@@ -10,3 +10,4 @@ export { ExecutionHistory } from './execution-history';
 export { WorkflowNode } from './nodes/base-workflow-node';
 export { WorkflowEdge } from './edges/workflow-edge';
 export { EnvironmentConfig } from './environment-config';
+export { DockerImageConfig } from './docker-image-config';

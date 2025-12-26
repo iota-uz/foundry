@@ -18,6 +18,7 @@ export const createWorkflowAction = actionClient
       nodes: parsedInput.nodes as WorkflowNodeData[],
       edges: parsedInput.edges as WorkflowEdgeData[],
       initialContext: parsedInput.initialContext ?? null,
+      dockerImage: parsedInput.dockerImage ?? null,
     });
     return { workflow };
   });
@@ -52,6 +53,7 @@ export const updateWorkflowAction = actionClient
     if (data.nodes !== undefined) updateData.nodes = data.nodes;
     if (data.edges !== undefined) updateData.edges = data.edges;
     if (data.initialContext !== undefined) updateData.initialContext = data.initialContext;
+    if (data.dockerImage !== undefined) updateData.dockerImage = data.dockerImage;
 
     const workflow = await repo.updateWorkflow(id, updateData);
     return { workflow };

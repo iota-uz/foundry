@@ -30,6 +30,7 @@ import {
   ExecutionPanel,
   ExecutionHistory,
   EnvironmentConfig,
+  DockerImageConfig,
 } from '@/components/workflow-builder';
 import { WorkflowStatus } from '@/lib/graph/enums';
 import { Button, Skeleton } from '@/components/shared';
@@ -265,7 +266,10 @@ export default function WorkflowEditorPage({ params }: PageProps) {
                   </div>
                 )}
                 {rightDrawerView === 'settings' && (
-                  <EnvironmentConfig workflowId={id} />
+                  <div className="h-full overflow-y-auto">
+                    <DockerImageConfig workflowId={id} />
+                    <EnvironmentConfig workflowId={id} />
+                  </div>
                 )}
               </div>
             </div>

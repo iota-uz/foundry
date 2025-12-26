@@ -14,6 +14,7 @@ import type { Node, Edge, XYPosition } from '@xyflow/react';
 import { NodeType, AgentModel, StdlibTool, type LLMModelId } from '@/lib/graph/enums';
 import { createWorkflowAction, updateWorkflowAction } from '@/lib/actions/workflows';
 import type { FieldUpdate } from '@/lib/github-projects';
+import type { McpServerSelection } from '@/lib/graph/mcp-presets';
 
 // ============================================================================
 // Helpers
@@ -94,6 +95,7 @@ export interface AgentNodeConfig {
   model: AgentModel;
   maxTurns?: number;
   temperature?: number;
+  mcpServers?: McpServerSelection[];
 }
 
 export interface CommandNodeConfig {
@@ -235,6 +237,8 @@ export interface WorkflowMetadata {
   name: string;
   description: string;
   initialContext: Record<string, unknown>;
+  /** Docker image for container execution (optional) */
+  dockerImage?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -293,6 +297,7 @@ const defaultConfigs: Record<NodeType, () => NodeConfig> = {
     prompt: 'Enter your prompt here...',
     capabilities: [StdlibTool.Read, StdlibTool.Write, StdlibTool.Bash],
     model: AgentModel.Sonnet,
+    mcpServers: [],
   }),
   [NodeType.Command]: () => ({
     type: 'command',
@@ -507,6 +512,7 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
             sourceHandle: e.sourceHandle ?? undefined,
           })),
           initialContext: metadata.initialContext,
+          dockerImage: metadata.dockerImage || undefined,
         };
 
         // Use the appropriate action based on whether we're creating or updating
@@ -549,6 +555,7 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
             nodes: Node<WorkflowNodeData>[];
             edges: Edge[];
             initialContext: Record<string, unknown>;
+            dockerImage?: string;
             createdAt: string;
             updatedAt: string;
           };
@@ -563,6 +570,8 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
               initialContext: workflow.initialContext ?? {},
               createdAt: workflow.createdAt,
               updatedAt: workflow.updatedAt,
+              // Use conditional spread for exactOptionalPropertyTypes compliance
+              ...(workflow.dockerImage && { dockerImage: workflow.dockerImage }),
             },
             isDirty: false,
             isLoading: false,
