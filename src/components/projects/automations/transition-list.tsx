@@ -72,7 +72,7 @@ function TransitionRow({
         `}
       >
         {transition.condition}
-        {transition.condition === 'custom' && transition.customExpression && (
+        {transition.condition === 'custom' && transition.customExpression !== undefined && transition.customExpression !== '' && (
           <span className="ml-1.5 opacity-70">(...)</span>
         )}
       </div>
@@ -143,7 +143,7 @@ export function TransitionList({
   const handleStartEdit = (transition: Transition) => {
     setEditingId(transition.id);
     setEditCondition(transition.condition);
-    setEditExpression(transition.customExpression || '');
+    setEditExpression(transition.customExpression ?? '');
     setEditNextStatus(transition.nextStatus);
   };
 
@@ -155,7 +155,7 @@ export function TransitionList({
   };
 
   const handleSaveEdit = async () => {
-    if (!editingId) return;
+    if (editingId === null || editingId === '') return;
 
     await onUpdate(editingId, {
       condition: editCondition,

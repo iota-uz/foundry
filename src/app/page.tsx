@@ -48,7 +48,7 @@ export default function WorkflowsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchWorkflows();
+    void fetchWorkflows();
   }, []);
 
   async function fetchWorkflows() {
@@ -127,7 +127,7 @@ export default function WorkflowsPage() {
           )}
 
           {/* Error state */}
-          {error && !isLoading && (
+          {(error != null && error !== '') && !isLoading && (
             <div className="flex flex-col items-center justify-center py-16">
               <div className="w-12 h-12 rounded-full bg-accent-error/10 flex items-center justify-center mb-4">
                 <ExclamationCircleIcon className="w-6 h-6 text-accent-error" />
@@ -143,7 +143,7 @@ export default function WorkflowsPage() {
           )}
 
           {/* Empty state */}
-          {!isLoading && !error && workflows.length === 0 && (
+          {!isLoading && (error == null || error === '') && workflows.length === 0 && (
             <EmptyState
               icon={<BoltIcon className="w-12 h-12" />}
               title="No workflows yet"
@@ -157,7 +157,7 @@ export default function WorkflowsPage() {
           )}
 
           {/* Workflows grid */}
-          {!isLoading && !error && workflows.length > 0 && (
+          {!isLoading && (error == null || error === '') && workflows.length > 0 && (
             <>
               {/* Stats bar */}
               <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border-subtle">
@@ -223,7 +223,7 @@ function WorkflowCard({ workflow, onDelete }: WorkflowCardProps) {
           {workflow.name}
         </h3>
 
-        {workflow.description ? (
+        {(workflow.description != null && workflow.description !== '') ? (
           <p className="text-sm text-text-secondary mb-3 line-clamp-2 h-10">
             {workflow.description}
           </p>

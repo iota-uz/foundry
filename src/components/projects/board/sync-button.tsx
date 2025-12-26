@@ -28,7 +28,7 @@ interface SyncButtonProps {
 // ============================================================================
 
 function getRelativeTime(dateString: string | null): string {
-  if (!dateString) return 'Never synced';
+  if (dateString === null || dateString === '') return 'Never synced';
 
   const date = new Date(dateString);
   const now = new Date();
@@ -69,7 +69,7 @@ export function SyncButton({ lastSyncedAt, isSyncing, onSync }: SyncButtonProps)
 
   // Show success animation after sync
   useEffect(() => {
-    if (!isSyncing && lastSyncedAt) {
+    if (isSyncing === false && lastSyncedAt !== undefined && lastSyncedAt !== null && lastSyncedAt !== '') {
       setShowSuccess(true);
       const timeout = setTimeout(() => setShowSuccess(false), 2000);
       return () => clearTimeout(timeout);

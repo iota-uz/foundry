@@ -134,7 +134,7 @@ export function StepGitHubConnection({
           value={projectUrl}
           onChange={(e) => onProjectUrlChange(e.target.value)}
           placeholder="https://github.com/users/username/projects/1"
-          error={errors?.projectUrl || urlMessage}
+          error={errors?.projectUrl ?? urlMessage}
         />
 
         {/* Show parsed values as helper text */}

@@ -860,13 +860,13 @@ function Field({
       <div className="flex items-center justify-between mb-1.5">
         <label className="text-sm font-medium text-text-secondary">
           {label}
-          {optional && (
+          {optional === true && (
             <span className="ml-1 text-xs text-text-tertiary font-normal">
               (optional)
             </span>
           )}
         </label>
-        {hint && (
+        {hint !== undefined && hint !== null && hint !== '' && (
           <span className={`text-xs ${hintColor ?? 'text-text-tertiary'}`}>
             {hint}
           </span>

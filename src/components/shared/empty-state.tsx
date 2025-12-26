@@ -100,7 +100,7 @@ export function EmptyState({
       `}
     >
       {/* Icon */}
-      {icon && (
+      {icon !== undefined && icon !== null && (
         <div
           className={`
             ${styles.icon}
@@ -110,7 +110,7 @@ export function EmptyState({
         >
           {React.isValidElement(icon)
             ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
-                className: `${styles.iconSize} ${(icon as React.ReactElement<{ className?: string }>).props.className || ''}`,
+                className: `${styles.iconSize} ${(icon as React.ReactElement<{ className?: string }>).props.className ?? ''}`,
               })
             : icon}
         </div>
@@ -120,7 +120,7 @@ export function EmptyState({
       <h3 className={`text-text-primary ${styles.title}`}>{title}</h3>
 
       {/* Description */}
-      {description && (
+      {description !== undefined && description !== null && description !== '' && (
         <p className={`text-text-secondary ${styles.description}`}>
           {description}
         </p>

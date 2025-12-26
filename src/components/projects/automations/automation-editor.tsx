@@ -77,10 +77,10 @@ export function AutomationEditor({
 
   // Reset form when automation changes
   useEffect(() => {
-    if (automation) {
+    if (automation !== null) {
       setTriggerType(automation.triggerType);
-      setTriggerStatus(automation.triggerStatus || '');
-      setButtonLabel(automation.buttonLabel || '');
+      setTriggerStatus(automation.triggerStatus ?? '');
+      setButtonLabel(automation.buttonLabel ?? '');
       setWorkflowId(automation.workflowId);
       setPriority(automation.priority);
       setEnabled(automation.enabled);
@@ -99,15 +99,15 @@ export function AutomationEditor({
   const validate = useCallback(() => {
     const errors: Record<string, string> = {};
 
-    if (!workflowId) {
+    if (workflowId === '') {
       errors.workflowId = 'Please select a workflow';
     }
 
-    if (triggerType === 'status_enter' && !triggerStatus) {
+    if (triggerType === 'status_enter' && triggerStatus === '') {
       errors.triggerStatus = 'Please select a status';
     }
 
-    if (triggerType === 'manual' && !buttonLabel.trim()) {
+    if (triggerType === 'manual' && buttonLabel.trim() === '') {
       errors.buttonLabel = 'Please enter a button label';
     }
 
@@ -141,9 +141,9 @@ export function AutomationEditor({
 
       if (e.key === 'Escape') {
         onClose();
-      } else if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
+      } else if (e.key === 's' && (e.metaKey === true || e.ctrlKey === true)) {
         e.preventDefault();
-        handleSave();
+        void handleSave();
       }
     };
 
@@ -212,7 +212,7 @@ export function AutomationEditor({
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Error display */}
-            {error && (
+            {error !== undefined && error !== '' && (
               <div
                 className={`
                   flex items-start gap-3 p-4
@@ -241,10 +241,10 @@ export function AutomationEditor({
                 onTriggerStatusChange={setTriggerStatus}
                 onButtonLabelChange={setButtonLabel}
                 errors={
-                  validationErrors.triggerStatus || validationErrors.buttonLabel
+                  (validationErrors.triggerStatus !== undefined && validationErrors.triggerStatus !== '') || (validationErrors.buttonLabel !== undefined && validationErrors.buttonLabel !== '')
                     ? {
-                        ...(validationErrors.triggerStatus && { triggerStatus: validationErrors.triggerStatus }),
-                        ...(validationErrors.buttonLabel && { buttonLabel: validationErrors.buttonLabel }),
+                        ...(validationErrors.triggerStatus !== undefined && validationErrors.triggerStatus !== '' ? { triggerStatus: validationErrors.triggerStatus } : {}),
+                        ...(validationErrors.buttonLabel !== undefined && validationErrors.buttonLabel !== '' ? { buttonLabel: validationErrors.buttonLabel } : {}),
                       }
                     : undefined
                 }
@@ -259,7 +259,7 @@ export function AutomationEditor({
               <WorkflowSelector
                 value={workflowId}
                 onChange={setWorkflowId}
-                error={validationErrors.workflowId || undefined}
+                error={validationErrors.workflowId !== undefined && validationErrors.workflowId !== '' ? validationErrors.workflowId : undefined}
               />
             </section>
 
@@ -325,7 +325,7 @@ export function AutomationEditor({
             </section>
 
             {/* Transitions (only in edit mode) */}
-            {isEditMode && automation && (
+            {isEditMode && automation !== null && (
               <section>
                 <h3 className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider mb-4">
                   Status Transitions

@@ -40,7 +40,7 @@ export const GraphQLTypeNodeComponent = memo(
       setExpanded((prev) => !prev);
     }, []);
 
-    const hasFields = data.fields && data.fields.length > 0;
+    const hasFields = data.fields !== undefined && data.fields !== null && data.fields.length > 0;
     const isExpandable =
       hasFields && ['OBJECT', 'INPUT_OBJECT', 'INTERFACE'].includes(data.kind);
 
@@ -49,8 +49,8 @@ export const GraphQLTypeNodeComponent = memo(
         className={`
           bg-bg-secondary border rounded-lg overflow-hidden
           transition-all duration-200
-          ${isSelected ? 'border-accent-primary shadow-lg shadow-accent-primary/20' : 'border-border-default'}
-          ${expanded ? 'shadow-lg' : ''}
+          ${isSelected === true ? 'border-accent-primary shadow-lg shadow-accent-primary/20' : 'border-border-default'}
+          ${expanded === true ? 'shadow-lg' : ''}
         `}
         style={{ minWidth: '200px' }}
       >
@@ -76,9 +76,9 @@ export const GraphQLTypeNodeComponent = memo(
           className={`
             px-4 py-3
             border-b border-border-default
-            ${isExpandable ? 'cursor-pointer hover:bg-bg-tertiary transition-colors' : ''}
+            ${isExpandable === true ? 'cursor-pointer hover:bg-bg-tertiary transition-colors' : ''}
           `}
-          onClick={isExpandable ? handleToggle : undefined}
+          onClick={isExpandable === true ? handleToggle : undefined}
         >
           <div className="flex items-center gap-2 justify-between">
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -97,16 +97,16 @@ export const GraphQLTypeNodeComponent = memo(
                 {data.typeName}
               </span>
             </div>
-            {isExpandable && (
+            {isExpandable === true && (
               <span className="text-text-secondary flex-shrink-0">
-                {expanded ? '▼' : '▶'}
+                {expanded === true ? '▼' : '▶'}
               </span>
             )}
           </div>
         </div>
 
         {/* Description */}
-        {data.description && (
+        {data.description !== undefined && data.description !== null && data.description !== '' && (
           <div className="px-4 py-2 border-b border-border-default bg-bg-tertiary/50">
             <p className="text-xs text-text-secondary line-clamp-2">
               {data.description}
@@ -115,7 +115,7 @@ export const GraphQLTypeNodeComponent = memo(
         )}
 
         {/* Fields */}
-        {isExpandable && expanded && hasFields && (
+        {isExpandable === true && expanded === true && hasFields === true && (
           <div className="divide-y divide-border-default max-h-64 overflow-y-auto">
             {data.fields!.map((field, index) => (
               <div
@@ -137,14 +137,14 @@ export const GraphQLTypeNodeComponent = memo(
         )}
 
         {/* Scalar/Enum info */}
-        {!isExpandable && (
+        {isExpandable !== true && (
           <div className="px-4 py-2 text-xs text-text-secondary bg-bg-tertiary/50 text-center">
             {data.kind}
           </div>
         )}
 
         {/* Field count for expandable types */}
-        {isExpandable && !expanded && hasFields && (
+        {isExpandable === true && expanded !== true && hasFields === true && (
           <div className="px-4 py-2 text-xs text-text-secondary bg-bg-tertiary/50 text-center">
             {data.fields!.length} field{data.fields!.length !== 1 ? 's' : ''}
           </div>

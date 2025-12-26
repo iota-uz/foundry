@@ -15,18 +15,21 @@ import { ENV, DEFAULTS } from '../constants';
  */
 function parseRepository(): { owner: string; repo: string; repository: string } {
   const ghRepo = process.env[ENV.GITHUB_REPOSITORY];
-  if (!ghRepo) {
+  if (ghRepo === undefined || ghRepo === null || ghRepo === '') {
     throw new Error(`${ENV.GITHUB_REPOSITORY} environment variable is required`);
   }
 
   const parts = ghRepo.split('/');
-  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+  const owner = parts[0];
+  const repo = parts[1];
+  if (parts.length !== 2 || owner === undefined || owner === null || owner === '' ||
+      repo === undefined || repo === null || repo === '') {
     throw new Error(`Invalid GITHUB_REPOSITORY format: ${ghRepo} (expected owner/repo)`);
   }
 
   return {
-    owner: parts[0],
-    repo: parts[1],
+    owner,
+    repo,
     repository: ghRepo,
   };
 }
@@ -36,7 +39,7 @@ function parseRepository(): { owner: string; repo: string; repository: string } 
  */
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
-  if (!value) {
+  if (value === undefined || value === null || value === '') {
     throw new Error(`${name} environment variable is required`);
   }
   return value;
@@ -46,7 +49,8 @@ function getRequiredEnv(name: string): string {
  * Get optional environment variable with default.
  */
 function getEnv(name: string, defaultValue: string): string {
-  return process.env[name] || defaultValue;
+  const value = process.env[name];
+  return (value !== undefined && value !== null && value !== '') ? value : defaultValue;
 }
 
 /**
@@ -54,7 +58,7 @@ function getEnv(name: string, defaultValue: string): string {
  */
 function getEnvNumber(name: string): number | undefined {
   const value = process.env[name];
-  if (!value) return undefined;
+  if (value === undefined || value === null || value === '') return undefined;
   const num = parseInt(value, 10);
   return isNaN(num) ? undefined : num;
 }
@@ -97,14 +101,14 @@ export function buildDispatchContext(): DispatchContext {
   const maxConcurrent = getEnvNumber(ENV.GRAPH_MAX_CONCURRENT);
   const dryRun = process.env[ENV.GRAPH_DRY_RUN] === 'true';
 
-  if (projectOwner) context.projectOwner = projectOwner;
-  if (projectNumber) context.projectNumber = projectNumber;
-  if (maxConcurrent) context.maxConcurrent = maxConcurrent;
+  if (projectOwner !== undefined && projectOwner !== '') context.projectOwner = projectOwner;
+  if (projectNumber !== undefined && projectNumber !== 0) context.projectNumber = projectNumber;
+  if (maxConcurrent !== undefined && maxConcurrent !== 0) context.maxConcurrent = maxConcurrent;
   if (dryRun) context.dryRun = dryRun;
 
   // Validate project source config
   if (sourceType === 'project') {
-    if (!projectNumber) {
+    if (projectNumber === undefined || projectNumber === 0) {
       throw new Error(`${ENV.GRAPH_PROJECT_NUMBER} is required for project source`);
     }
   }
@@ -131,7 +135,7 @@ export function buildIssueProcessorContext(): IssueContext {
   const { repository } = parseRepository();
   const issueNumber = getEnvNumber(ENV.GRAPH_ISSUE_NUMBER);
 
-  if (!issueNumber) {
+  if (issueNumber === undefined || issueNumber === 0) {
     throw new Error(`${ENV.GRAPH_ISSUE_NUMBER} environment variable is required`);
   }
 
@@ -156,10 +160,10 @@ export function buildIssueProcessorContext(): IssueContext {
   const doneStatus = process.env[ENV.GRAPH_DONE_STATUS];
   const actionsRunUrl = buildActionsRunUrl();
 
-  if (projectOwner) context.projectOwner = projectOwner;
-  if (projectNumber) context.projectNumber = projectNumber;
-  if (doneStatus) context.doneStatus = doneStatus;
-  if (actionsRunUrl) context.actionsRunUrl = actionsRunUrl;
+  if (projectOwner !== undefined && projectOwner !== '') context.projectOwner = projectOwner;
+  if (projectNumber !== undefined && projectNumber !== 0) context.projectNumber = projectNumber;
+  if (doneStatus !== undefined && doneStatus !== '') context.doneStatus = doneStatus;
+  if (actionsRunUrl !== undefined && actionsRunUrl !== '') context.actionsRunUrl = actionsRunUrl;
 
   return context;
 }
@@ -172,7 +176,7 @@ function buildActionsRunUrl(): string | undefined {
   const serverUrl = process.env[ENV.GITHUB_SERVER_URL];
   const repository = process.env[ENV.GITHUB_REPOSITORY];
 
-  if (runId && serverUrl && repository) {
+  if (runId !== undefined && runId !== '' && serverUrl !== undefined && serverUrl !== '' && repository !== undefined && repository !== '') {
     return `${serverUrl}/${repository}/actions/runs/${runId}`;
   }
 

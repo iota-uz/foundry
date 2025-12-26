@@ -183,12 +183,12 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
     const { token, projectOwner, projectNumber, owner, repo, updates } = this.config;
 
     const missing: string[] = [];
-    if (!token) missing.push('token');
-    if (!projectOwner) missing.push('projectOwner');
-    if (!projectNumber) missing.push('projectNumber');
-    if (!owner) missing.push('owner');
-    if (!repo) missing.push('repo');
-    if (!updates) missing.push('updates');
+    if (token === undefined || token === '') missing.push('token');
+    if (projectOwner === undefined || projectOwner === '') missing.push('projectOwner');
+    if (projectNumber === undefined || projectNumber === 0) missing.push('projectNumber');
+    if (owner === undefined || owner === '') missing.push('owner');
+    if (repo === undefined || repo === '') missing.push('repo');
+    if (updates === undefined) missing.push('updates');
 
     if (missing.length > 0) {
       throw new NodeExecutionError(
@@ -237,7 +237,7 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
         projectNumber,
       };
 
-      if (verbose) {
+      if (verbose === true) {
         projectConfig.verbose = true;
       }
 
@@ -260,10 +260,10 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
         issueNumber,
         repository: `${owner}/${repo}`,
         duration,
-        ...(updateResult.error && { error: updateResult.error }),
+        ...(updateResult.error !== undefined && updateResult.error !== '' ? { error: updateResult.error } : {}),
       };
 
-      if (!updateResult.success && throwOnError) {
+      if (!updateResult.success && throwOnError === true) {
         const failedFields = updateResult.updatedFields
           .filter(f => !f.success)
           .map(f => `${f.field}: ${f.error}`)

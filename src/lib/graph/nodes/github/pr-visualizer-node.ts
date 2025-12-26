@@ -403,7 +403,7 @@ export class GitHubPRVisualizerNodeRuntime<TContext extends Record<string, unkno
       // Apply custom labels
       for (const node of diagramNodes) {
         const meta = this.config.workflowNodes[node.id];
-        if (meta?.label) {
+        if (meta?.label !== undefined && meta.label !== '') {
           node.label = meta.label;
         }
       }
@@ -492,7 +492,7 @@ export class GitHubPRVisualizerNodeRuntime<TContext extends Record<string, unkno
       const duration = Date.now() - startTime;
 
       if (err instanceof NodeExecutionError) {
-        if (throwOnError) {
+        if (throwOnError === true) {
           throw err;
         }
       }
@@ -509,7 +509,7 @@ export class GitHubPRVisualizerNodeRuntime<TContext extends Record<string, unkno
         `[GitHubPRVisualizerNode] Failed: ${err.message}`
       );
 
-      if (throwOnError) {
+      if (throwOnError === true) {
         throw new NodeExecutionError(
           `PR visualization failed: ${err.message}`,
           'pr-visualizer',

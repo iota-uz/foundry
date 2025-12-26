@@ -63,7 +63,7 @@ export default function ProjectsPage() {
   } = useProjectStore();
 
   useEffect(() => {
-    fetchProjects();
+    void fetchProjects();
   }, [fetchProjects]);
 
   const handleCreateNew = () => {
@@ -117,7 +117,7 @@ export default function ProjectsPage() {
           </div>
 
           {/* Error banner */}
-          {error && (
+          {(error != null && error !== '') && (
             <div className="mb-6 p-4 rounded-lg bg-accent-error/10 border border-accent-error/30 flex items-start gap-3">
               <ExclamationCircleIcon className="w-5 h-5 text-accent-error flex-shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -147,7 +147,7 @@ export default function ProjectsPage() {
           )}
 
           {/* Empty state */}
-          {!isLoading && !error && projects?.length === 0 && (
+          {!isLoading && (error == null || error === '') && projects?.length === 0 && (
             <EmptyState
               icon={<FolderIcon className="w-12 h-12" />}
               title="No projects yet"
@@ -161,7 +161,7 @@ export default function ProjectsPage() {
           )}
 
           {/* Projects grid */}
-          {!isLoading && projects && projects.length > 0 && (
+          {!isLoading && (projects != null) && projects.length > 0 && (
             <>
               {/* Stats bar */}
               <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border-subtle">

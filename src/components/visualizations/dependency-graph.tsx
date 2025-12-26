@@ -54,7 +54,7 @@ export function DependencyGraph({
 
   // Create nodes and edges from features
   useEffect(() => {
-    if (!features || loading) return;
+    if (features === undefined || features === null || loading === true) return;
 
     async function calculateLayout() {
       try {
@@ -79,7 +79,7 @@ export function DependencyGraph({
         const edgeSet = new Set<string>();
 
         features.forEach((feature) => {
-          if (feature.dependencies && feature.dependencies.length > 0) {
+          if (feature.dependencies !== undefined && feature.dependencies !== null && feature.dependencies.length > 0) {
             feature.dependencies.forEach((depId) => {
               const depFeature = features.find((f) => f.id === depId);
               if (depFeature) {
@@ -120,7 +120,7 @@ export function DependencyGraph({
           for (let i = 0; i < cycle.length - 1; i++) {
             const current = cycle[i];
             const next = cycle[i + 1];
-            if (current && next) {
+            if (current !== undefined && current !== null && current !== '' && next !== undefined && next !== null && next !== '') {
               circularEdgeIds.add(generateEdgeId(current, next));
             }
           }
@@ -150,7 +150,7 @@ export function DependencyGraph({
       }
     }
 
-    calculateLayout();
+    void calculateLayout();
   }, [features, loading, layoutDirection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
@@ -175,7 +175,7 @@ export function DependencyGraph({
     []
   );
 
-  if (error) {
+  if (error !== undefined && error !== null && error !== '') {
     return (
       <div className="w-full h-full flex items-center justify-center bg-bg-primary">
         <div className="text-center">
@@ -186,7 +186,7 @@ export function DependencyGraph({
     );
   }
 
-  if (!features || features.length === 0) {
+  if (features === undefined || features === null || features.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-bg-primary">
         <p className="text-text-secondary">No features available</p>

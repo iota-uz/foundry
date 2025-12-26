@@ -45,15 +45,15 @@ export function RelationshipEdgeComponent({
   });
 
   const cardinalityLabel = formatCardinalityLabel(data?.cardinality);
-  const strokeColor = selected ? '#3b82f6' : '#6b7280';
-  const strokeWidth = selected ? 2.5 : 2;
+  const strokeColor = selected === true ? '#3b82f6' : '#6b7280';
+  const strokeWidth = selected === true ? 2.5 : 2;
 
   return (
     <>
       <BaseEdge
         id={id}
         path={edgePath}
-        {...(markerEnd && { markerEnd })}
+        {...(markerEnd !== undefined && markerEnd !== null && markerEnd !== '' && { markerEnd })}
         style={{
           stroke: strokeColor,
           strokeWidth,
@@ -63,7 +63,7 @@ export function RelationshipEdgeComponent({
       />
 
       {/* Cardinality label */}
-      {cardinalityLabel && (
+      {cardinalityLabel !== undefined && cardinalityLabel !== null && cardinalityLabel !== '' && (
         <EdgeLabelRenderer>
           <div
             style={{

@@ -93,7 +93,7 @@ export function Sidebar() {
                 text-sm font-medium
                 transition-all duration-150
                 ${
-                  isActive
+                  isActive === true
                     ? 'bg-bg-hover text-text-primary'
                     : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
                 }
@@ -101,7 +101,7 @@ export function Sidebar() {
               title={sidebarCollapsed ? item.name : undefined}
             >
               {/* Active indicator - left accent bar */}
-              {isActive && (
+              {isActive === true && (
                 <div
                   className={`
                     absolute left-0 top-1/2 -translate-y-1/2
@@ -114,7 +114,7 @@ export function Sidebar() {
               <Icon
                 className={`
                   h-5 w-5 flex-shrink-0
-                  ${isActive ? 'text-accent-primary' : ''}
+                  ${isActive === true ? 'text-accent-primary' : ''}
                 `}
               />
 
@@ -124,7 +124,7 @@ export function Sidebar() {
               )}
 
               {/* Keyboard shortcut (shown on hover when expanded) */}
-              {!sidebarCollapsed && item.shortcut && (
+              {!sidebarCollapsed && item.shortcut !== undefined && item.shortcut !== null && item.shortcut !== '' && (
                 <kbd
                   className={`
                     hidden group-hover:flex

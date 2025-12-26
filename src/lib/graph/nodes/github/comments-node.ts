@@ -204,7 +204,7 @@ export class GithubCommentsNodeRuntime<TContext extends Record<string, unknown>>
           );
       }
 
-      if (!result.success && throwOnError) {
+      if (!result.success && throwOnError === true) {
         throw new NodeExecutionError(
           `Comment operation failed: ${result.error}`,
           `${owner}/${repo}#${issueNumber}`,

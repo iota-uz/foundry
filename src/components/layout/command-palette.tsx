@@ -268,7 +268,7 @@ export function CommandPalette() {
                                         >
                                           {command.name}
                                         </div>
-                                        {command.description && (
+                                        {command.description !== undefined && command.description !== null && command.description !== '' && (
                                           <div className="text-xs text-text-tertiary mt-0.5 truncate">
                                             {command.description}
                                           </div>
@@ -276,7 +276,7 @@ export function CommandPalette() {
                                       </div>
 
                                       {/* Keyboard shortcut */}
-                                      {command.shortcut && (
+                                      {command.shortcut !== undefined && command.shortcut !== null && command.shortcut !== '' && (
                                         <kbd
                                           className={`
                                             flex items-center justify-center

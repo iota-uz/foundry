@@ -24,10 +24,10 @@ function Error({ statusCode }: ErrorProps) {
       }}
     >
       <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-        {statusCode || 'Error'}
+        {typeof statusCode === 'number' ? statusCode : 'Error'}
       </h1>
       <p style={{ color: '#888888', marginBottom: '2rem' }}>
-        {statusCode
+        {typeof statusCode === 'number'
           ? `An error ${statusCode} occurred on server`
           : 'An error occurred on client'}
       </p>

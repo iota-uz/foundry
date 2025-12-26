@@ -59,7 +59,10 @@ export interface WorkflowState<TContext extends Record<string, unknown> = Record
   /** Last update timestamp (ISO 8601) */
   updatedAt: string;
 
-  /** AI conversation history for resumability */
+  /**
+   * AI conversation history for resumability.
+   * Using unknown[] for flexibility - actual SDK types are handled at runtime.
+   */
   conversationHistory: unknown[];
 
   /** User-defined context data */
@@ -113,16 +116,18 @@ export interface InlineTool<TInput = unknown> {
   /** Zod schema for input validation */
   schema: ZodType<TInput>;
 
-  /** Tool execution function */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  execute: (args: any) => Promise<unknown>;
+  /**
+   * Tool execution function.
+   * At runtime, the args are validated against the schema, but the function
+   * signature uses unknown for compatibility with heterogeneous tool arrays.
+   */
+  execute: (args: unknown) => Promise<unknown>;
 }
 
 /**
- * Tool reference: either a stdlib tool enum or an inline definition.
+ * Tool reference: either a stdlib tool enum or an inline tool definition.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ToolReference = StdlibTool | InlineTool<any>;
+export type ToolReference = StdlibTool | InlineTool;
 
 // ============================================================================
 // Base Node Definition

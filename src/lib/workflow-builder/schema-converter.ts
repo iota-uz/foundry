@@ -330,8 +330,7 @@ function nodeDefToReactFlow(
  * This is a best-effort approach since functions can be complex
  */
 function extractTransitionTarget(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  transitionFn: (state: any) => string,
+  transitionFn: (state: { currentNode: string; status: string; updatedAt: string; conversationHistory: unknown[]; context: Record<string, unknown> }) => string,
   allNodeNames: string[]
 ): string | null {
   // Try to execute with a mock state to get the result
@@ -354,8 +353,9 @@ function extractTransitionTarget(
   // Try to parse the function source for simple arrow functions
   const fnStr = transitionFn.toString();
   const simpleMatch = fnStr.match(/=>\s*['"`](\w+)['"`]/);
-  if (simpleMatch?.[1]) {
-    return simpleMatch[1];
+  const matchedValue = simpleMatch?.[1];
+  if (matchedValue !== undefined && matchedValue !== null && matchedValue !== '') {
+    return matchedValue;
   }
 
   return null;
@@ -379,8 +379,10 @@ export function fromWorkflowConfig(
 
   // Extract edges from transition functions
   for (const nodeDef of config.nodes) {
-    const target = extractTransitionTarget(nodeDef.then, allNodeNames);
-    if (target && target !== SpecialNode.End) {
+    // Cast the transition function to the expected signature
+    const transitionFn = nodeDef.then as (state: { currentNode: string; status: string; updatedAt: string; conversationHistory: unknown[]; context: Record<string, unknown> }) => string;
+    const target = extractTransitionTarget(transitionFn, allNodeNames);
+    if (target !== null && target !== undefined && target !== '' && target !== SpecialNode.End) {
       edges.push({
         id: `edge-${nodeDef.name}-${target}`,
         source: nodeDef.name,

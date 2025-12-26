@@ -8,7 +8,8 @@
 
 import { main } from './run';
 
-main(process.argv.slice(2)).catch((error) => {
-  console.error('Error:', error.message || error);
+main(process.argv.slice(2)).catch((error: unknown) => {
+  const err = error as Error | undefined;
+  console.error('Error:', err?.message ?? String(error));
   process.exit(1);
 });

@@ -53,8 +53,8 @@ export class GraphEngine<TState extends BaseState> {
 
     this.config = {
       apiKey: options.apiKey,
-      model: options.model || 'claude-sonnet-4.5',
-      maxRetries: options.maxRetries || 0,
+      model: options.model ?? 'claude-sonnet-4.5',
+      maxRetries: options.maxRetries ?? 0,
     };
   }
 

@@ -120,14 +120,14 @@ export default function WorkflowEditorPage({ params }: PageProps) {
 
   // Auto-switch to config when a node is selected
   useEffect(() => {
-    if (selectedNodeId && rightPanelView !== 'config') {
+    if ((selectedNodeId != null && selectedNodeId !== '') && rightPanelView !== 'config') {
       setRightPanelView('config');
     }
   }, [selectedNodeId, rightPanelView]);
 
   useEffect(() => {
-    if (id) {
-      loadWorkflow(id);
+    if (id != null && id !== '') {
+      void loadWorkflow(id);
       // Reset execution state when loading a new workflow
       resetExecution();
     }
@@ -139,7 +139,7 @@ export default function WorkflowEditorPage({ params }: PageProps) {
   }
 
   // Show error state
-  if (error) {
+  if (error != null && error !== '') {
     return (
       <div className="flex items-center justify-center h-screen bg-bg-primary">
         <div className="text-center max-w-md">
@@ -264,7 +264,7 @@ function TabButton({ active, onClick, icon, label, highlight }: TabButtonProps) 
         ${
           active
             ? 'text-text-primary'
-            : highlight
+            : (highlight === true)
               ? 'text-accent-primary'
               : 'text-text-tertiary hover:text-text-secondary'
         }

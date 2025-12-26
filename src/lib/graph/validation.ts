@@ -483,11 +483,11 @@ export function validateSemantics<TNodeNames extends string>(
 
   // Report unreachable nodes (only if no dynamic transitions)
   const hasDynamicTransitions = config.nodes.some(
-    (n) => n && typeof n.then === 'function'
+    (n) => n !== undefined && n !== null && typeof n.then === 'function'
   );
   if (!hasDynamicTransitions) {
     for (const node of config.nodes) {
-      if (node && !reachable.has(node.name)) {
+      if (node !== undefined && node !== null && !reachable.has(node.name)) {
         errors.push({
           path: ['nodes'],
           message: `Node "${node.name}" is unreachable from entry node`,

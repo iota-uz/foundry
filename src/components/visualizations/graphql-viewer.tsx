@@ -44,7 +44,7 @@ export function GraphQLViewer({
 
   // Parse GraphQL schema and create React Flow nodes/edges
   useEffect(() => {
-    if (!schema || loading) return;
+    if (schema === undefined || schema === null || schema === '' || loading === true) return;
 
     async function calculateLayout() {
       try {
@@ -66,9 +66,10 @@ export function GraphQLViewer({
 
           if ('getFields' in type) {
             const typeObj = type as GraphQLObjectType | GraphQLInputObjectType;
-            fields = Object.entries(typeObj.getFields()).map(([name, field]) => ({
+            const typeFields = typeObj.getFields();
+            fields = Object.entries(typeFields).map(([name, field]) => ({
               name,
-              type: field.type.toString(),
+              type: String((field as { type: unknown }).type),
             }));
             kind = 'OBJECT';
           } else if ('_values' in type) {
@@ -99,7 +100,7 @@ export function GraphQLViewer({
 
         typeNodes.forEach((node) => {
           const typeData = node.data as Record<string, unknown>;
-          if (typeData.fields && Array.isArray(typeData.fields)) {
+          if (typeData.fields !== undefined && typeData.fields !== null && Array.isArray(typeData.fields)) {
             (typeData.fields as Array<{ name: string; type: string }>).forEach((field) => {
               // Extract referenced type from field type string
               const refType = field.type
@@ -139,7 +140,7 @@ export function GraphQLViewer({
       }
     }
 
-    calculateLayout();
+    void calculateLayout();
   }, [schema, loading, layoutDirection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
@@ -164,7 +165,7 @@ export function GraphQLViewer({
     []
   );
 
-  if (error) {
+  if (error !== undefined && error !== null && error !== '') {
     return (
       <div className="w-full h-full flex items-center justify-center bg-bg-primary">
         <div className="text-center">
@@ -175,7 +176,7 @@ export function GraphQLViewer({
     );
   }
 
-  if (!schema) {
+  if (schema === undefined || schema === null || schema === '') {
     return (
       <div className="w-full h-full flex items-center justify-center bg-bg-primary">
         <p className="text-text-secondary">No GraphQL schema available</p>

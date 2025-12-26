@@ -50,7 +50,7 @@ export function makeUniqueSlug(
  * /path/to/file.yaml -> file
  */
 export function extractSlugFromPath(filePath: string): string {
-  const fileName = filePath.split('/').pop() || '';
+  const fileName = filePath.split('/').pop() ?? '';
   return fileName.replace(/\.(yaml|yml|md)$/, '');
 }
 

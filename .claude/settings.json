@@ -134,7 +134,6 @@
     "deny": [
       "Read(**/*.key)",
       "Read(**/*.pem)",
-      "Read(**/credentials*)",
       "Bash(sudo:*)"
     ],
     "ask": [

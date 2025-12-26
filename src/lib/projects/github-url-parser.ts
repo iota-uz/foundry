@@ -59,14 +59,14 @@ export function parseGitHubProjectUrl(url: string): ParsedGitHubProject | null {
     const owner = match[2];
     const projectNumStr = match[3];
 
-    if (!typeStr || !owner || !projectNumStr) {
+    if (typeStr === undefined || typeStr === '' || owner === undefined || owner === '' || projectNumStr === undefined || projectNumStr === '') {
       return null;
     }
 
     const projectNumber = parseInt(projectNumStr, 10);
 
     // Validate extracted values
-    if (!owner || isNaN(projectNumber) || projectNumber < 1) {
+    if (isNaN(projectNumber) || projectNumber < 1) {
       return null;
     }
 

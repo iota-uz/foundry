@@ -183,7 +183,7 @@ export class HttpNodeRuntime<TContext extends Record<string, unknown>>
         // Parse response
         let data: unknown;
         const contentType = response.headers.get('content-type');
-        if (contentType?.includes('application/json')) {
+        if (contentType !== null && contentType !== undefined && contentType.includes('application/json')) {
           data = await response.json();
         } else {
           data = await response.text();
@@ -213,7 +213,7 @@ export class HttpNodeRuntime<TContext extends Record<string, unknown>>
         );
 
         // Check for errors
-        if (throwOnError && !response.ok) {
+        if (throwOnError === true && !response.ok) {
           throw new NodeExecutionError(
             `HTTP request failed: ${result.error}`,
             finalUrl,

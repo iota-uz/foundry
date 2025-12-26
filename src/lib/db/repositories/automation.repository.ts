@@ -111,7 +111,7 @@ export async function findAutomationsByTrigger(
     eq(projectAutomations.enabled, true),
   ];
 
-  if (status && triggerType === 'status_enter') {
+  if (status !== undefined && status !== null && status !== '' && triggerType === 'status_enter') {
     conditions.push(eq(projectAutomations.triggerStatus, status));
   }
 

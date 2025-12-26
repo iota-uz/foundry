@@ -35,7 +35,7 @@ export function DBMLDiagram({ dbml, loading, error }: DBMLDiagramProps) {
 
   // Parse DBML and create React Flow nodes/edges
   useEffect(() => {
-    if (!dbml || loading) return;
+    if (dbml === undefined || dbml === null || dbml === '' || loading === true) return;
 
     async function calculateLayout() {
       try {
@@ -48,7 +48,7 @@ export function DBMLDiagram({ dbml, loading, error }: DBMLDiagramProps) {
           position: { x: 0, y: 0 },
           data: {
             tableName: table.name,
-            fields: table.fields || [],
+            fields: table.fields ?? [],
             expanded: false,
           },
           width: 220,
@@ -77,7 +77,7 @@ export function DBMLDiagram({ dbml, loading, error }: DBMLDiagramProps) {
       }
     }
 
-    calculateLayout();
+    void calculateLayout();
   }, [dbml, loading, layoutDirection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
@@ -102,7 +102,7 @@ export function DBMLDiagram({ dbml, loading, error }: DBMLDiagramProps) {
     []
   );
 
-  if (error) {
+  if (error !== undefined && error !== null && error !== '') {
     return (
       <div className="w-full h-full flex items-center justify-center bg-bg-primary">
         <div className="text-center">

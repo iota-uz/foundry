@@ -10,6 +10,50 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import {
+  createAutomationAction,
+  updateAutomationAction,
+  deleteAutomationAction,
+  createTransitionAction,
+  updateTransitionAction,
+  deleteTransitionAction,
+} from '@/lib/actions/automations';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Extract error message from server action result
+ * next-safe-action validationErrors uses _errors arrays on each field
+ */
+function extractActionError(result: {
+  serverError?: string;
+  validationErrors?: unknown;
+}): string | null {
+  if (result.serverError !== undefined && result.serverError !== '') {
+    return result.serverError;
+  }
+  if (result.validationErrors !== null && result.validationErrors !== undefined && typeof result.validationErrors === 'object') {
+    const errors = result.validationErrors as Record<string, unknown>;
+    // Check for root-level errors first
+    const rootErrors = errors._errors;
+    if (Array.isArray(rootErrors) && rootErrors.length > 0 && typeof rootErrors[0] === 'string') {
+      return rootErrors[0];
+    }
+    // Check for field-level errors
+    for (const [key, value] of Object.entries(errors)) {
+      if (key !== '_errors' && value !== null && value !== undefined && typeof value === 'object' && '_errors' in value) {
+        const fieldErrors = (value as { _errors?: unknown })._errors;
+        if (Array.isArray(fieldErrors) && fieldErrors.length > 0 && typeof fieldErrors[0] === 'string') {
+          return fieldErrors[0];
+        }
+      }
+    }
+    return 'Validation failed';
+  }
+  return null;
+}
 
 // ============================================================================
 // Types
@@ -26,6 +70,7 @@ export interface Transition {
 export interface Automation {
   id: string;
   projectId: string;
+  name: string;
   triggerType: 'status_enter' | 'manual';
   triggerStatus: string | null;
   buttonLabel: string | null;
@@ -38,6 +83,7 @@ export interface Automation {
 }
 
 export interface CreateAutomationData {
+  name: string;
   triggerType: 'status_enter' | 'manual';
   triggerStatus?: string;
   buttonLabel?: string;
@@ -47,6 +93,7 @@ export interface CreateAutomationData {
 }
 
 export interface UpdateAutomationData {
+  name?: string;
   triggerType?: 'status_enter' | 'manual';
   triggerStatus?: string | null;
   buttonLabel?: string | null;
@@ -125,8 +172,8 @@ export const useAutomationStore = create<AutomationState>()(
         try {
           const response = await fetch(`/api/projects/${projectId}/automations`);
           if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to fetch automations');
+            const data = await response.json() as { error?: string };
+            throw new Error(data.error ?? 'Failed to fetch automations');
           }
 
           const { data } = await response.json() as { data: Automation[] };
@@ -143,93 +190,87 @@ export const useAutomationStore = create<AutomationState>()(
       createAutomation: async (projectId: string, data: CreateAutomationData) => {
         set({ isSaving: true, error: null });
 
-        try {
-          const response = await fetch(`/api/projects/${projectId}/automations`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-          });
+        const result = await createAutomationAction({
+          projectId,
+          name: data.name,
+          triggerType: data.triggerType,
+          triggerStatus: data.triggerStatus,
+          buttonLabel: data.buttonLabel,
+          workflowId: data.workflowId,
+          enabled: data.enabled,
+          priority: data.priority,
+        });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to create automation');
-          }
-
-          const { data: automation } = await response.json() as { data: Automation };
-
-          set((state) => ({
-            automations: [...state.automations, automation],
-            isSaving: false,
-          }));
-
-          return automation;
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to create automation',
-            isSaving: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isSaving: false });
+          throw new Error(error);
         }
+
+        if (result.data === undefined) {
+          const errMsg = 'Unexpected error: no data returned';
+          set({ error: errMsg, isSaving: false });
+          throw new Error(errMsg);
+        }
+
+        const automation = result.data.automation as unknown as Automation;
+
+        set((state) => ({
+          automations: [...state.automations, automation],
+          isSaving: false,
+        }));
+
+        return automation;
       },
 
       // Update automation
       updateAutomation: async (projectId: string, id: string, data: UpdateAutomationData) => {
         set({ isSaving: true, error: null });
 
-        try {
-          const response = await fetch(`/api/projects/${projectId}/automations/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-          });
+        const result = await updateAutomationAction({
+          projectId,
+          automationId: id,
+          ...data,
+        });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to update automation');
-          }
-
-          const { data: automation } = await response.json() as { data: Automation };
-
-          set((state) => ({
-            automations: state.automations.map((a) => (a.id === id ? automation : a)),
-            selectedAutomation: state.selectedAutomation?.id === id ? automation : state.selectedAutomation,
-            isSaving: false,
-          }));
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to update automation',
-            isSaving: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isSaving: false });
+          throw new Error(error);
         }
+
+        if (result.data === undefined) {
+          const errMsg = 'Unexpected error: no data returned';
+          set({ error: errMsg, isSaving: false });
+          throw new Error(errMsg);
+        }
+
+        const automation = result.data.automation as unknown as Automation;
+
+        set((state) => ({
+          automations: state.automations.map((a) => (a.id === id ? automation : a)),
+          selectedAutomation: state.selectedAutomation?.id === id ? automation : state.selectedAutomation,
+          isSaving: false,
+        }));
       },
 
       // Delete automation
       deleteAutomation: async (projectId: string, id: string) => {
         set({ isSaving: true, error: null });
 
-        try {
-          const response = await fetch(`/api/projects/${projectId}/automations/${id}`, {
-            method: 'DELETE',
-          });
+        const result = await deleteAutomationAction({ projectId, automationId: id });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to delete automation');
-          }
-
-          set((state) => ({
-            automations: state.automations.filter((a) => a.id !== id),
-            selectedAutomation: state.selectedAutomation?.id === id ? null : state.selectedAutomation,
-            isSaving: false,
-          }));
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to delete automation',
-            isSaving: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isSaving: false });
+          throw new Error(error);
         }
+
+        set((state) => ({
+          automations: state.automations.filter((a) => a.id !== id),
+          selectedAutomation: state.selectedAutomation?.id === id ? null : state.selectedAutomation,
+          isSaving: false,
+        }));
       },
 
       // Toggle enabled state
@@ -257,42 +298,40 @@ export const useAutomationStore = create<AutomationState>()(
       createTransition: async (projectId: string, automationId: string, data: CreateTransitionData) => {
         set({ isSaving: true, error: null });
 
-        try {
-          const response = await fetch(
-            `/api/projects/${projectId}/automations/${automationId}/transitions`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(data),
-            }
-          );
+        const result = await createTransitionAction({
+          projectId,
+          automationId,
+          condition: data.condition,
+          customExpression: data.customExpression,
+          nextStatus: data.nextStatus,
+        });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to create transition');
-          }
-
-          const { data: transition } = await response.json() as { data: Transition };
-
-          set((state) => ({
-            automations: state.automations.map((a) =>
-              a.id === automationId
-                ? { ...a, transitions: [...a.transitions, transition] }
-                : a
-            ),
-            selectedAutomation:
-              state.selectedAutomation?.id === automationId
-                ? { ...state.selectedAutomation, transitions: [...state.selectedAutomation.transitions, transition] }
-                : state.selectedAutomation,
-            isSaving: false,
-          }));
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to create transition',
-            isSaving: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isSaving: false });
+          throw new Error(error);
         }
+
+        if (result.data === undefined) {
+          const errMsg = 'Unexpected error: no data returned';
+          set({ error: errMsg, isSaving: false });
+          throw new Error(errMsg);
+        }
+
+        const transition = result.data.transition as unknown as Transition;
+
+        set((state) => ({
+          automations: state.automations.map((a) =>
+            a.id === automationId
+              ? { ...a, transitions: [...a.transitions, transition] }
+              : a
+          ),
+          selectedAutomation:
+            state.selectedAutomation?.id === automationId
+              ? { ...state.selectedAutomation, transitions: [...state.selectedAutomation.transitions, transition] }
+              : state.selectedAutomation,
+          isSaving: false,
+        }));
       },
 
       // Update transition
@@ -304,88 +343,77 @@ export const useAutomationStore = create<AutomationState>()(
       ) => {
         set({ isSaving: true, error: null });
 
-        try {
-          const response = await fetch(
-            `/api/projects/${projectId}/automations/${automationId}/transitions/${id}`,
-            {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(data),
-            }
-          );
+        const result = await updateTransitionAction({
+          projectId,
+          automationId,
+          transitionId: id,
+          ...data,
+        });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to update transition');
-          }
-
-          const { data: transition } = await response.json() as { data: Transition };
-
-          set((state) => ({
-            automations: state.automations.map((a) =>
-              a.id === automationId
-                ? { ...a, transitions: a.transitions.map((t) => (t.id === id ? transition : t)) }
-                : a
-            ),
-            selectedAutomation:
-              state.selectedAutomation?.id === automationId
-                ? {
-                    ...state.selectedAutomation,
-                    transitions: state.selectedAutomation.transitions.map((t) =>
-                      t.id === id ? transition : t
-                    ),
-                  }
-                : state.selectedAutomation,
-            isSaving: false,
-          }));
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to update transition',
-            isSaving: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isSaving: false });
+          throw new Error(error);
         }
+
+        if (result.data === undefined) {
+          const errMsg = 'Unexpected error: no data returned';
+          set({ error: errMsg, isSaving: false });
+          throw new Error(errMsg);
+        }
+
+        const transition = result.data.transition as unknown as Transition;
+
+        set((state) => ({
+          automations: state.automations.map((a) =>
+            a.id === automationId
+              ? { ...a, transitions: a.transitions.map((t) => (t.id === id ? transition : t)) }
+              : a
+          ),
+          selectedAutomation:
+            state.selectedAutomation?.id === automationId
+              ? {
+                  ...state.selectedAutomation,
+                  transitions: state.selectedAutomation.transitions.map((t) =>
+                    t.id === id ? transition : t
+                  ),
+                }
+              : state.selectedAutomation,
+          isSaving: false,
+        }));
       },
 
       // Delete transition
       deleteTransition: async (projectId: string, automationId: string, id: string) => {
         set({ isSaving: true, error: null });
 
-        try {
-          const response = await fetch(
-            `/api/projects/${projectId}/automations/${automationId}/transitions/${id}`,
-            {
-              method: 'DELETE',
-            }
-          );
+        const result = await deleteTransitionAction({
+          projectId,
+          automationId,
+          transitionId: id,
+        });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to delete transition');
-          }
-
-          set((state) => ({
-            automations: state.automations.map((a) =>
-              a.id === automationId
-                ? { ...a, transitions: a.transitions.filter((t) => t.id !== id) }
-                : a
-            ),
-            selectedAutomation:
-              state.selectedAutomation?.id === automationId
-                ? {
-                    ...state.selectedAutomation,
-                    transitions: state.selectedAutomation.transitions.filter((t) => t.id !== id),
-                  }
-                : state.selectedAutomation,
-            isSaving: false,
-          }));
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to delete transition',
-            isSaving: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isSaving: false });
+          throw new Error(error);
         }
+
+        set((state) => ({
+          automations: state.automations.map((a) =>
+            a.id === automationId
+              ? { ...a, transitions: a.transitions.filter((t) => t.id !== id) }
+              : a
+          ),
+          selectedAutomation:
+            state.selectedAutomation?.id === automationId
+              ? {
+                  ...state.selectedAutomation,
+                  transitions: state.selectedAutomation.transitions.filter((t) => t.id !== id),
+                }
+              : state.selectedAutomation,
+          isSaving: false,
+        }));
       },
 
       // Set selected automation

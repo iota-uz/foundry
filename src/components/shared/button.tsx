@@ -125,7 +125,7 @@ export function Button({
   fullWidth,
   ...props
 }: ButtonProps) {
-  const isDisabled = disabled || loading;
+  const isDisabled = disabled === true || loading === true;
 
   return (
     <button
@@ -133,16 +133,16 @@ export function Button({
         ${baseStyles}
         ${variantStyles[variant]}
         ${sizeStyles[size]}
-        ${fullWidth ? 'w-full' : ''}
+        ${fullWidth === true ? 'w-full' : ''}
         ${className}
       `}
       disabled={isDisabled}
       {...props}
     >
-      {loading && <LoadingSpinner />}
-      {icon && !loading && iconPosition === 'left' && icon}
+      {loading === true && <LoadingSpinner />}
+      {icon !== undefined && icon !== null && loading !== true && iconPosition === 'left' && icon}
       {children}
-      {icon && !loading && iconPosition === 'right' && icon}
+      {icon !== undefined && icon !== null && loading !== true && iconPosition === 'right' && icon}
     </button>
   );
 }

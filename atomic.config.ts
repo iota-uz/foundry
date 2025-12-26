@@ -93,7 +93,9 @@ const runTestsTool: InlineTool<{ pattern: string }> = {
   schema: z.object({
     pattern: z.string().describe('Test file pattern (e.g., "*.test.ts")'),
   }),
-  execute: async (args) => {
+  execute: async (rawArgs) => {
+    // Args are validated at runtime by the schema
+    const args = rawArgs as { pattern: string };
     // In a real implementation, this would run bun test
     return { success: true, pattern: args.pattern, message: `Tests matching ${args.pattern} passed` };
   },
@@ -108,7 +110,9 @@ const browserTestTool: InlineTool<{ testSuite: string }> = {
   schema: z.object({
     testSuite: z.string().describe('Name of the test suite to run'),
   }),
-  execute: async (args) => {
+  execute: async (rawArgs) => {
+    // Args are validated at runtime by the schema
+    const args = rawArgs as { testSuite: string };
     // In a real implementation, this would run Playwright/Cypress
     return { success: true, testSuite: args.testSuite, results: [] };
   },

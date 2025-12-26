@@ -222,7 +222,7 @@ export class LLMNodeRuntime<
 
     try {
       // Validate input if schema provided
-      if (inputSchema && inputKey) {
+      if (inputSchema !== undefined && inputKey !== undefined) {
         const inputData = state.context[inputKey];
         const parseResult = inputSchema.safeParse(inputData);
         if (!parseResult.success) {
@@ -283,8 +283,8 @@ export class LLMNodeRuntime<
           // Try to parse as JSON
           const jsonMatch = rawOutput.match(/```json\n?([\s\S]*?)\n?```/) ||
                            rawOutput.match(/\{[\s\S]*\}/);
-          const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : rawOutput;
-          const parsed = JSON.parse(jsonStr);
+          const jsonStr = jsonMatch !== null ? (jsonMatch[1] ?? jsonMatch[0]) : rawOutput;
+          const parsed: unknown = JSON.parse(jsonStr);
           const parseResult = outputSchema.safeParse(parsed);
 
           if (parseResult.success) {
@@ -298,7 +298,7 @@ export class LLMNodeRuntime<
       }
 
       const result: LLMResult<TOutput> = {
-        success: !parseError,
+        success: parseError === undefined,
         rawOutput,
         model: modelId,
         usage: {
@@ -311,7 +311,7 @@ export class LLMNodeRuntime<
       if (output !== undefined) {
         result.output = output;
       }
-      if (parseError) {
+      if (parseError !== undefined && parseError !== '') {
         result.error = parseError;
       }
 
@@ -320,7 +320,7 @@ export class LLMNodeRuntime<
       );
 
       // Check for errors
-      if (throwOnError && parseError) {
+      if (throwOnError === true && parseError !== undefined && parseError !== '') {
         throw new NodeExecutionError(
           parseError,
           model,
@@ -372,8 +372,8 @@ export class LLMNodeRuntime<
       return this.client;
     }
 
-    const key = apiKey || process.env.ANTHROPIC_API_KEY;
-    if (!key) {
+    const key = apiKey ?? process.env.ANTHROPIC_API_KEY;
+    if (key === undefined || key === '') {
       throw new NodeExecutionError(
         'Anthropic API key not provided. Set apiKey in config or ANTHROPIC_API_KEY env var.',
         'config',

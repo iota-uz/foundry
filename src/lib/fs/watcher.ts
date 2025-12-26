@@ -43,7 +43,7 @@ export function watch(
 
   // Return cleanup function
   return () => {
-    watcher.close();
+    void watcher.close();
   };
 }
 

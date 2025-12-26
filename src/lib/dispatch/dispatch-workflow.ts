@@ -148,6 +148,16 @@ function createInitialState(config: DispatchWorkflowConfig): WorkflowState<Dispa
 }
 
 /**
+ * Null agent wrapper for dispatch workflow.
+ * Dispatch nodes don't use the agent, so we provide a stub implementation.
+ */
+const nullAgentWrapper: GraphContext['agent'] = {
+  runStep: async () => {
+    throw new Error('Agent not available in dispatch workflow context');
+  },
+};
+
+/**
  * Creates a mock GraphContext for node execution.
  */
 function createGraphContext(verbose: boolean): GraphContext {
@@ -155,8 +165,7 @@ function createGraphContext(verbose: boolean): GraphContext {
 
   return {
     logger,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    agent: null as any, // Not used by dispatch nodes
+    agent: nullAgentWrapper, // Not used by dispatch nodes
   };
 }
 
@@ -171,7 +180,9 @@ function generateMatrix(
   const sorted = [...readyIssues].sort((a, b) => a.priorityScore - b.priorityScore);
 
   // Limit if maxConcurrent is set
-  const limited = maxConcurrent ? sorted.slice(0, maxConcurrent) : sorted;
+  const limited = (maxConcurrent !== undefined && maxConcurrent !== null && maxConcurrent > 0)
+    ? sorted.slice(0, maxConcurrent)
+    : sorted;
 
   const include: MatrixEntry[] = limited.map((resolved) => {
     const entry: MatrixEntry = {
@@ -271,7 +282,7 @@ export async function runDispatchWorkflow(
     const blockedIssues = state.context.blockedIssues ?? [];
 
     // Step 3: SET_IN_PROGRESS (project source only, not in dry run)
-    if (config.sourceType === 'project' && !config.dryRun && readyIssues.length > 0) {
+    if (config.sourceType === 'project' && config.dryRun !== true && readyIssues.length > 0) {
       context.logger.info('[DispatchWorkflow] Step 3: Setting status to "In Progress"...');
 
       const setStatusConfig: SetStatusNodeConfig<DispatchContext> = {

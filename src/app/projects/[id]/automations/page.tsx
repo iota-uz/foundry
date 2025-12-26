@@ -68,9 +68,9 @@ export default function ProjectAutomationsPage() {
     try {
       const response = await fetch(`/api/projects/${projectId}/board`);
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as { columns?: Array<{ name: string }> };
         // Extract status names from columns
-        if (data.columns) {
+        if (data.columns != null && Array.isArray(data.columns)) {
           setAvailableStatuses(data.columns.map((col: { name: string }) => col.name));
         }
       }
@@ -82,9 +82,9 @@ export default function ProjectAutomationsPage() {
 
   // Fetch automations on mount
   useEffect(() => {
-    if (projectId) {
-      fetchAutomations(projectId);
-      fetchStatuses();
+    if (projectId != null && projectId !== '') {
+      void fetchAutomations(projectId);
+      void fetchStatuses();
     }
   }, [projectId, fetchAutomations, fetchStatuses]);
 
@@ -107,11 +107,11 @@ export default function ProjectAutomationsPage() {
   }, []);
 
   const handleSaveAutomation = useCallback(async (data: CreateAutomationData | UpdateAutomationData) => {
-    if (editingAutomation) {
+    if (editingAutomation != null) {
       await updateAutomation(projectId, editingAutomation.id, data);
     } else {
       const newAutomation = await createAutomation(projectId, data as CreateAutomationData);
-      if (newAutomation) {
+      if (newAutomation != null) {
         setEditingAutomation(newAutomation);
       }
     }

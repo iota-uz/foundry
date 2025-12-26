@@ -84,7 +84,7 @@ export function NodeLibrarySidebar() {
             <div className="space-y-1.5">
               {section.types.map((type) => {
                 const config = NODE_COLORS[type];
-                if (!config) return null;
+                if (config === undefined || config === null) return null;
 
                 return (
                   <NodeTypeCard

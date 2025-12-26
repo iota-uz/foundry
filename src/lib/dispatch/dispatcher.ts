@@ -71,7 +71,8 @@ export async function dispatch(config: DispatchConfig): Promise<DispatchResult> 
   // Apply MAX_CONCURRENT limit with priority sorting
   readyIssues = applyMaxConcurrent(readyIssues, config.maxConcurrent);
 
-  if (config.maxConcurrent !== undefined && readyIssues.length < dagBuilder.getReadyIssues().length) {
+  if (config.maxConcurrent !== undefined && config.maxConcurrent !== null && config.maxConcurrent > 0 &&
+      readyIssues.length < dagBuilder.getReadyIssues().length) {
     log(`Applied MAX_CONCURRENT limit: ${config.maxConcurrent}`);
   }
 
@@ -149,7 +150,7 @@ export function formatResultSummary(result: DispatchResult): string {
     lines.push('READY FOR EXECUTION (leaf issues only):');
     for (const issue of result.readyIssues) {
       const id = createIssueId(issue.issue.owner, issue.issue.repo, issue.issue.number);
-      const parentInfo = issue.issue.parentIssueNumber ? ` (child of #${issue.issue.parentIssueNumber})` : '';
+      const parentInfo = issue.issue.parentIssueNumber !== undefined && issue.issue.parentIssueNumber !== null && issue.issue.parentIssueNumber !== 0 ? ` (child of #${issue.issue.parentIssueNumber})` : '';
       lines.push(`  [${issue.priority.toUpperCase()}] ${id}: ${issue.issue.title}${parentInfo}`);
     }
     lines.push('');
@@ -194,7 +195,7 @@ export async function setGitHubActionsOutput(matrix: MatrixOutput): Promise<void
 
   // For GitHub Actions, output to GITHUB_OUTPUT file
   const outputFile = process.env['GITHUB_OUTPUT'];
-  if (outputFile) {
+  if (outputFile !== undefined && outputFile !== null && outputFile !== '') {
     const fs = await import('fs/promises');
     await fs.appendFile(outputFile, `matrix=${matrixJson}\n`);
   }

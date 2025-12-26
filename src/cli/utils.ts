@@ -10,8 +10,11 @@ import type {
   WorkflowState,
   NodeDef,
   BaseState,
+  GraphContext,
+  Transition,
+  ToolReference,
 } from '../lib/graph';
-import { resolveTransition, NodeType, StdlibTool } from '../lib/graph';
+import { resolveTransition, NodeType } from '../lib/graph';
 import {
   AgentNodeRuntime,
   CommandNodeRuntime,
@@ -19,28 +22,44 @@ import {
   EvalNodeRuntime,
   DynamicAgentNodeRuntime,
   DynamicCommandNodeRuntime,
+  type AgentNodeConfig,
+  type CommandNodeConfig,
+  type SlashCommandNodeConfig,
+  type EvalNodeConfig,
+  type DynamicAgentNodeConfig,
+  type DynamicCommandNodeConfig,
 } from '../lib/graph/nodes';
 
 /**
- * Generic state type that works with both BaseState and WorkflowState.
- * Uses any[] for conversationHistory for compatibility.
+ * State type that works with both BaseState and WorkflowState.
+ * Combines BaseState properties with a typed context.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyState<TContext extends Record<string, unknown>> = BaseState & {
+type GraphState<TContext extends Record<string, unknown>> = BaseState & {
   context: TContext;
 };
 
 /**
  * Generic graph node interface for workflow execution.
+ * Represents the runtime node that can be executed by the GraphEngine.
  */
 interface WorkflowGraphNode<TContext extends Record<string, unknown>> {
   name: string;
   execute(
-    state: AnyState<TContext>,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    context: any
-  ): Promise<Partial<AnyState<TContext>>>;
-  next(state: AnyState<TContext>): string;
+    state: GraphState<TContext>,
+    context: GraphContext
+  ): Promise<Partial<GraphState<TContext>>>;
+  next(state: GraphState<TContext>): string;
+}
+
+/**
+ * A node runtime instance with an execute method that returns a NodeExecutionResult.
+ * This is the shape returned by the node runtime classes (AgentNodeRuntime, etc).
+ */
+interface NodeRuntimeInstance<TContext extends Record<string, unknown>> {
+  execute(
+    state: WorkflowState<TContext>,
+    context: GraphContext
+  ): Promise<{ stateUpdate: Partial<WorkflowState<TContext>> }>;
 }
 
 /**
@@ -61,90 +80,84 @@ export function createGraphNode<
   validNodeNames: Set<string>
 ): WorkflowGraphNode<TContext> {
   // Create the underlying node runtime implementation based on type
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let nodeRuntime: any;
+  let nodeRuntime: NodeRuntimeInstance<TContext>;
 
   switch (node.type) {
     case NodeType.Agent: {
       const agentNode = node;
-      // Convert StdlibTool enums to string tool references
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tools = (agentNode.capabilities ?? []).map((t: any) => {
-        if (typeof t === 'string') return t;
-        if (Object.values(StdlibTool).includes(t)) return t;
-        return t; // Inline tool
-      });
-      nodeRuntime = new AgentNodeRuntime<TContext>({
+      // Convert StdlibTool enums to tool references - they're already the right type
+      const tools: ToolReference[] = agentNode.capabilities ?? [];
+
+      const agentConfig: AgentNodeConfig<TContext> = {
         role: agentNode.role,
         system: agentNode.prompt,
         tools,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        next: agentNode.then as any,
-      });
+        next: agentNode.then as Transition<TContext>,
+      };
+
+      nodeRuntime = new AgentNodeRuntime<TContext>(agentConfig);
       break;
     }
     case NodeType.Command: {
       const cmdNode = node;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cmdConfig: any = {
+      const cmdConfig: CommandNodeConfig<TContext> = {
         command: cmdNode.command,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        next: cmdNode.then as any,
+        next: cmdNode.then as Transition<TContext>,
       };
-      if (cmdNode.cwd) cmdConfig.cwd = cmdNode.cwd;
-      if (cmdNode.env) cmdConfig.env = cmdNode.env;
-      if (cmdNode.timeout) cmdConfig.timeout = cmdNode.timeout;
+      if (cmdNode.cwd !== undefined) cmdConfig.cwd = cmdNode.cwd;
+      if (cmdNode.env !== undefined) cmdConfig.env = cmdNode.env;
+      if (cmdNode.timeout !== undefined) cmdConfig.timeout = cmdNode.timeout;
       if (cmdNode.throwOnError !== undefined) cmdConfig.throwOnError = cmdNode.throwOnError;
+
       nodeRuntime = new CommandNodeRuntime<TContext>(cmdConfig);
       break;
     }
     case NodeType.SlashCommand: {
       const slashNode = node;
-      nodeRuntime = new SlashCommandNodeRuntime<TContext>({
+      const slashConfig: SlashCommandNodeConfig<TContext> = {
         command: slashNode.command,
         args: slashNode.args,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        next: slashNode.then as any,
-      });
+        next: slashNode.then as Transition<TContext>,
+      };
+
+      nodeRuntime = new SlashCommandNodeRuntime<TContext>(slashConfig);
       break;
     }
     case NodeType.Eval: {
       const evalNode = node;
-      nodeRuntime = new EvalNodeRuntime<TContext>({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        fn: evalNode.update as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        next: evalNode.then as any,
-      });
+      const evalConfig: EvalNodeConfig<TContext> = {
+        fn: evalNode.update,
+        next: evalNode.then as Transition<TContext>,
+      };
+
+      nodeRuntime = new EvalNodeRuntime<TContext>(evalConfig);
       break;
     }
     case NodeType.DynamicAgent: {
       const dynAgentNode = node;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dynAgentConfig: any = {
+      const dynAgentConfig: DynamicAgentNodeConfig<TContext> = {
         model: dynAgentNode.model,
         prompt: dynAgentNode.prompt,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        next: dynAgentNode.then as any,
+        next: dynAgentNode.then as Transition<TContext>,
       };
-      if (dynAgentNode.system) dynAgentConfig.system = dynAgentNode.system;
-      if (dynAgentNode.capabilities) dynAgentConfig.tools = dynAgentNode.capabilities;
-      if (dynAgentNode.maxTurns) dynAgentConfig.maxTurns = dynAgentNode.maxTurns;
-      if (dynAgentNode.temperature) dynAgentConfig.temperature = dynAgentNode.temperature;
+      if (dynAgentNode.system !== undefined) dynAgentConfig.system = dynAgentNode.system;
+      if (dynAgentNode.capabilities !== undefined) dynAgentConfig.tools = dynAgentNode.capabilities;
+      if (dynAgentNode.maxTurns !== undefined) dynAgentConfig.maxTurns = dynAgentNode.maxTurns;
+      if (dynAgentNode.temperature !== undefined) dynAgentConfig.temperature = dynAgentNode.temperature;
+
       nodeRuntime = new DynamicAgentNodeRuntime<TContext>(dynAgentConfig);
       break;
     }
     case NodeType.DynamicCommand: {
       const dynCmdNode = node;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dynCmdConfig: any = {
+      const dynCmdConfig: DynamicCommandNodeConfig<TContext> = {
         command: dynCmdNode.command,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        next: dynCmdNode.then as any,
+        next: dynCmdNode.then as Transition<TContext>,
       };
-      if (dynCmdNode.cwd) dynCmdConfig.cwd = dynCmdNode.cwd;
-      if (dynCmdNode.env) dynCmdConfig.env = dynCmdNode.env;
-      if (dynCmdNode.timeout) dynCmdConfig.timeout = dynCmdNode.timeout;
+      if (dynCmdNode.cwd !== undefined) dynCmdConfig.cwd = dynCmdNode.cwd;
+      if (dynCmdNode.env !== undefined) dynCmdConfig.env = dynCmdNode.env;
+      if (dynCmdNode.timeout !== undefined) dynCmdConfig.timeout = dynCmdNode.timeout;
+
       nodeRuntime = new DynamicCommandNodeRuntime<TContext>(dynCmdConfig);
       break;
     }
@@ -155,24 +168,26 @@ export function createGraphNode<
   }
 
   const nodeName = node.name;
+  const nodeTransition = node.then;
 
   // Wrap in GraphNode interface
   return {
     name: nodeName,
     async execute(
-      state: AnyState<TContext>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      context: any
-    ): Promise<Partial<AnyState<TContext>>> {
-      const result = await nodeRuntime.execute(state, context);
-      return result.stateUpdate;
+      state: GraphState<TContext>,
+      context: GraphContext
+    ): Promise<Partial<GraphState<TContext>>> {
+      // Cast state to WorkflowState for node execution
+      const workflowState = state as WorkflowState<TContext>;
+      const result = await nodeRuntime.execute(workflowState, context);
+      return result.stateUpdate as Partial<GraphState<TContext>>;
     },
-    next(state: AnyState<TContext>): string {
+    next(state: GraphState<TContext>): string {
+      // Cast state to WorkflowState for transition resolution
+      const workflowState = state as WorkflowState<TContext>;
       return resolveTransition(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        node.then as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        state as WorkflowState<TContext>,
+        nodeTransition as Transition<TContext>,
+        workflowState,
         validNodeNames,
         nodeName
       );

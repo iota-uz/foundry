@@ -77,7 +77,7 @@ export function WorkflowToolbar() {
       await saveWorkflow();
     }
 
-    if (metadata.id) {
+    if (metadata.id !== undefined && metadata.id !== null && metadata.id !== '') {
       await startExecution(metadata.id);
     }
   };
@@ -210,7 +210,7 @@ export function WorkflowToolbar() {
       {/* Right: Save and error */}
       <div className="flex items-center gap-3">
         {/* Error display */}
-        {error && (
+        {error !== null && error !== undefined && error !== '' && (
           <div className="flex items-center gap-2 text-accent-error text-sm">
             <ExclamationTriangleIcon className="w-4 h-4" />
             <span className="max-w-[150px] truncate">{error}</span>

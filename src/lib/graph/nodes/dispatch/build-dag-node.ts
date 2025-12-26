@@ -290,7 +290,7 @@ export class BuildDagNodeRuntime<TContext extends Record<string, unknown>>
 
       const duration = Date.now() - startTime;
 
-      if (throwOnError) {
+      if (throwOnError === true) {
         throw new NodeExecutionError(
           `Failed to build DAG: ${err.message}`,
           'build',
@@ -497,7 +497,7 @@ export class BuildDagNodeRuntime<TContext extends Record<string, unknown>>
   ): PriorityLevel {
     // Check for project priority (from FetchIssuesNode)
     const projectPriority = (issue as QueuedIssue & { projectPriority?: string }).projectPriority;
-    if (projectPriority) {
+    if (projectPriority !== undefined && projectPriority !== '') {
       return this.normalizePriority(projectPriority);
     }
 

@@ -15,6 +15,7 @@ function deepClone<T>(obj: T): T {
   }
 
   if (Array.isArray(obj)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return obj.map((item) => deepClone(item)) as unknown as T;
   }
 
@@ -129,7 +130,7 @@ export function applyReverseDiff(current: unknown, diffResult: DiffResult): unkn
   Object.keys(diffResult.modified).forEach((key) => {
     if (key === 'root') return;
     const modified = diffResult.modified[key];
-    if (modified) {
+    if (modified !== undefined && modified !== null) {
       restored[key] = modified.before;
     }
   });
@@ -148,7 +149,7 @@ export function snapshot<T>(obj: T): string {
  * Restore an object from a snapshot
  */
 export function restore<T>(snapshotStr: string): T {
-  return JSON.parse(snapshotStr);
+  return JSON.parse(snapshotStr) as T;
 }
 
 /**

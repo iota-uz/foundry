@@ -63,7 +63,7 @@ export function ProjectCard({
   isSyncing,
 }: ProjectCardProps) {
   const repoCount = project.repos?.length ?? 0;
-  const lastSynced = project.lastSyncedAt
+  const lastSynced = project.lastSyncedAt !== undefined && project.lastSyncedAt !== null && project.lastSyncedAt !== ''
     ? formatRelativeTime(new Date(project.lastSyncedAt))
     : 'Never synced';
 
@@ -117,7 +117,7 @@ export function ProjectCard({
           {project.name}
         </h3>
 
-        {project.description ? (
+        {project.description !== undefined && project.description !== null && project.description !== '' ? (
           <p className="text-sm text-text-secondary mb-4 line-clamp-2 h-10 leading-relaxed">
             {project.description}
           </p>
@@ -177,7 +177,7 @@ export function ProjectCard({
             title="Sync with GitHub"
           >
             <ArrowPathIcon
-              className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
+              className={`w-4 h-4 ${isSyncing === true ? 'animate-spin' : ''}`}
             />
           </button>
         )}

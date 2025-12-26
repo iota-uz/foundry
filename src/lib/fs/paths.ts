@@ -9,7 +9,7 @@ import fs from 'fs/promises';
  * Get the .foundry directory path
  */
 export function getFoundryDir(projectRoot?: string): string {
-  const root = projectRoot || process.cwd();
+  const root = (projectRoot !== undefined && projectRoot !== null && projectRoot !== '') ? projectRoot : process.cwd();
   return path.join(root, '.foundry');
 }
 

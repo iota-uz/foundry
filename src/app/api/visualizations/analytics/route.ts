@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const workflowId = searchParams.get('workflowId');
 
     // Validate workflow ID if provided
-    if (workflowId) {
+    if (workflowId !== null && workflowId !== '') {
       const validId = validateUuid(workflowId);
       if (isValidationError(validId)) {
         return validId;

@@ -126,8 +126,8 @@ export function AutomationCard({
               </div>
               <h3 className="text-sm font-medium text-text-primary mt-0.5">
                 {isStatusTrigger
-                  ? automation.triggerStatus || 'Any Status'
-                  : automation.buttonLabel || 'Run Workflow'
+                  ? (automation.triggerStatus !== undefined && automation.triggerStatus !== '' ? automation.triggerStatus : 'Any Status')
+                  : (automation.buttonLabel !== undefined && automation.buttonLabel !== '' ? automation.buttonLabel : 'Run Workflow')
                 }
               </h3>
             </div>

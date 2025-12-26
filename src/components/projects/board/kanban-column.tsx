@@ -58,7 +58,7 @@ export function KanbanColumn({ column, issues, isOver, onIssueClick }: KanbanCol
         bg-bg-primary/50
         border rounded-xl
         transition-all duration-200 ease-out
-        ${isOver
+        ${isOver === true
           ? `${colors.border.replace('/30', '/50')} ${colors.glow} shadow-lg ring-1 ring-white/10`
           : 'border-border-subtle'
         }
@@ -81,7 +81,7 @@ export function KanbanColumn({ column, issues, isOver, onIssueClick }: KanbanCol
               <div
                 className={`w-2.5 h-2.5 rounded-full ${colors.text.replace('text-', 'bg-')}`}
                 style={{
-                  boxShadow: isOver
+                  boxShadow: isOver === true
                     ? `0 0 8px 2px currentColor`
                     : '0 0 4px 1px currentColor',
                 }}
@@ -120,21 +120,21 @@ export function KanbanColumn({ column, issues, isOver, onIssueClick }: KanbanCol
               flex flex-col items-center justify-center
               py-8 px-4
               border border-dashed border-border-subtle rounded-lg
-              ${isOver ? 'border-emerald-500/50 bg-emerald-500/5' : ''}
+              ${isOver === true ? 'border-emerald-500/50 bg-emerald-500/5' : ''}
               transition-all duration-200
             `}
           >
             <div className="font-mono text-xs text-text-muted mb-1">
-              {isOver ? '[ drop here ]' : '[ empty ]'}
+              {isOver === true ? '[ drop here ]' : '[ empty ]'}
             </div>
             <p className="text-xs text-text-tertiary">
-              {isOver ? 'Release to add issue' : 'No issues in this column'}
+              {isOver === true ? 'Release to add issue' : 'No issues in this column'}
             </p>
           </div>
         )}
 
         {/* Drop indicator when dragging over */}
-        {isOver && issues.length > 0 && (
+        {isOver === true && issues.length > 0 && (
           <div
             className={`
               h-1 rounded-full
@@ -150,7 +150,7 @@ export function KanbanColumn({ column, issues, isOver, onIssueClick }: KanbanCol
         className={`
           absolute bottom-0 left-4 right-4 h-px
           bg-gradient-to-r from-transparent via-white/10 to-transparent
-          ${isOver ? 'opacity-100' : 'opacity-0'}
+          ${isOver === true ? 'opacity-100' : 'opacity-0'}
           transition-opacity duration-300
         `}
       />

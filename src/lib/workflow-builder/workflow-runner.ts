@@ -63,8 +63,8 @@ function createExecutionLogger(
         timestamp,
         level,
         message,
-        ...(currentNodeId && { nodeId: currentNodeId }),
-        ...(metadata && { metadata }),
+        ...((currentNodeId !== undefined && currentNodeId !== null && currentNodeId !== '') && { nodeId: currentNodeId }),
+        ...((metadata !== undefined && metadata !== null) && { metadata }),
       },
     });
   };
@@ -132,7 +132,7 @@ export async function runWorkflow(options: RunWorkflowOptions): Promise<void> {
 
     // 3. Setup agent wrapper
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    if (apiKey === undefined || apiKey === null || apiKey === '') {
       throw new Error('ANTHROPIC_API_KEY environment variable is required');
     }
 

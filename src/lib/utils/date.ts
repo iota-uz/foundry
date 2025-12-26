@@ -109,7 +109,7 @@ export function formatDurationBetween(
   start: string | Date,
   end: string | Date | null
 ): string {
-  if (!end) return 'running...';
+  if (end === null || end === undefined) return 'running...';
 
   const startMs = typeof start === 'string' ? parseISO(start).getTime() : start.getTime();
   const endMs = typeof end === 'string' ? parseISO(end).getTime() : end.getTime();

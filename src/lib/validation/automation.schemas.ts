@@ -20,11 +20,11 @@ export const createAutomationSchema = z.object({
 }).refine(
   (data) => {
     // If trigger type is status_enter, triggerStatus is required
-    if (data.triggerType === 'status_enter' && !data.triggerStatus) {
+    if (data.triggerType === 'status_enter' && (data.triggerStatus === undefined || data.triggerStatus === null || data.triggerStatus === '')) {
       return false;
     }
     // If trigger type is manual, buttonLabel is required
-    if (data.triggerType === 'manual' && !data.buttonLabel) {
+    if (data.triggerType === 'manual' && (data.buttonLabel === undefined || data.buttonLabel === null || data.buttonLabel === '')) {
       return false;
     }
     return true;
@@ -61,7 +61,7 @@ export const createTransitionSchema = z.object({
 }).refine(
   (data) => {
     // If condition is custom, customExpression is required
-    if (data.condition === 'custom' && !data.customExpression) {
+    if (data.condition === 'custom' && (data.customExpression === undefined || data.customExpression === '')) {
       return false;
     }
     return true;

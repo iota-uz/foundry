@@ -153,8 +153,7 @@ export abstract class BaseNode<
  */
 export function isInlineToolDefinition(
   tool: ToolReference
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): tool is InlineTool<any> {
+): tool is InlineTool {
   return typeof tool === 'object' && 'name' in tool && 'schema' in tool;
 }
 

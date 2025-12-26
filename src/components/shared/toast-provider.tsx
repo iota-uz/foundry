@@ -77,8 +77,8 @@ export function ToastProvider({ children }: ToastProviderProps) {
         id,
         type,
         message,
-        ...(options?.title && { title: options.title }),
-        ...(options?.duration && { duration: options.duration }),
+        ...(options?.title !== undefined && options.title !== null && options.title !== '' && { title: options.title }),
+        ...(options?.duration !== undefined && { duration: options.duration }),
       };
 
       // Keep max 3 toasts
@@ -108,7 +108,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
           <Toast
             key={toast.id}
             type={toast.type}
-            {...(toast.title && { title: toast.title })}
+            {...(toast.title !== undefined && toast.title !== '' ? { title: toast.title } : {})}
             message={toast.message}
             onClose={() => removeToast(toast.id)}
           />

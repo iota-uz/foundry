@@ -44,7 +44,7 @@ export async function executeCommand(
   // Create the subprocess
   const proc = spawn({
     cmd: parts,
-    cwd: cwd || process.cwd(),
+    cwd: (cwd !== undefined && cwd !== '') ? cwd : process.cwd(),
     env: {
       ...process.env,
       ...env,
@@ -71,7 +71,7 @@ export async function executeCommand(
     ]);
 
     // Clear timeout on success
-    if (timeoutId) clearTimeout(timeoutId);
+    if (timeoutId !== null) clearTimeout(timeoutId);
 
     // Read outputs
     const stdout = await new Response(proc.stdout).text();
@@ -85,7 +85,7 @@ export async function executeCommand(
     };
   } catch (error) {
     // Clear timeout on error
-    if (timeoutId) clearTimeout(timeoutId);
+    if (timeoutId !== undefined && timeoutId !== null) clearTimeout(timeoutId);
 
     // Ensure process is killed on error
     try {

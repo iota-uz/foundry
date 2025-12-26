@@ -17,8 +17,10 @@ import { listAllExecutions } from '@/lib/db/repositories/analytics.repository';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const limitParam = searchParams.get('limit');
+    const offsetParam = searchParams.get('offset');
+    const limit = parseInt(limitParam !== null && limitParam !== '' ? limitParam : '50', 10);
+    const offset = parseInt(offsetParam !== null && offsetParam !== '' ? offsetParam : '0', 10);
 
     // Validate parameters
     if (limit < 1 || limit > 100) {

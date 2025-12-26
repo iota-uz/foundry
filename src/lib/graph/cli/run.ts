@@ -49,7 +49,8 @@ function parseArgs(args: string[]): CliArgs {
         break;
       default:
         // First non-flag argument is the config path
-        if (arg && !arg.startsWith('-') && !result.configPath) {
+        if (arg !== undefined && arg !== null && arg !== '' && !arg.startsWith('-') &&
+            (result.configPath === undefined || result.configPath === null || result.configPath === '')) {
           result.configPath = arg;
         }
         break;
@@ -165,7 +166,7 @@ async function runDispatch(verbose: boolean): Promise<void> {
 
   // Write to output file if specified
   const outputFile = runtimeConfig.outputFile;
-  if (outputFile) {
+  if (outputFile !== undefined && outputFile !== null && outputFile !== '') {
     await writeMatrixToFile(result.matrix, outputFile);
     console.log(`\nMatrix written to: ${outputFile}`);
   }
@@ -197,13 +198,14 @@ async function runIssueProcessor(
 
   // Get API key
   const apiKey = process.env[ENV.ANTHROPIC_API_KEY];
-  if (!apiKey) {
+  if (apiKey === undefined || apiKey === null || apiKey === '') {
     throw new Error(`${ENV.ANTHROPIC_API_KEY} environment variable is required`);
   }
 
   // Parse repository for gh CLI
   const [owner, repo] = context.repository.split('/');
-  if (!owner || !repo) {
+  if (owner === undefined || owner === null || owner === '' ||
+      repo === undefined || repo === null || repo === '') {
     throw new Error(`Invalid repository format: ${context.repository}`);
   }
 
@@ -241,7 +243,7 @@ async function runIssueProcessor(
   const nodes = createNodeRuntimes(workflow);
 
   // Inject SetDoneStatusNodeRuntime if project configuration is provided
-  if (context.projectOwner && context.projectNumber) {
+  if (context.projectOwner !== undefined && context.projectOwner !== '' && context.projectNumber !== undefined && context.projectNumber !== 0) {
     const setDoneStatusRuntime = new SetDoneStatusNodeRuntime<IssueContext>({
       verbose: verbose || runtimeConfig.verbose,
       next: () => 'REPORT',
@@ -291,7 +293,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
     process.exit(0);
   }
 
-  if (!args.configPath) {
+  if (args.configPath === undefined || args.configPath === '') {
     console.error('Error: Config file path is required');
     console.error('Usage: bun run src/lib/graph/cli/run.ts <config-file> [--verbose]');
     process.exit(1);
@@ -314,10 +316,10 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
     // Type is WorkflowConfig<string, Record<string, unknown>> because specific
     // workflow types are unknown at compile time - they're determined by the
     // user's config file loaded at runtime
-    const workflowModule = await import(configPath);
-    const workflow = workflowModule.default as WorkflowConfig<string, Record<string, unknown>>;
+    const workflowModule = await import(configPath) as { default?: WorkflowConfig<string, Record<string, unknown>> };
+    const workflow = workflowModule.default;
 
-    if (!workflow || !workflow.id) {
+    if (workflow === undefined || workflow === null || workflow.id === undefined || workflow.id === '') {
       throw new Error(`Invalid workflow config: ${configPath} (must export default workflow)`);
     }
 
@@ -344,7 +346,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
     const err = error as Error;
     console.error('\n=== WORKFLOW FAILED ===');
     console.error('Error:', err.message);
-    if (verbose && err.stack) {
+    if (verbose === true && err.stack !== undefined && err.stack !== null && err.stack !== '') {
       console.error('Stack:', err.stack);
     }
     process.exit(1);

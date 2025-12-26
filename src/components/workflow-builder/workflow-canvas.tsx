@@ -116,8 +116,9 @@ export function WorkflowCanvas() {
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const type = event.dataTransfer.getData('application/reactflow') as NodeType;
-      if (!type) return;
+      const typeData = event.dataTransfer.getData('application/reactflow');
+      if (!typeData) return;
+      const type = typeData as NodeType;
 
       // Get position in flow coordinates
       const position = screenToFlowPosition({

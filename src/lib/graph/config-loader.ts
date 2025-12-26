@@ -81,7 +81,7 @@ export function validateTransitions<
 export function validateConfigSchema(config: unknown): string[] {
   const errors: string[] = [];
 
-  if (!config || typeof config !== 'object') {
+  if (config === null || config === undefined || typeof config !== 'object') {
     errors.push('Config must be an object');
     return errors;
   }
@@ -89,7 +89,7 @@ export function validateConfigSchema(config: unknown): string[] {
   const cfg = config as Record<string, unknown>;
 
   // Validate required 'id' property
-  if (!cfg.id) {
+  if (cfg.id === undefined || cfg.id === null) {
     errors.push('Config must have an "id" property');
   } else if (typeof cfg.id !== 'string') {
     errors.push(`Config "id" must be a string, got ${typeof cfg.id}`);
@@ -98,12 +98,12 @@ export function validateConfigSchema(config: unknown): string[] {
   }
 
   // Validate required 'schema' property (v2 API)
-  if (!cfg.schema) {
+  if (cfg.schema === undefined || cfg.schema === null) {
     errors.push('Config must have a "schema" property (use defineNodes() to create one)');
   }
 
   // Validate required 'nodes' property (v2 is array-based)
-  if (!cfg.nodes) {
+  if (cfg.nodes === undefined || cfg.nodes === null) {
     errors.push('Config must have a "nodes" property');
   } else if (!Array.isArray(cfg.nodes)) {
     errors.push('Config "nodes" must be an array');
@@ -135,7 +135,7 @@ function validateNodeDefinition(index: number, node: unknown): string[] {
   const errors: string[] = [];
   const location = `nodes[${index}]`;
 
-  if (!node || typeof node !== 'object') {
+  if (node === null || node === undefined || typeof node !== 'object') {
     errors.push(`${location} must be an object`);
     return errors;
   }
@@ -143,14 +143,14 @@ function validateNodeDefinition(index: number, node: unknown): string[] {
   const n = node as Record<string, unknown>;
 
   // Validate required 'type' property
-  if (!n.type) {
+  if (n.type === undefined || n.type === null || n.type === '') {
     errors.push(`${location} must have a "type" property`);
   } else if (typeof n.type !== 'string') {
     errors.push(`${location} type must be a string`);
   }
 
   // Validate required 'name' property (v2 uses name inside object)
-  if (!n.name) {
+  if (n.name === undefined || n.name === null || n.name === '') {
     errors.push(`${location} must have a "name" property`);
   } else if (typeof n.name !== 'string') {
     errors.push(`${location} name must be a string`);
@@ -169,14 +169,14 @@ function validateNodeDefinition(index: number, node: unknown): string[] {
 
   // Type-specific validation
   if (n.type === 'agent') {
-    if (!n.role) {
+    if (n.role === undefined || n.role === null || n.role === '') {
       errors.push(`AgentNode "${nodeName}" must have a "role" property`);
     } else if (typeof n.role !== 'string') {
       errors.push(`AgentNode "${nodeName}" role must be a string`);
     }
 
     // v2 uses 'prompt' not 'system'
-    if (!n.prompt) {
+    if (n.prompt === undefined || n.prompt === null || n.prompt === '') {
       errors.push(`AgentNode "${nodeName}" must have a "prompt" property`);
     } else if (typeof n.prompt !== 'string') {
       errors.push(`AgentNode "${nodeName}" prompt must be a string`);
@@ -189,7 +189,7 @@ function validateNodeDefinition(index: number, node: unknown): string[] {
   }
 
   if (n.type === 'command') {
-    if (!n.command) {
+    if (n.command === undefined || n.command === null || n.command === '') {
       errors.push(`CommandNode "${nodeName}" must have a "command" property`);
     } else if (typeof n.command !== 'string') {
       errors.push(`CommandNode "${nodeName}" command must be a string`);
@@ -197,13 +197,13 @@ function validateNodeDefinition(index: number, node: unknown): string[] {
   }
 
   if (n.type === 'slash-command') {
-    if (!n.command) {
+    if (n.command === undefined || n.command === null || n.command === '') {
       errors.push(`SlashCommandNode "${nodeName}" must have a "command" property`);
     } else if (typeof n.command !== 'string') {
       errors.push(`SlashCommandNode "${nodeName}" command must be a string`);
     }
 
-    if (!n.args && n.args !== '') {
+    if (n.args === undefined || n.args === null || n.args === '') {
       errors.push(`SlashCommandNode "${nodeName}" must have an "args" property`);
     } else if (typeof n.args !== 'string') {
       errors.push(`SlashCommandNode "${nodeName}" args must be a string`);
@@ -211,7 +211,7 @@ function validateNodeDefinition(index: number, node: unknown): string[] {
   }
 
   if (n.type === 'eval') {
-    if (!n.update) {
+    if (n.update === undefined || n.update === null) {
       errors.push(`EvalNode "${nodeName}" must have an "update" property`);
     } else if (typeof n.update !== 'function') {
       errors.push(`EvalNode "${nodeName}" update must be a function`);
@@ -282,7 +282,7 @@ export async function loadConfig<
   // Step 1: Dynamic import
   let configModule: { default?: unknown };
   try {
-    configModule = await import(absolutePath);
+    configModule = await import(absolutePath) as { default?: unknown };
   } catch (importError) {
     const error = importError as Error;
     if (error.message?.includes('Cannot find module') || error.message?.includes('ENOENT')) {
@@ -307,7 +307,7 @@ export async function loadConfig<
 
   // Step 2: Extract default export
   const rawConfig = configModule.default;
-  if (!rawConfig) {
+  if (rawConfig === undefined || rawConfig === null) {
     throw new ConfigValidationError(
       `Config file must have a default export: "${configPath}"`,
       [`The config file at "${configPath}" does not export a default value. ` +

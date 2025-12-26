@@ -61,7 +61,7 @@ export function parseDependencies(
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(body)) !== null) {
       const section = match[1];
-      if (section) {
+      if (section !== undefined && section !== null && section !== '') {
         // Parse individual references from this section
         const refs = parseIssueReferences(section, defaultOwner, defaultRepo);
 
@@ -97,13 +97,14 @@ export function parseIssueReferences(
     const repoRef = match[1]; // May be undefined for bare #123
     const issueNumber = match[2];
 
-    if (issueNumber) {
+    if (issueNumber !== undefined && issueNumber !== null && issueNumber !== '') {
       let owner = defaultOwner;
       let repo = defaultRepo;
 
-      if (repoRef) {
+      if (repoRef !== undefined && repoRef !== null && repoRef !== '') {
         const [parsedOwner, parsedRepo] = repoRef.split('/');
-        if (parsedOwner && parsedRepo) {
+        if (parsedOwner !== undefined && parsedOwner !== null && parsedOwner !== '' &&
+            parsedRepo !== undefined && parsedRepo !== null && parsedRepo !== '') {
           owner = parsedOwner;
           repo = parsedRepo;
         }

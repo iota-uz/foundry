@@ -87,10 +87,10 @@ export function GitPanel({
       return;
     }
 
-    fetchGitStatus();
+    void fetchGitStatus();
     // Poll for changes every 30 seconds
     const interval = setInterval(() => {
-      fetchGitStatus();
+      void fetchGitStatus();
     }, 30000);
     return () => clearInterval(interval);
   }, [isOpen, fetchGitStatus]);
@@ -274,7 +274,7 @@ export function GitPanel({
         </div>
 
         {/* Error message */}
-        {state.error && (
+        {state.error !== undefined && state.error !== null && state.error !== '' && (
           <div className="px-4 py-3 bg-accent-error/10 border-b border-accent-error text-sm text-accent-error">
             {state.error}
           </div>

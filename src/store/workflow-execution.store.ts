@@ -11,6 +11,48 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { WorkflowStatus } from '@/lib/graph/enums';
+import {
+  startExecutionAction,
+  pauseExecutionAction,
+  resumeExecutionAction,
+  cancelExecutionAction,
+} from '@/lib/actions/executions';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Extract error message from server action result
+ * next-safe-action validationErrors uses _errors arrays on each field
+ */
+function extractActionError(result: {
+  serverError?: string;
+  validationErrors?: unknown;
+}): string | null {
+  if (result.serverError !== undefined && result.serverError !== '') {
+    return result.serverError;
+  }
+  if (result.validationErrors !== null && result.validationErrors !== undefined && typeof result.validationErrors === 'object') {
+    const errors = result.validationErrors as Record<string, unknown>;
+    // Check for root-level errors first
+    const rootErrors = errors._errors;
+    if (Array.isArray(rootErrors) && rootErrors.length > 0 && typeof rootErrors[0] === 'string') {
+      return rootErrors[0];
+    }
+    // Check for field-level errors
+    for (const [key, value] of Object.entries(errors)) {
+      if (key !== '_errors' && value !== null && value !== undefined && typeof value === 'object' && '_errors' in value) {
+        const fieldErrors = (value as { _errors?: unknown })._errors;
+        if (Array.isArray(fieldErrors) && fieldErrors.length > 0 && typeof fieldErrors[0] === 'string') {
+          return fieldErrors[0];
+        }
+      }
+    }
+    return 'Validation failed';
+  }
+  return null;
+}
 
 // ============================================================================
 // Types
@@ -100,110 +142,100 @@ export const useWorkflowExecutionStore = create<WorkflowExecutionState>()(
       startExecution: async (workflowId: string) => {
         set({ status: WorkflowStatus.Pending, logs: [], nodeStates: {} });
 
-        try {
-          const response = await fetch(`/api/workflows/${workflowId}/execute`, {
-            method: 'POST',
-          });
+        const result = await startExecutionAction({ workflowId });
 
-          if (!response.ok) {
-            throw new Error('Failed to start execution');
-          }
-
-          const result = await response.json() as { executionId: string };
-          const executionId = result.executionId;
-
-          set({
-            executionId,
-            workflowId,
-            status: WorkflowStatus.Running,
-          });
-
-          // Connect to SSE for real-time updates
-          get().connectToExecution(executionId);
-        } catch (error) {
+        const error = extractActionError(result);
+        if (error !== null) {
           set({ status: WorkflowStatus.Failed });
           get().addLog({
             timestamp: new Date().toISOString(),
             level: 'error',
-            message: error instanceof Error ? error.message : 'Failed to start',
+            message: error,
           });
+          return;
         }
+
+        if (result.data === undefined) {
+          set({ status: WorkflowStatus.Failed });
+          get().addLog({
+            timestamp: new Date().toISOString(),
+            level: 'error',
+            message: 'Unexpected error: no data returned',
+          });
+          return;
+        }
+
+        const executionId = result.data.executionId;
+
+        set({
+          executionId,
+          workflowId,
+          status: WorkflowStatus.Running,
+        });
+
+        // Connect to SSE for real-time updates
+        get().connectToExecution(executionId);
       },
 
       // Pause current execution
       pauseExecution: async () => {
         const { executionId } = get();
-        if (!executionId) return;
+        if (executionId === null) return;
 
-        try {
-          const response = await fetch(
-            `/api/workflows/executions/${executionId}/pause`,
-            { method: 'POST' }
-          );
+        const result = await pauseExecutionAction({ executionId });
 
-          if (!response.ok) {
-            throw new Error('Failed to pause execution');
-          }
-
-          set({ status: WorkflowStatus.Paused });
-        } catch (error) {
+        const error = extractActionError(result);
+        if (error !== null) {
           get().addLog({
             timestamp: new Date().toISOString(),
             level: 'error',
-            message: error instanceof Error ? error.message : 'Failed to pause',
+            message: error,
           });
+          return;
         }
+
+        set({ status: WorkflowStatus.Paused });
       },
 
       // Resume paused execution
       resumeExecution: async () => {
         const { executionId } = get();
-        if (!executionId) return;
+        if (executionId === null) return;
 
-        try {
-          const response = await fetch(
-            `/api/workflows/executions/${executionId}/resume`,
-            { method: 'POST' }
-          );
+        const result = await resumeExecutionAction({ executionId });
 
-          if (!response.ok) {
-            throw new Error('Failed to resume execution');
-          }
-
-          set({ status: WorkflowStatus.Running });
-        } catch (error) {
+        const error = extractActionError(result);
+        if (error !== null) {
           get().addLog({
             timestamp: new Date().toISOString(),
             level: 'error',
-            message: error instanceof Error ? error.message : 'Failed to resume',
+            message: error,
           });
+          return;
         }
+
+        set({ status: WorkflowStatus.Running });
       },
 
       // Cancel current execution
       cancelExecution: async () => {
         const { executionId } = get();
-        if (!executionId) return;
+        if (executionId === null) return;
 
-        try {
-          const response = await fetch(
-            `/api/workflows/executions/${executionId}/cancel`,
-            { method: 'POST' }
-          );
+        const result = await cancelExecutionAction({ executionId });
 
-          if (!response.ok) {
-            throw new Error('Failed to cancel execution');
-          }
-
-          get().disconnectFromExecution();
-          set({ status: WorkflowStatus.Failed });
-        } catch (error) {
+        const error = extractActionError(result);
+        if (error !== null) {
           get().addLog({
             timestamp: new Date().toISOString(),
             level: 'error',
-            message: error instanceof Error ? error.message : 'Failed to cancel',
+            message: error,
           });
+          return;
         }
+
+        get().disconnectFromExecution();
+        set({ status: WorkflowStatus.Failed });
       },
 
       // Update execution state from SSE
@@ -246,7 +278,7 @@ export const useWorkflowExecutionStore = create<WorkflowExecutionState>()(
 
         eventSource.onmessage = (event) => {
           try {
-            const data = JSON.parse(event.data) as {
+            const data = JSON.parse(event.data as string) as {
               type: string;
               nodeId?: string;
               status?: WorkflowStatus;
@@ -258,27 +290,33 @@ export const useWorkflowExecutionStore = create<WorkflowExecutionState>()(
 
             switch (data.type) {
               case 'node_started':
-                get().updateNodeState(data.nodeId!, {
-                  status: 'running',
-                  startedAt: new Date().toISOString(),
-                });
-                set({ currentNodeId: data.nodeId! });
+                if (data.nodeId !== undefined && data.nodeId !== null && data.nodeId !== '') {
+                  get().updateNodeState(data.nodeId, {
+                    status: 'running',
+                    startedAt: new Date().toISOString(),
+                  });
+                  set({ currentNodeId: data.nodeId });
+                }
                 break;
 
               case 'node_completed':
-                get().updateNodeState(data.nodeId!, {
-                  status: 'completed',
-                  completedAt: new Date().toISOString(),
-                  output: data.nodeState?.output,
-                });
+                if (data.nodeId !== undefined && data.nodeId !== null && data.nodeId !== '') {
+                  get().updateNodeState(data.nodeId, {
+                    status: 'completed',
+                    completedAt: new Date().toISOString(),
+                    output: data.nodeState?.output,
+                  });
+                }
                 break;
 
               case 'node_failed':
-                get().updateNodeState(data.nodeId!, {
-                  status: 'failed',
-                  completedAt: new Date().toISOString(),
-                  ...(data.nodeState?.error && { error: data.nodeState.error }),
-                });
+                if (data.nodeId !== undefined && data.nodeId !== null && data.nodeId !== '') {
+                  get().updateNodeState(data.nodeId, {
+                    status: 'failed',
+                    completedAt: new Date().toISOString(),
+                    ...(data.nodeState?.error !== undefined && data.nodeState.error !== null && data.nodeState.error !== '' && { error: data.nodeState.error }),
+                  });
+                }
                 break;
 
               case 'workflow_completed':

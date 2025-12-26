@@ -101,7 +101,7 @@ export class GitHubClient {
         if (rateLimitRemaining === 0) {
           const resetTime = response.headers.get('X-RateLimit-Reset');
           throw new DispatchError(
-            `GitHub rate limit exceeded. Resets at ${resetTime ? new Date(Number(resetTime) * 1000).toISOString() : 'unknown'}`,
+            `GitHub rate limit exceeded. Resets at ${resetTime !== null && resetTime !== undefined && resetTime !== '' ? new Date(Number(resetTime) * 1000).toISOString() : 'unknown'}`,
             'GITHUB_RATE_LIMIT',
             { resetTime }
           );
@@ -130,16 +130,17 @@ export class GitHubClient {
    * Parse Link header for pagination
    */
   private parseLinkHeader(linkHeader: string | null): { next?: string; last?: string } {
-    if (!linkHeader) return {};
+    if (linkHeader === null || linkHeader === undefined || linkHeader === '') return {};
 
     const links: { next?: string; last?: string } = {};
     const parts = linkHeader.split(',');
 
     for (const part of parts) {
       const match = part.match(/<([^>]+)>;\s*rel="([^"]+)"/);
-      if (match?.[1] && match[2]) {
-        const url = match[1];
-        const rel = match[2];
+      const url = match?.[1];
+      const rel = match?.[2];
+      if (url !== undefined && url !== null && url !== '' &&
+          rel !== undefined && rel !== null && rel !== '') {
         if (rel === 'next') links.next = url;
         if (rel === 'last') links.last = url;
       }
@@ -189,7 +190,7 @@ export class GitHubClient {
       // Check for pagination
       const linkHeader = response.headers.get('Link');
       const links = this.parseLinkHeader(linkHeader);
-      hasMore = !!links.next && data.length === perPage;
+      hasMore = (links.next !== undefined && links.next !== null && links.next !== '') && data.length === perPage;
       page++;
     }
 

@@ -52,7 +52,7 @@ export function WorkflowEdge({
   // Determine stroke color
   const strokeColor = isActive
     ? 'var(--color-accent-warning)'
-    : selected
+    : selected === true
       ? 'var(--color-accent-primary)'
       : 'var(--color-border-default)';
 
@@ -64,7 +64,7 @@ export function WorkflowEdge({
         path={edgePath}
         style={{
           stroke: strokeColor,
-          strokeWidth: isActive ? 2.5 : selected ? 2 : 1.5,
+          strokeWidth: isActive ? 2.5 : selected === true ? 2 : 1.5,
           transition: 'stroke 200ms ease-out, stroke-width 200ms ease-out',
         }}
       />
@@ -84,7 +84,7 @@ export function WorkflowEdge({
       )}
 
       {/* Delete button on selection */}
-      {selected && (
+      {selected === true && (
         <EdgeLabelRenderer>
           <div
             style={{

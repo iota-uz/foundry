@@ -133,7 +133,7 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
       };
 
       // Create updated history
-      const existingHistory = (state.conversationHistory || []) as StoredMessage[];
+      const existingHistory = (state.conversationHistory ?? []) as StoredMessage[];
       const updatedHistory = [...existingHistory, newMessage];
 
       return {
@@ -196,7 +196,7 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
    */
   private buildPrompt(system: string, state: WorkflowState<TContext>): string {
     // Include relevant context in the prompt
-    const contextStr = state.context
+    const contextStr = (state.context !== undefined && state.context !== null)
       ? `\n\nCurrent context:\n${JSON.stringify(state.context, null, 2)}`
       : '';
 
@@ -223,7 +223,7 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
       systemPrompt: prompt,
     };
 
-    if (model) {
+    if (model !== undefined && model !== null && model !== '') {
       sdkOptions.model = model;
     }
 

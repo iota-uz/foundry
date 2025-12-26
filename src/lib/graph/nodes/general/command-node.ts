@@ -162,7 +162,7 @@ export class CommandNodeRuntime<TContext extends Record<string, unknown>>
       );
 
       // Check for errors
-      if (throwOnError && !result.success) {
+      if (throwOnError === true && !result.success) {
         throw new NodeExecutionError(
           `Command failed with exit code ${result.exitCode}: ${result.stderr}`,
           displayCommand,

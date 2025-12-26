@@ -118,7 +118,7 @@ export function ExecutionHistory({
       }
     }
 
-    fetchExecutions();
+    void fetchExecutions();
 
     // Poll while any execution is active
     const interval = setInterval(() => {
@@ -129,7 +129,7 @@ export function ExecutionHistory({
             e.status === WorkflowStatus.Paused
         )
       ) {
-        fetchExecutions();
+        void fetchExecutions();
       }
     }, 5000);
 
@@ -142,7 +142,7 @@ export function ExecutionHistory({
   }
 
   // Error state
-  if (error) {
+  if (error !== null && error !== '') {
     return (
       <div className="flex items-center justify-center py-8 text-accent-error">
         <ExclamationCircleIcon className="w-5 h-5 mr-2" />
@@ -210,7 +210,7 @@ export function ExecutionHistory({
 
               <div className="flex items-center gap-2 text-xs text-text-tertiary mt-0.5">
                 <span>{formatDuration(startedAt, completedAt)}</span>
-                {execution.currentNode && (
+                {execution.currentNode !== undefined && execution.currentNode !== null && execution.currentNode !== '' && (
                   <>
                     <span className="text-border-default">•</span>
                     <span className="truncate max-w-[100px]">
@@ -220,7 +220,7 @@ export function ExecutionHistory({
                 )}
               </div>
 
-              {execution.lastError && (
+              {execution.lastError !== undefined && execution.lastError !== null && execution.lastError !== '' && (
                 <p
                   className="mt-1 text-xs text-accent-error truncate"
                   title={execution.lastError}

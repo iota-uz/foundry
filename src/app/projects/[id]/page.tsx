@@ -89,20 +89,20 @@ export default function ProjectBoardPage() {
 
   // Get the selected issue
   const selectedIssue = useMemo(() => {
-    if (!selectedIssueId) return null;
+    if (selectedIssueId == null || selectedIssueId === '') return null;
     return issues.find((i) => i.id === selectedIssueId) || null;
   }, [selectedIssueId, issues]);
 
   // Fetch board data on mount
   useEffect(() => {
-    if (projectId) {
-      fetchBoard(projectId);
+    if (projectId != null && projectId !== '') {
+      void fetchBoard(projectId);
     }
   }, [projectId, fetchBoard]);
 
   const handleSync = () => {
-    if (projectId) {
-      syncBoard(projectId);
+    if (projectId != null && projectId !== '') {
+      void syncBoard(projectId);
     }
   };
 
@@ -171,7 +171,7 @@ export default function ProjectBoardPage() {
       </div>
 
       {/* Error banner */}
-      {error && (
+      {(error != null && error !== '') && (
         <div className="flex-shrink-0 mx-4 mt-4 p-4 rounded-lg bg-accent-error/10 border border-accent-error/30 flex items-start gap-3">
           <ExclamationCircleIcon className="w-5 h-5 text-accent-error flex-shrink-0 mt-0.5" />
           <div className="flex-1">

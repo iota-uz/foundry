@@ -28,7 +28,7 @@ export const EndpointNodeComponent = memo(
         className={`
           bg-bg-secondary border rounded-lg overflow-hidden
           transition-all duration-200
-          ${isSelected ? 'border-accent-primary shadow-lg shadow-accent-primary/20' : 'border-border-default'}
+          ${isSelected === true ? 'border-accent-primary shadow-lg shadow-accent-primary/20' : 'border-border-default'}
         `}
         style={{ minWidth: '240px' }}
       >
@@ -70,7 +70,7 @@ export const EndpointNodeComponent = memo(
             {data.method}
           </span>
           <span className="text-xs text-text-primary font-medium truncate">
-            {data.operationId && `#${data.operationId}`}
+            {data.operationId !== undefined && data.operationId !== null && data.operationId !== '' && `#${data.operationId}`}
           </span>
         </div>
 
@@ -82,14 +82,14 @@ export const EndpointNodeComponent = memo(
         </div>
 
         {/* Summary */}
-        {data.summary && (
+        {data.summary !== undefined && data.summary !== null && data.summary !== '' && (
           <div className="px-4 py-2 text-xs text-text-secondary line-clamp-2">
             {data.summary}
           </div>
         )}
 
         {/* Content helper */}
-        {!data.summary && (
+        {(data.summary === undefined || data.summary === null || data.summary === '') && (
           <div className="px-4 py-2 text-xs text-text-tertiary italic">
             {data.method} endpoint
           </div>

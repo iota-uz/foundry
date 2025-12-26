@@ -55,8 +55,8 @@ export const DatabaseTableNode = memo(
         className={`
           bg-bg-secondary border rounded-lg overflow-hidden
           transition-all duration-200
-          ${isSelected ? 'border-accent-primary shadow-lg shadow-accent-primary/20' : 'border-border-default'}
-          ${expanded ? 'shadow-lg' : ''}
+          ${isSelected === true ? 'border-accent-primary shadow-lg shadow-accent-primary/20' : 'border-border-default'}
+          ${expanded === true ? 'shadow-lg' : ''}
         `}
         style={{ minWidth: '220px' }}
       >

@@ -86,7 +86,7 @@ function evaluateCustomExpression(
 
     // Match patterns like: context.key === "value"
     const stringMatch = expr.match(/^context\.([a-zA-Z_][a-zA-Z0-9_]*)\s*(===|!==)\s*"([^"]+)"$/);
-    if (stringMatch && stringMatch[1] && stringMatch[2] && stringMatch[3]) {
+    if (stringMatch !== null && stringMatch[1] !== undefined && stringMatch[1] !== '' && stringMatch[2] !== undefined && stringMatch[2] !== '' && stringMatch[3] !== undefined && stringMatch[3] !== '') {
       const key = stringMatch[1];
       const operator = stringMatch[2];
       const value = stringMatch[3];
@@ -100,7 +100,7 @@ function evaluateCustomExpression(
 
     // Match patterns like: context.key > 10, context.key < 20
     const numericMatch = expr.match(/^context\.([a-zA-Z_][a-zA-Z0-9_]*)\s*(>|<|>=|<=)\s*(-?[0-9]+(?:\.[0-9]+)?)$/);
-    if (numericMatch && numericMatch[1] && numericMatch[2] && numericMatch[3]) {
+    if (numericMatch !== null && numericMatch[1] !== undefined && numericMatch[1] !== '' && numericMatch[2] !== undefined && numericMatch[2] !== '' && numericMatch[3] !== undefined && numericMatch[3] !== '') {
       const key = numericMatch[1];
       const operator = numericMatch[2];
       const value = parseFloat(numericMatch[3]);
@@ -150,7 +150,10 @@ function evaluateTransition(
     }
 
     // Handle custom expressions
-    if (transition.condition === 'custom' && transition.customExpression) {
+    if (transition.condition === 'custom' &&
+        transition.customExpression !== undefined &&
+        transition.customExpression !== null &&
+        transition.customExpression !== '') {
       const matches = evaluateCustomExpression(transition.customExpression, {
         result: executionResult,
         context: executionContext,
@@ -231,7 +234,7 @@ async function executeAutomation(
   }
 
   // Check if workflow exists
-  if (!automation.workflowId) {
+  if (automation.workflowId === undefined || automation.workflowId === null || automation.workflowId === '') {
     logger.error(`Automation ${automation.id} has no workflow assigned`);
     return { result: 'failure', nextStatus: null };
   }
@@ -400,7 +403,7 @@ export async function onStatusChange(
     );
 
     // If there's a next status to transition to, trigger recursively
-    if (nextStatus && nextStatus !== newStatus) {
+    if (nextStatus !== null && nextStatus !== undefined && nextStatus !== '' && nextStatus !== newStatus) {
       logger.info(`Transitioning to next status: ${nextStatus}`);
 
       // Trigger next automation (GitHub status was already updated in executeAutomation)
@@ -456,7 +459,7 @@ export async function triggerManualAutomation(
   );
 
   // If there's a next status, trigger status change automation
-  if (nextStatus && nextStatus !== issue.currentStatus) {
+  if (nextStatus !== null && nextStatus !== undefined && nextStatus !== '' && nextStatus !== issue.currentStatus) {
     logger.info(`Manual trigger resulted in status transition to: ${nextStatus}`);
 
     // Trigger status change automation (GitHub status was already updated in executeAutomation)

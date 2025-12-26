@@ -59,7 +59,7 @@ export function parseArgs(args: string[]): RunCliArgs {
       case '--config':
       case '-c': {
         const value = getNextArg(i);
-        if (value) {
+        if (value !== undefined && value !== '') {
           result.configPath = value;
           i++;
         }
@@ -67,7 +67,7 @@ export function parseArgs(args: string[]): RunCliArgs {
       }
       case '--context': {
         const value = getNextArg(i);
-        if (value) {
+        if (value !== undefined && value !== '') {
           result.context = value;
           i++;
         }
@@ -75,7 +75,7 @@ export function parseArgs(args: string[]): RunCliArgs {
       }
       case '--state-dir': {
         const value = getNextArg(i);
-        if (value) {
+        if (value !== undefined && value !== '') {
           result.stateDir = value;
           i++;
         }
@@ -83,7 +83,7 @@ export function parseArgs(args: string[]): RunCliArgs {
       }
       case '--api-key': {
         const value = getNextArg(i);
-        if (value) {
+        if (value !== undefined && value !== '') {
           result.apiKey = value;
           i++;
         }
@@ -112,7 +112,7 @@ export function parseArgs(args: string[]): RunCliArgs {
 export function buildConfig(args: RunCliArgs): RunConfig {
   // Get API key from args or environment
   const apiKey = args.apiKey ?? process.env['ANTHROPIC_API_KEY'];
-  if (!apiKey && !args.dryRun) {
+  if ((apiKey === undefined || apiKey === '') && !args.dryRun) {
     throw new CliError(
       'Anthropic API key is required. Set ANTHROPIC_API_KEY or use --api-key',
       'MISSING_API_KEY'
@@ -121,12 +121,13 @@ export function buildConfig(args: RunCliArgs): RunConfig {
 
   // Parse context JSON if provided
   let context: Record<string, unknown> | undefined;
-  if (args.context) {
+  if (args.context !== undefined && args.context !== '') {
     try {
-      context = JSON.parse(args.context);
-      if (typeof context !== 'object' || context === null || Array.isArray(context)) {
+      const parsed: unknown = JSON.parse(args.context);
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
         throw new Error('Context must be a JSON object');
       }
+      context = parsed as Record<string, unknown>;
     } catch (error) {
       const err = error as Error;
       throw new CliError(
@@ -199,15 +200,22 @@ EXAMPLES
 `);
 }
 
+import type { GraphNode, WorkflowState } from '../lib/graph';
+
+/**
+ * Workflow execution state returned by executeWorkflow.
+ * Alias for WorkflowState with generic context.
+ */
+type WorkflowExecutionState = WorkflowState<Record<string, unknown>>;
+
 /**
  * Execute a workflow from configuration.
  *
  * @param config - Run configuration
  * @returns Promise that resolves when workflow completes
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function executeWorkflow(config: RunConfig): Promise<any> {
-  const log = config.verbose ? console.log.bind(console) : () => {};
+export async function executeWorkflow(config: RunConfig): Promise<WorkflowExecutionState> {
+  const log = config.verbose ? console.log.bind(console) : (): void => { /* noop */ };
 
   // Step 1: Load and validate config
   log(`Loading config from: ${config.configPath}`);
@@ -271,11 +279,11 @@ export async function executeWorkflow(config: RunConfig): Promise<any> {
 
   const graphNodes = createGraphNodes(workflowConfig);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const engine = new GraphEngine<any>({
+  // Create engine with the proper state type
+  // The state type is compatible with BaseState required by GraphEngine
+  const engine = new GraphEngine<WorkflowExecutionState>({
     stateDir: config.stateDir,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    nodes: graphNodes as any,
+    nodes: graphNodes as Record<string, GraphNode<WorkflowExecutionState>>,
     apiKey: config.apiKey,
   });
 
@@ -308,12 +316,12 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   } catch (error) {
     if (error instanceof CliError) {
       console.error(`Error [${error.code}]: ${error.message}`);
-      if (error.details && args.verbose) {
+      if (error.details !== undefined && args.verbose === true) {
         console.error('Details:', JSON.stringify(error.details, null, 2));
       }
     } else if (error instanceof ConfigValidationError) {
       console.error(error.message);
-      if (args.verbose) {
+      if (args.verbose === true) {
         console.error('Errors:', error.errors);
       }
     } else {

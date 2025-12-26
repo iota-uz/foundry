@@ -42,9 +42,9 @@ export function CommitForm({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Ctrl+Enter or Cmd+Enter to submit
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    if ((e.ctrlKey === true || e.metaKey === true) && e.key === 'Enter') {
       if (isValid && !isSubmitting) {
-        handleSubmit(e as unknown as React.FormEvent);
+        void handleSubmit(e as unknown as React.FormEvent);
       }
     }
   };

@@ -84,11 +84,11 @@ export function WorkflowGraphViewer() {
         const response = await fetch('/api/workflows');
         if (!response.ok) throw new Error('Failed to fetch workflows');
 
-        const data = await response.json();
+        const data = await response.json() as Workflow[];
         setWorkflows(data);
 
         // Auto-select first workflow if available
-        if (data.length > 0 && data[0]) {
+        if (data.length > 0 && data[0] !== undefined) {
           setSelectedWorkflowId(data[0].id);
         }
       } catch (err) {
@@ -98,7 +98,7 @@ export function WorkflowGraphViewer() {
       }
     }
 
-    fetchWorkflows();
+    void fetchWorkflows();
   }, []);
 
   // Update nodes/edges when workflow is selected
@@ -153,7 +153,7 @@ export function WorkflowGraphViewer() {
           value: w.id,
           label: w.name,
         };
-        if (w.description) {
+        if (w.description !== undefined && w.description !== null && w.description !== '') {
           option.description = w.description;
         }
         return option;
@@ -165,13 +165,13 @@ export function WorkflowGraphViewer() {
   const getNodeColor = useCallback((node: Node) => {
     const nodeData = node.data as { nodeType?: string } | undefined;
     const nodeType = nodeData?.nodeType as NodeType | undefined;
-    if (nodeType) {
+    if (nodeType !== undefined && nodeType !== null) {
       return getNodeHexColor(nodeType);
     }
     return '#3f3f46';
   }, []);
 
-  if (error) {
+  if (error !== null && error !== '') {
     return (
       <div className="p-6">
         <div className="bg-accent-error/10 border border-accent-error/30 rounded-lg p-4">

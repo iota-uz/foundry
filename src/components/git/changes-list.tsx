@@ -74,7 +74,7 @@ export function ChangesList({ changes, isLoading = false }: ChangesListProps) {
     <div className="space-y-3">
       {Object.entries(grouped).map(([status, statusChanges]) => {
         const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
-        if (!config) {
+        if (config === undefined) {
           return null;
         }
         const IconComponent = config.icon;

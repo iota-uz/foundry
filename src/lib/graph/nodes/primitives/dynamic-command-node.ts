@@ -145,9 +145,9 @@ export class DynamicCommandNodeRuntime<TContext extends Record<string, unknown>>
 
     // Resolve all dynamic values
     const command = resolveDynamic(this.config.command, state);
-    const cwd = this.config.cwd ? resolveDynamic(this.config.cwd, state) : undefined;
-    const env = this.config.env ? resolveDynamic(this.config.env, state) : undefined;
-    const timeout = this.config.timeout
+    const cwd = this.config.cwd !== undefined ? resolveDynamic(this.config.cwd, state) : undefined;
+    const env = this.config.env !== undefined ? resolveDynamic(this.config.env, state) : undefined;
+    const timeout = this.config.timeout !== undefined
       ? resolveDynamic(this.config.timeout, state)
       : 300000;
 
@@ -176,7 +176,7 @@ export class DynamicCommandNodeRuntime<TContext extends Record<string, unknown>>
       );
 
       // Check for errors
-      if (throwOnError && !result.success) {
+      if (throwOnError === true && !result.success) {
         throw new NodeExecutionError(
           `Command failed with exit code ${result.exitCode}: ${result.stderr}`,
           displayCommand,

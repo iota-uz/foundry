@@ -201,15 +201,15 @@ export class DynamicAgentNodeRuntime<TContext extends Record<string, unknown>>
     // Resolve all dynamic values
     const model = resolveDynamic(this.config.model, state);
     const prompt = resolveDynamic(this.config.prompt, state);
-    const system = this.config.system
+    const system = this.config.system !== undefined
       ? resolveDynamic(this.config.system, state)
       : 'You are a helpful AI assistant. Complete the task described in the user message.';
-    const tools = this.config.tools ? resolveDynamic(this.config.tools, state) : [];
+    const tools = this.config.tools !== undefined ? resolveDynamic(this.config.tools, state) : [];
     // TODO: config.maxTurns is defined but not yet implemented (multi-turn agent loops)
-    const temperature = this.config.temperature
+    const temperature = this.config.temperature !== undefined
       ? resolveDynamic(this.config.temperature, state)
       : 0;
-    const maxTokens = this.config.maxTokens
+    const maxTokens = this.config.maxTokens !== undefined
       ? resolveDynamic(this.config.maxTokens, state)
       : 4096;
 
@@ -302,7 +302,7 @@ export class DynamicAgentNodeRuntime<TContext extends Record<string, unknown>>
         duration,
       };
 
-      if (throwOnError) {
+      if (throwOnError === true) {
         throw new NodeExecutionError(
           `Dynamic agent execution failed: ${err.message}`,
           model,
@@ -339,8 +339,8 @@ export class DynamicAgentNodeRuntime<TContext extends Record<string, unknown>>
       return this.client;
     }
 
-    const key = apiKey || process.env.ANTHROPIC_API_KEY;
-    if (!key) {
+    const key = apiKey ?? process.env.ANTHROPIC_API_KEY;
+    if (key === undefined || key === null || key === '') {
       throw new NodeExecutionError(
         'Anthropic API key not provided. Set apiKey in config or ANTHROPIC_API_KEY env var.',
         'config',

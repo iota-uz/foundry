@@ -63,7 +63,7 @@ export function Select({
   return (
     <div className="w-full">
       {/* Label */}
-      {label && (
+      {label !== undefined && label !== null && label !== '' && (
         <label className="block text-sm font-medium text-text-primary mb-2">
           {label}
         </label>
@@ -88,7 +88,7 @@ export function Select({
             `}
           >
             <span className={selectedOption ? 'text-text-primary' : 'text-text-tertiary'}>
-              {selectedOption?.label || placeholder}
+              {selectedOption?.label ?? placeholder}
             </span>
             <span className="absolute inset-y-0 right-0 flex items-center pr-2">
               <ChevronUpDownIcon className="h-4 w-4 text-text-tertiary" aria-hidden="true" />
@@ -128,7 +128,7 @@ export function Select({
                       <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
                         {option.label}
                       </span>
-                      {option.description && (
+                      {option.description !== undefined && option.description !== null && option.description !== '' && (
                         <span className="block text-xs text-text-tertiary truncate mt-0.5">
                           {option.description}
                         </span>
@@ -148,7 +148,7 @@ export function Select({
       </Listbox>
 
       {/* Error message */}
-      {error && (
+      {error !== undefined && error !== null && error !== '' && (
         <p className="mt-1.5 text-sm text-accent-error">{error}</p>
       )}
     </div>

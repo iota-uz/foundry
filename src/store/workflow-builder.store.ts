@@ -12,6 +12,43 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { Node, Edge, XYPosition } from '@xyflow/react';
 import { NodeType, AgentModel, StdlibTool } from '@/lib/graph/enums';
+import { createWorkflowAction, updateWorkflowAction } from '@/lib/actions/workflows';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Extract error message from server action result
+ * next-safe-action validationErrors uses _errors arrays on each field
+ */
+function extractActionError(result: {
+  serverError?: string;
+  validationErrors?: unknown;
+}): string | null {
+  if (result.serverError !== undefined && result.serverError !== '') {
+    return result.serverError;
+  }
+  if (result.validationErrors !== null && result.validationErrors !== undefined && typeof result.validationErrors === 'object') {
+    const errors = result.validationErrors as Record<string, unknown>;
+    // Check for root-level errors first
+    const rootErrors = errors._errors;
+    if (Array.isArray(rootErrors) && rootErrors.length > 0 && typeof rootErrors[0] === 'string') {
+      return rootErrors[0];
+    }
+    // Check for field-level errors
+    for (const [key, value] of Object.entries(errors)) {
+      if (key !== '_errors' && value !== null && value !== undefined && typeof value === 'object' && '_errors' in value) {
+        const fieldErrors = (value as { _errors?: unknown })._errors;
+        if (Array.isArray(fieldErrors) && fieldErrors.length > 0 && typeof fieldErrors[0] === 'string') {
+          return fieldErrors[0];
+        }
+      }
+    }
+    return 'Validation failed';
+  }
+  return null;
+}
 
 // ============================================================================
 // Types
@@ -362,51 +399,46 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
         const { nodes, edges, metadata } = get();
         set({ isLoading: true, error: null });
 
-        try {
-          const method = metadata.id ? 'PUT' : 'POST';
-          const url = metadata.id
-            ? `/api/workflows/${metadata.id}`
-            : '/api/workflows';
+        const workflowData = {
+          name: metadata.name,
+          description: metadata.description || undefined,
+          nodes: nodes.map((n) => ({
+            id: n.id,
+            type: n.type ?? 'workflowNode',
+            position: n.position,
+            data: n.data as Record<string, unknown>,
+          })),
+          edges: edges.map((e) => ({
+            id: e.id,
+            source: e.source,
+            target: e.target,
+            sourceHandle: e.sourceHandle ?? undefined,
+          })),
+          initialContext: metadata.initialContext,
+        };
 
-          const response = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: metadata.name,
-              description: metadata.description,
-              nodes: nodes.map((n) => ({
-                id: n.id,
-                type: n.type,
-                position: n.position,
-                data: n.data,
-              })),
-              edges: edges.map((e) => ({
-                id: e.id,
-                source: e.source,
-                target: e.target,
-                sourceHandle: e.sourceHandle,
-              })),
-              initialContext: metadata.initialContext,
-            }),
-          });
+        // Use the appropriate action based on whether we're creating or updating
+        const result = metadata.id !== null
+          ? await updateWorkflowAction({ id: metadata.id, ...workflowData })
+          : await createWorkflowAction(workflowData);
 
-          if (!response.ok) {
-            throw new Error('Failed to save workflow');
-          }
-
-          const result = await response.json() as { id: string };
-
-          set((state) => ({
-            metadata: { ...state.metadata, id: result.id },
-            isDirty: false,
-            isLoading: false,
-          }));
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to save',
-            isLoading: false,
-          });
+        // Handle errors
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isLoading: false });
+          return;
         }
+
+        if (result.data === undefined) {
+          set({ error: 'Unexpected error: no data returned', isLoading: false });
+          return;
+        }
+
+        set((state) => ({
+          metadata: { ...state.metadata, id: result.data!.workflow.id },
+          isDirty: false,
+          isLoading: false,
+        }));
       },
 
       loadWorkflow: async (id: string) => {

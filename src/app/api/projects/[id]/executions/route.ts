@@ -35,7 +35,9 @@ export async function GET(request: Request, { params }: RouteParams) {
     // Parse query params
     const url = new URL(request.url);
     const limitParam = url.searchParams.get('limit');
-    const limit = limitParam ? Math.min(parseInt(limitParam, 10), 100) : 50;
+    const limit = limitParam !== null && limitParam !== ''
+      ? Math.min(parseInt(limitParam, 10), 100)
+      : 50;
 
     // Get recent executions
     const executions = await IssueMetadataRepository.getRecentExecutions(validId, limit);

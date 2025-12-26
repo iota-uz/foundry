@@ -32,8 +32,8 @@ export async function writeYaml<T>(
 ): Promise<void> {
   try {
     const content = yaml.dump(data, {
-      lineWidth: options?.lineWidth || 120,
-      indent: options?.indent || 2,
+      lineWidth: options?.lineWidth ?? 120,
+      indent: options?.indent ?? 2,
       sortKeys: false,
       noRefs: true,
     });
@@ -65,8 +65,8 @@ export function stringifyYaml<T>(
   options?: { lineWidth?: number; indent?: number }
 ): string {
   return yaml.dump(data, {
-    lineWidth: options?.lineWidth || 120,
-    indent: options?.indent || 2,
+    lineWidth: options?.lineWidth ?? 120,
+    indent: options?.indent ?? 2,
     sortKeys: false,
     noRefs: true,
   });

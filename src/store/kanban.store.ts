@@ -155,8 +155,8 @@ export const useKanbanStore = create<KanbanState>()(
         try {
           const response = await fetch(`/api/projects/${projectId}/board`);
           if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to fetch board');
+            const data = await response.json() as { error?: string };
+            throw new Error(data.error ?? 'Failed to fetch board');
           }
 
           const data = await response.json() as BoardApiResponse;
@@ -212,7 +212,7 @@ export const useKanbanStore = create<KanbanState>()(
       // Move issue to new status
       moveIssue: async (issueId: string, toStatus: string) => {
         const { projectId, issues } = get();
-        if (!projectId) return;
+        if (projectId === null || projectId === undefined || projectId === '') return;
 
         const issue = issues.find((i) => i.id === issueId);
         if (!issue || issue.status === toStatus) return;
@@ -238,8 +238,8 @@ export const useKanbanStore = create<KanbanState>()(
           );
 
           if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to move issue');
+            const data = await response.json() as { error?: string };
+            throw new Error(data.error ?? 'Failed to move issue');
           }
 
           set({ isMoving: false });
@@ -265,8 +265,8 @@ export const useKanbanStore = create<KanbanState>()(
           });
 
           if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to sync');
+            const data = await response.json() as { error?: string };
+            throw new Error(data.error ?? 'Failed to sync');
           }
 
           // Refresh board data

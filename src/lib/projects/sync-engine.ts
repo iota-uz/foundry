@@ -154,7 +154,7 @@ export class SyncEngine {
           }
 
           // Track status changes
-          if (statusChanged && currentStatus) {
+          if (statusChanged === true && currentStatus !== undefined && currentStatus !== null && currentStatus !== '') {
             result.statusChanges.push({
               issueMetadataId: metadata.id,
               owner: owner.login,
@@ -208,7 +208,7 @@ export class SyncEngine {
         issueNumber
       );
 
-      if (metadata && metadata.currentStatus !== githubStatus && githubStatus) {
+      if (metadata !== null && metadata !== undefined && metadata.currentStatus !== githubStatus && githubStatus !== undefined && githubStatus !== null && githubStatus !== '') {
         changes.push({
           issueMetadataId: metadata.id,
           owner: owner.login,

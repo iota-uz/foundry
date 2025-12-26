@@ -56,7 +56,7 @@ export function WorkflowSelector({ value, onChange, error }: WorkflowSelectorPro
       }
     }
 
-    fetchWorkflows();
+    void fetchWorkflows();
   }, []);
 
   const selectedWorkflow = workflows.find((w) => w.id === value);
@@ -80,7 +80,7 @@ export function WorkflowSelector({ value, onChange, error }: WorkflowSelectorPro
           bg-bg-secondary text-sm
           border transition-all duration-150 ease-out
           focus:outline-none focus:ring-1
-          ${error
+          ${error !== undefined && error !== ''
             ? 'border-accent-error focus:ring-accent-error focus:border-accent-error'
             : 'border-border-default hover:border-border-hover focus:ring-emerald-500 focus:border-emerald-500'
           }
@@ -112,7 +112,7 @@ export function WorkflowSelector({ value, onChange, error }: WorkflowSelectorPro
         </svg>
       </button>
 
-      {error && <p className="mt-1.5 text-sm text-accent-error">{error}</p>}
+      {error !== undefined && error !== '' && <p className="mt-1.5 text-sm text-accent-error">{error}</p>}
 
       {/* Dropdown */}
       {isOpen && (
@@ -190,7 +190,7 @@ export function WorkflowSelector({ value, onChange, error }: WorkflowSelectorPro
                     <BoltIcon className="w-4 h-4 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="font-mono truncate">{workflow.name}</div>
-                      {workflow.description && (
+                      {workflow.description !== undefined && workflow.description !== '' && (
                         <div className="text-xs text-text-tertiary truncate">
                           {workflow.description}
                         </div>

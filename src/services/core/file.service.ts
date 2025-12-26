@@ -124,7 +124,7 @@ export class FileService implements IFileService {
    */
   async list(directory: string, pattern?: string): Promise<string[]> {
     try {
-      if (pattern) {
+      if (pattern !== undefined && pattern !== null && pattern !== '') {
         // Use glob pattern
         const searchPattern = path.join(directory, pattern);
         const files = await glob(searchPattern, { nodir: true });
@@ -158,8 +158,9 @@ export class FileService implements IFileService {
     // Dynamically import watcher to avoid bundling in client builds
     if (typeof window === 'undefined') {
       // Server-side only
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
       const { watch } = require('@/lib/fs/watcher');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
       return watch(targetPath, callback);
     }
     // Client-side: return no-op cleanup function

@@ -128,7 +128,7 @@ export function BranchSelector({
                   onChange={(e) => setNewBranchName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      handleCreateBranch();
+                      void handleCreateBranch();
                     }
                   }}
                   placeholder="feature/..."

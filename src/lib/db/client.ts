@@ -23,7 +23,7 @@ export function getDatabase() {
   }
 
   const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
+  if (connectionString === undefined || connectionString === '') {
     throw new Error(
       'DATABASE_URL environment variable is not set. ' +
         'Run `bun db:up` to start PostgreSQL and set DATABASE_URL=postgres://foundry:foundry@localhost:5432/foundry'

@@ -88,14 +88,14 @@ export class ProjectsClient {
 
     const data = (await response.json()) as { data?: T; errors?: Array<{ message: string }> };
 
-    if (data.errors && data.errors.length > 0) {
+    if (data.errors !== undefined && data.errors.length > 0) {
       const errorMessages = data.errors.map((e) => e.message).join(', ');
       throw new ProjectsError(`GraphQL error: ${errorMessages}`, 'GRAPHQL_ERROR', {
         errors: data.errors,
       });
     }
 
-    if (!data.data) {
+    if (data.data === undefined || data.data === null) {
       throw new ProjectsError('No data returned from GraphQL query', 'GRAPHQL_ERROR');
     }
 
@@ -800,8 +800,11 @@ export class ProjectsClient {
       // Extract field values
       const fieldValues: Record<string, string> = {};
       for (const fieldValue of rawItem.fieldValues?.nodes ?? []) {
-        if (fieldValue.field?.name && fieldValue.name) {
-          fieldValues[fieldValue.field.name.toLowerCase()] = fieldValue.name;
+        const fieldName = fieldValue.field?.name;
+        const valueName = fieldValue.name;
+        if (fieldName !== undefined && fieldName !== null && fieldName !== '' &&
+            valueName !== undefined && valueName !== null && valueName !== '') {
+          fieldValues[fieldName.toLowerCase()] = valueName;
         }
       }
 

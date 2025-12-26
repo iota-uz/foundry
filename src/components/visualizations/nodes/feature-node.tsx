@@ -29,7 +29,7 @@ export const FeatureNodeComponent = memo(
         className={`
           bg-bg-secondary border rounded-lg overflow-hidden
           transition-all duration-200
-          ${isSelected ? 'border-accent-primary shadow-lg shadow-accent-primary/20' : 'border-border-default'}
+          ${isSelected === true ? 'border-accent-primary shadow-lg shadow-accent-primary/20' : 'border-border-default'}
           hover:border-accent-primary/50
         `}
         style={{ minWidth: '200px' }}
@@ -80,14 +80,14 @@ export const FeatureNodeComponent = memo(
           </h4>
 
           {/* Module */}
-          {data.module && (
+          {data.module !== undefined && data.module !== null && data.module !== '' && (
             <div className="text-xs text-text-secondary mb-2">
               {data.module}
             </div>
           )}
 
           {/* Description */}
-          {data.description && (
+          {data.description !== undefined && data.description !== null && data.description !== '' && (
             <p className="text-xs text-text-secondary line-clamp-2">
               {data.description}
             </p>

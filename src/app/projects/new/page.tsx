@@ -58,7 +58,7 @@ export default function CreateProjectPage() {
     <K extends keyof FormState>(field: K, value: FormState[K]) => {
       setFormState((prev) => ({ ...prev, [field]: value }));
       // Clear error when user starts typing
-      if (errors[field]) {
+      if ((errors[field] ?? '') !== '') {
         setErrors((prev) => {
           const next = { ...prev };
           delete next[field];
@@ -214,7 +214,7 @@ export default function CreateProjectPage() {
             {renderStepContent()}
 
             {/* Submit error */}
-            {errors.submit && (
+            {((errors.submit ?? '') !== '') && (
               <div className="mt-6 p-4 rounded-lg bg-accent-error/10 border border-accent-error/30">
                 <p className="text-sm text-accent-error">{errors.submit}</p>
               </div>

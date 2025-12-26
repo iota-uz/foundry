@@ -34,7 +34,7 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
     'overview'
   );
 
-  if (error) {
+  if (error !== undefined && error !== null && error !== '') {
     return (
       <div className="w-full h-full flex items-center justify-center bg-bg-primary">
         <div className="text-center">
@@ -45,7 +45,7 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
     );
   }
 
-  if (!spec || Object.keys(spec).length === 0) {
+  if (spec === undefined || spec === null || Object.keys(spec).length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-bg-primary">
         <p className="text-text-secondary">No OpenAPI specification available</p>
@@ -55,8 +55,9 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
 
   const info = spec.info as Record<string, unknown> | undefined;
   const paths = spec.paths as Record<string, unknown> | undefined;
+  const components = spec.components as Record<string, unknown> | undefined;
   const schemas =
-    ((spec.components as Record<string, unknown>)?.schemas as Record<string, unknown>) ||
+    (components?.schemas as Record<string, unknown>) ??
     {};
 
   const tabs = [
@@ -131,7 +132,7 @@ export function OpenAPIViewer({ spec, error }: OpenAPIViewerProps) {
               <p className="text-text-secondary mb-4">
                 {(info?.description as string) || 'No description available'}
               </p>
-              {info?.version ? (
+              {info?.version !== undefined && info?.version !== null && info?.version !== '' ? (
                 <div className="inline-block px-3 py-1 rounded bg-bg-tertiary text-text-secondary text-sm">
                   Version: {String(info.version)}
                 </div>

@@ -88,7 +88,7 @@ function StatCard({ label, value, subValue, icon: Icon, iconColor }: StatCardPro
           <p className="text-2xl font-semibold text-text-primary tracking-tight">
             {value}
           </p>
-          {subValue && (
+          {subValue !== undefined && subValue !== null && subValue !== '' && (
             <p className="text-xs text-text-tertiary mt-1">{subValue}</p>
           )}
         </div>
@@ -180,7 +180,7 @@ function formatDuration(ms: number): string {
 
 function calculateDuration(startedAt: string, completedAt: string | null): string {
   const start = new Date(startedAt).getTime();
-  const end = completedAt ? new Date(completedAt).getTime() : Date.now();
+  const end = completedAt !== null && completedAt !== '' ? new Date(completedAt).getTime() : Date.now();
   return formatDuration(end - start);
 }
 
@@ -207,11 +207,11 @@ export function ExecutionOverview() {
           throw new Error('Failed to fetch visualization data');
         }
 
-        const statsData = await statsRes.json();
-        const executionsData = await executionsRes.json();
+        const statsData = await statsRes.json() as ExecutionStats;
+        const executionsData = await executionsRes.json() as { executions?: Execution[] };
 
         setStats(statsData);
-        setExecutions(executionsData.executions || []);
+        setExecutions(executionsData.executions !== undefined ? executionsData.executions : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
@@ -219,10 +219,10 @@ export function ExecutionOverview() {
       }
     }
 
-    fetchData();
+    void fetchData();
   }, []);
 
-  if (error) {
+  if (error !== null && error !== '') {
     return (
       <div className="p-6">
         <div className="bg-accent-error/10 border border-accent-error/30 rounded-lg p-4">
@@ -348,7 +348,7 @@ export function ExecutionOverview() {
                       href={`/workflows/${execution.workflowId}`}
                       className="text-sm font-medium text-text-primary hover:text-accent-primary transition-colors"
                     >
-                      {execution.workflowName || 'Unnamed Workflow'}
+                      {execution.workflowName ?? 'Unnamed Workflow'}
                     </Link>
                     <p className="text-xs text-text-tertiary mt-0.5 font-mono">
                       {execution.currentNode}

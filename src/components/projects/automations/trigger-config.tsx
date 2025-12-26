@@ -125,7 +125,7 @@ export function TriggerConfig({
                 appearance-none
                 transition-all duration-150 ease-out
                 focus:outline-none focus:ring-1
-                ${errors?.triggerStatus
+                ${errors?.triggerStatus !== undefined && errors.triggerStatus !== ''
                   ? 'border-accent-error focus:ring-accent-error focus:border-accent-error'
                   : 'border-border-default hover:border-border-hover focus:ring-yellow-500 focus:border-yellow-500'
                 }
@@ -144,7 +144,7 @@ export function TriggerConfig({
               </svg>
             </div>
           </div>
-          {errors?.triggerStatus && (
+          {errors?.triggerStatus !== undefined && errors.triggerStatus !== '' && (
             <p className="mt-1.5 text-sm text-accent-error">{errors.triggerStatus}</p>
           )}
           <p className="mt-1.5 text-xs text-text-tertiary">

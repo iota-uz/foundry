@@ -130,11 +130,11 @@ export async function getExecutionStats(): Promise<ExecutionStats> {
   );
 
   const total = statusCounts.reduce((sum, { count }) => sum + count, 0);
-  const completed = countsByStatus.completed || 0;
-  const failed = countsByStatus.failed || 0;
-  const running = countsByStatus.running || 0;
-  const pending = countsByStatus.pending || 0;
-  const paused = countsByStatus.paused || 0;
+  const completed = countsByStatus.completed ?? 0;
+  const failed = countsByStatus.failed ?? 0;
+  const running = countsByStatus.running ?? 0;
+  const pending = countsByStatus.pending ?? 0;
+  const paused = countsByStatus.paused ?? 0;
 
   const successRate = total > 0 ? (completed / total) * 100 : 0;
 
@@ -160,7 +160,7 @@ export async function getExecutionStats(): Promise<ExecutionStats> {
     pending,
     paused,
     successRate: Math.round(successRate * 100) / 100,
-    avgDurationMs: avgDuration ? Math.round(avgDuration) : null,
+    avgDurationMs: avgDuration !== null && avgDuration !== undefined && avgDuration !== 0 ? Math.round(avgDuration) : null,
   };
 }
 
@@ -179,7 +179,7 @@ export async function getNodeAnalytics(
   const db = getDatabase();
 
   // Build where clause
-  const whereClause = workflowId
+  const whereClause = workflowId !== undefined && workflowId !== null && workflowId !== ''
     ? eq(workflowExecutions.workflowId, workflowId)
     : undefined;
 
@@ -216,14 +216,14 @@ export async function getNodeAnalytics(
       }
     >;
 
-    if (!nodeStates) continue;
+    if (nodeStates === undefined || nodeStates === null) continue;
 
     for (const [nodeId, state] of Object.entries(nodeStates)) {
-      if (!state || !state.startedAt) continue;
+      if (state === undefined || state === null || state.startedAt === undefined || state.startedAt === null || state.startedAt === '') continue;
 
       // Extract node type from node ID (assumes format like "AGENT_1", "COMMAND_2")
       // If this assumption is incorrect, we may need to store node type separately
-      const nodeType = nodeId.split('_')[0] || 'UNKNOWN';
+      const nodeType = nodeId.split('_')[0] ?? 'UNKNOWN';
 
       const stats = nodeStats.get(nodeId) || {
         nodeType,
@@ -242,7 +242,7 @@ export async function getNodeAnalytics(
       }
 
       // Calculate duration if completed
-      if (state.startedAt && state.completedAt) {
+      if (state.startedAt !== undefined && state.startedAt !== null && state.startedAt !== '' && state.completedAt !== undefined && state.completedAt !== null && state.completedAt !== '') {
         const startMs = new Date(state.startedAt).getTime();
         const endMs = new Date(state.completedAt).getTime();
         stats.totalDurationMs += endMs - startMs;

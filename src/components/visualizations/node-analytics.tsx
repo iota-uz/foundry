@@ -60,7 +60,7 @@ function getNodeTypeLabel(type: string): string {
     'dynamic-command': 'Dynamic Command',
     'github-project': 'GitHub Project',
   };
-  return labels[type.toLowerCase()] || type;
+  return labels[type.toLowerCase()] ?? type;
 }
 
 function getNodeTypeColor(type: string): string {
@@ -75,7 +75,7 @@ function getNodeTypeColor(type: string): string {
     'dynamic-command': 'text-red-400 bg-red-500/10',
     'github-project': 'text-violet-400 bg-violet-500/10',
   };
-  return colors[type.toLowerCase()] || 'text-text-tertiary bg-bg-tertiary';
+  return colors[type.toLowerCase()] ?? 'text-text-tertiary bg-bg-tertiary';
 }
 
 // =============================================================================
@@ -165,8 +165,8 @@ export function NodeAnalytics() {
         const response = await fetch('/api/visualizations/analytics');
         if (!response.ok) throw new Error('Failed to fetch analytics');
 
-        const data = await response.json();
-        setAnalytics(data.nodes || []);
+        const data = await response.json() as { nodes?: NodeAnalytic[] };
+        setAnalytics(data.nodes !== undefined ? data.nodes : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
@@ -174,7 +174,7 @@ export function NodeAnalytics() {
       }
     }
 
-    fetchAnalytics();
+    void fetchAnalytics();
   }, []);
 
   // Handle sort
@@ -205,7 +205,7 @@ export function NodeAnalytics() {
     });
   }, [analytics, sortField, sortDirection]);
 
-  if (error) {
+  if (error !== null && error !== '') {
     return (
       <div className="p-6">
         <div className="bg-accent-error/10 border border-accent-error/30 rounded-lg p-4">

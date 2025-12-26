@@ -45,7 +45,7 @@ export default function NewWorkflowPage() {
       }
     }
 
-    createAndRedirect();
+    void createAndRedirect();
   }, [newWorkflow, router]);
 
   return (

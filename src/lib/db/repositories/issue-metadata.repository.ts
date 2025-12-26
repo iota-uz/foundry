@@ -109,7 +109,7 @@ export async function listIssueMetadata(
 
   const conditions = [eq(issueMetadata.projectId, projectId)];
 
-  if (options?.status) {
+  if (options?.status !== undefined && options.status !== null && options.status !== '') {
     conditions.push(eq(issueMetadata.currentStatus, options.status));
   }
 

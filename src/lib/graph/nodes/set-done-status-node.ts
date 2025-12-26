@@ -139,7 +139,7 @@ export class SetDoneStatusNodeRuntime<TContext extends Record<string, unknown>>
     const issueNumber = ctx[issueNumberKey!] as number | undefined;
 
     // Check if we have required configuration
-    if (!projectOwner || !projectNumber) {
+    if ((projectOwner === undefined || projectOwner === '') || (projectNumber === undefined || projectNumber === 0)) {
       const result: SetDoneStatusResult = {
         success: true,
         newStatus: doneStatus,
@@ -160,7 +160,7 @@ export class SetDoneStatusNodeRuntime<TContext extends Record<string, unknown>>
       };
     }
 
-    if (!token) {
+    if (token === undefined || token === '') {
       const result: SetDoneStatusResult = {
         success: false,
         newStatus: doneStatus,
@@ -181,7 +181,7 @@ export class SetDoneStatusNodeRuntime<TContext extends Record<string, unknown>>
       };
     }
 
-    if (!repository || !issueNumber) {
+    if ((repository === undefined || repository === null || repository === '') || (issueNumber === undefined || issueNumber === null || issueNumber === 0)) {
       const result: SetDoneStatusResult = {
         success: true,
         newStatus: doneStatus,
@@ -204,7 +204,7 @@ export class SetDoneStatusNodeRuntime<TContext extends Record<string, unknown>>
 
     // Parse owner/repo from repository string
     const [repoOwner, repoName] = repository.split('/');
-    if (!repoOwner || !repoName) {
+    if ((repoOwner === undefined || repoOwner === null || repoOwner === '') || (repoName === undefined || repoName === null || repoName === '')) {
       const result: SetDoneStatusResult = {
         success: false,
         newStatus: doneStatus,
@@ -234,7 +234,7 @@ export class SetDoneStatusNodeRuntime<TContext extends Record<string, unknown>>
         projectOwner,
         projectNumber,
       };
-      if (verbose) {
+      if (verbose === true) {
         projectConfig.verbose = true;
       }
 
@@ -277,10 +277,10 @@ export class SetDoneStatusNodeRuntime<TContext extends Record<string, unknown>>
         skipped: false,
       };
 
-      if (updateResult.previousStatus) {
+      if (updateResult.previousStatus !== undefined && updateResult.previousStatus !== '') {
         result.previousStatus = updateResult.previousStatus;
       }
-      if (updateResult.error) {
+      if (updateResult.error !== undefined && updateResult.error !== '') {
         result.error = updateResult.error;
       }
 

@@ -11,6 +11,49 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import {
+  createProjectAction,
+  updateProjectAction,
+  deleteProjectAction,
+  syncProjectAction,
+} from '@/lib/actions/projects';
+import { addRepoAction, removeRepoAction } from '@/lib/actions/repos';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Extract error message from server action result
+ * next-safe-action validationErrors uses _errors arrays on each field
+ */
+function extractActionError(result: {
+  serverError?: string;
+  validationErrors?: unknown;
+}): string | null {
+  if (result.serverError !== undefined && result.serverError !== '') {
+    return result.serverError;
+  }
+  if (result.validationErrors !== null && result.validationErrors !== undefined && typeof result.validationErrors === 'object') {
+    const errors = result.validationErrors as Record<string, unknown>;
+    // Check for root-level errors first
+    const rootErrors = errors._errors;
+    if (Array.isArray(rootErrors) && rootErrors.length > 0 && typeof rootErrors[0] === 'string') {
+      return rootErrors[0];
+    }
+    // Check for field-level errors
+    for (const [key, value] of Object.entries(errors)) {
+      if (key !== '_errors' && value !== null && value !== undefined && typeof value === 'object' && '_errors' in value) {
+        const fieldErrors = (value as { _errors?: unknown })._errors;
+        if (Array.isArray(fieldErrors) && fieldErrors.length > 0 && typeof fieldErrors[0] === 'string') {
+          return fieldErrors[0];
+        }
+      }
+    }
+    return 'Validation failed';
+  }
+  return null;
+}
 
 // ============================================================================
 // Types
@@ -109,8 +152,8 @@ export const useProjectStore = create<ProjectState>()(
         try {
           const response = await fetch('/api/projects');
           if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to fetch projects');
+            const data = await response.json() as { error?: string };
+            throw new Error(data.error ?? 'Failed to fetch projects');
           }
 
           const { projects } = await response.json() as { projects: Project[] };
@@ -130,8 +173,8 @@ export const useProjectStore = create<ProjectState>()(
         try {
           const response = await fetch(`/api/projects/${id}`);
           if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to fetch project');
+            const data = await response.json() as { error?: string };
+            throw new Error(data.error ?? 'Failed to fetch project');
           }
 
           const project = await response.json() as Project;
@@ -148,196 +191,157 @@ export const useProjectStore = create<ProjectState>()(
       createProject: async (data: CreateProjectData) => {
         set({ isLoading: true, error: null });
 
-        try {
-          const response = await fetch('/api/projects', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-          });
+        const result = await createProjectAction({
+          name: data.name,
+          description: data.description,
+          githubToken: data.githubToken,
+          githubProjectOwner: data.githubProjectOwner,
+          githubProjectNumber: data.githubProjectNumber,
+          syncIntervalMinutes: data.syncIntervalMinutes,
+        });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to create project');
-          }
-
-          const project = await response.json() as Project;
-
-          // Add repos if provided
-          if (data.repos && data.repos.length > 0) {
-            for (const repo of data.repos) {
-              await fetch(`/api/projects/${project.id}/repos`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(repo),
-              });
-            }
-          }
-
-          // Refresh project with repos
-          const refreshResponse = await fetch(`/api/projects/${project.id}`);
-          const refreshedProject = await refreshResponse.json() as Project;
-
-          set((state) => ({
-            projects: [...state.projects, refreshedProject],
-            currentProject: refreshedProject,
-            isLoading: false,
-          }));
-
-          return refreshedProject;
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to create project',
-            isLoading: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isLoading: false });
+          throw new Error(error);
         }
+
+        if (result.data === undefined) {
+          const errMsg = 'Unexpected error: no data returned';
+          set({ error: errMsg, isLoading: false });
+          throw new Error(errMsg);
+        }
+
+        const project = result.data.project as unknown as Project;
+
+        // Add repos if provided
+        if (data.repos !== undefined && data.repos.length > 0) {
+          for (const repo of data.repos) {
+            await addRepoAction({
+              projectId: project.id,
+              owner: repo.owner,
+              repo: repo.repo,
+            });
+          }
+        }
+
+        // Refresh project with repos
+        const refreshResponse = await fetch(`/api/projects/${project.id}`);
+        const refreshedProject = await refreshResponse.json() as Project;
+
+        set((state) => ({
+          projects: [...state.projects, refreshedProject],
+          currentProject: refreshedProject,
+          isLoading: false,
+        }));
+
+        return refreshedProject;
       },
 
       // Update project
       updateProject: async (id: string, data: UpdateProjectData) => {
         set({ isLoading: true, error: null });
 
-        try {
-          const response = await fetch(`/api/projects/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-          });
+        const result = await updateProjectAction({ id, ...data });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to update project');
-          }
-
-          const project = await response.json() as Project;
-
-          set((state) => ({
-            projects: state.projects.map((p) => (p.id === id ? project : p)),
-            currentProject: state.currentProject?.id === id ? project : state.currentProject,
-            isLoading: false,
-          }));
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to update project',
-            isLoading: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isLoading: false });
+          throw new Error(error);
         }
+
+        if (result.data === undefined) {
+          const errMsg = 'Unexpected error: no data returned';
+          set({ error: errMsg, isLoading: false });
+          throw new Error(errMsg);
+        }
+
+        const project = result.data.project as unknown as Project;
+
+        set((state) => ({
+          projects: state.projects.map((p) => (p.id === id ? project : p)),
+          currentProject: state.currentProject?.id === id ? project : state.currentProject,
+          isLoading: false,
+        }));
       },
 
       // Delete project
       deleteProject: async (id: string) => {
         set({ isLoading: true, error: null });
 
-        try {
-          const response = await fetch(`/api/projects/${id}`, {
-            method: 'DELETE',
-          });
+        const result = await deleteProjectAction({ id });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to delete project');
-          }
-
-          set((state) => ({
-            projects: state.projects.filter((p) => p.id !== id),
-            currentProject: state.currentProject?.id === id ? null : state.currentProject,
-            isLoading: false,
-          }));
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to delete project',
-            isLoading: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isLoading: false });
+          throw new Error(error);
         }
+
+        set((state) => ({
+          projects: state.projects.filter((p) => p.id !== id),
+          currentProject: state.currentProject?.id === id ? null : state.currentProject,
+          isLoading: false,
+        }));
       },
 
       // Add repository
       addRepo: async (projectId: string, owner: string, repo: string) => {
         set({ error: null });
 
-        try {
-          const response = await fetch(`/api/projects/${projectId}/repos`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ owner, repo }),
-          });
+        const result = await addRepoAction({ projectId, owner, repo });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to add repository');
-          }
-
-          // Refresh project to get updated repos
-          const { fetchProject } = get();
-          await fetchProject(projectId);
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to add repository',
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error });
+          throw new Error(error);
         }
+
+        // Refresh project to get updated repos
+        const { fetchProject } = get();
+        await fetchProject(projectId);
       },
 
       // Remove repository
       removeRepo: async (projectId: string, repoId: string) => {
         set({ error: null });
 
-        try {
-          const response = await fetch(`/api/projects/${projectId}/repos/${repoId}`, {
-            method: 'DELETE',
-          });
+        const result = await removeRepoAction({ projectId, repoId });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to remove repository');
-          }
-
-          // Update current project repos
-          set((state) => {
-            if (!state.currentProject) return {};
-            return {
-              currentProject: {
-                ...state.currentProject,
-                repos: (state.currentProject.repos ?? []).filter((r) => r.id !== repoId),
-              },
-            };
-          });
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to remove repository',
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error });
+          throw new Error(error);
         }
+
+        // Update current project repos
+        set((state) => {
+          if (!state.currentProject) return {};
+          return {
+            currentProject: {
+              ...state.currentProject,
+              repos: (state.currentProject.repos ?? []).filter((r) => r.id !== repoId),
+            },
+          };
+        });
       },
 
       // Sync project with GitHub
       syncProject: async (id: string) => {
         set({ isSyncing: true, error: null });
 
-        try {
-          const response = await fetch(`/api/projects/${id}/sync`, {
-            method: 'POST',
-          });
+        const result = await syncProjectAction({ id });
 
-          if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || 'Failed to sync project');
-          }
-
-          // Refresh project
-          const { fetchProject } = get();
-          await fetchProject(id);
-
-          set({ isSyncing: false });
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Failed to sync project',
-            isSyncing: false,
-          });
-          throw error;
+        const error = extractActionError(result);
+        if (error !== null) {
+          set({ error, isSyncing: false });
+          throw new Error(error);
         }
+
+        // Refresh project
+        const { fetchProject } = get();
+        await fetchProject(id);
+
+        set({ isSyncing: false });
       },
 
       // Set current project

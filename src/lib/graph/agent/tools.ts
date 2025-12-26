@@ -53,7 +53,7 @@ export interface SdkToolDefinition {
  * @returns Sanitized schema compatible with SDK expectations
  */
 function sanitizeJsonSchemaForSdk(schema: Record<string, unknown>): Record<string, unknown> {
-  if (!schema || typeof schema !== 'object') return {};
+  if (schema === null || schema === undefined || typeof schema !== 'object') return {};
 
   // These are the properties the SDK expects at the top level
   const allowedKeys = ['type', 'properties', 'required', 'description', 'title', 'default', 'items', 'enum'];

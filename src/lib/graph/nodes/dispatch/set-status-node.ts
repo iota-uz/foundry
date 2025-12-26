@@ -211,7 +211,7 @@ export class SetStatusNodeRuntime<TContext extends Record<string, unknown>>
     const startTime = Date.now();
 
     // Check if we should skip this node
-    if (skipIfNotProject) {
+    if (skipIfNotProject === true) {
       const sourceType = (state.context as Record<string, unknown>)[sourceTypeKey!] as string | undefined;
       if (sourceType !== 'project') {
         context.logger.info(
@@ -363,7 +363,7 @@ export class SetStatusNodeRuntime<TContext extends Record<string, unknown>>
         `[SetStatusNode] Completed: ${successCount} succeeded, ${failedCount} failed in ${duration}ms`
       );
 
-      if (!allSucceeded && throwOnError) {
+      if (!allSucceeded && throwOnError === true) {
         throw new NodeExecutionError(
           `Failed to update ${failedCount} issue(s)`,
           'batch-update',
@@ -430,7 +430,7 @@ export class SetStatusNodeRuntime<TContext extends Record<string, unknown>>
       token,
       projectOwner,
       projectNumber,
-      ...(verbose ? { verbose: true } : {}),
+      ...(verbose === true ? { verbose: true } : {}),
     };
 
     const client = new ProjectsClient(projectConfig);

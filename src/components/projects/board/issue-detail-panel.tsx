@@ -49,7 +49,7 @@ interface Automation {
 
 // Simple markdown-ish rendering (basic formatting)
 function renderBody(body: string | null): React.ReactNode {
-  if (!body) return null;
+  if (body === null || body === '') return null;
 
   // Basic markdown-like processing
   const lines = body.split('\n');
@@ -169,7 +169,7 @@ function ManualTriggerButton({
       ) : (
         <PlayIcon className="w-4 h-4" />
       )}
-      {automation.buttonLabel || 'Run Workflow'}
+      {automation.buttonLabel ?? 'Run Workflow'}
     </button>
   );
 }
@@ -191,7 +191,7 @@ export function IssueDetailPanel({
 
   // Fetch executions when issue changes
   const fetchExecutions = useCallback(async () => {
-    if (!issue || !projectId) return;
+    if (issue === null || issue === undefined || projectId === undefined || projectId === '') return;
 
     setIsLoadingExecutions(true);
     try {
@@ -199,8 +199,8 @@ export function IssueDetailPanel({
         `/api/projects/${projectId}/issues/${issue.id}/executions`
       );
       if (response.ok) {
-        const data = await response.json();
-        setExecutions(data.data || []);
+        const data: { data?: ExecutionEntry[] } = await response.json() as { data?: ExecutionEntry[] };
+        setExecutions(data.data !== undefined ? data.data : []);
       }
     } catch (error) {
       console.error('Failed to fetch executions:', error);
@@ -211,13 +211,13 @@ export function IssueDetailPanel({
 
   // Fetch manual automations
   const fetchManualAutomations = useCallback(async () => {
-    if (!projectId) return;
+    if (projectId === undefined || projectId === '') return;
 
     try {
       const response = await fetch(`/api/projects/${projectId}/automations`);
       if (response.ok) {
-        const data = await response.json();
-        const manuals = (data.data || []).filter(
+        const data: { data?: Automation[] } = await response.json() as { data?: Automation[] };
+        const manuals = (data.data !== undefined ? data.data : []).filter(
           (a: Automation) => a.triggerType === 'manual'
         );
         setManualAutomations(manuals);
@@ -228,9 +228,9 @@ export function IssueDetailPanel({
   }, [projectId]);
 
   useEffect(() => {
-    if (isOpen && issue) {
-      fetchExecutions();
-      fetchManualAutomations();
+    if (isOpen && issue !== null && issue !== undefined) {
+      void fetchExecutions();
+      void fetchManualAutomations();
     }
   }, [isOpen, issue, fetchExecutions, fetchManualAutomations]);
 
@@ -443,7 +443,7 @@ export function IssueDetailPanel({
               )}
 
               {/* Body */}
-              {issue.body && (
+              {issue.body !== undefined && issue.body !== null && issue.body !== '' && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider">

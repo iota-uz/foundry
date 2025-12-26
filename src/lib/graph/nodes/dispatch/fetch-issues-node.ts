@@ -197,8 +197,8 @@ export class FetchIssuesNodeRuntime<TContext extends Record<string, unknown>>
     if (!repo) missing.push('repo');
 
     if (sourceType === 'project') {
-      if (!projectOwner) missing.push('projectOwner');
-      if (!projectNumber) missing.push('projectNumber');
+      if (projectOwner === undefined || projectOwner === '') missing.push('projectOwner');
+      if (projectNumber === undefined || projectNumber === 0) missing.push('projectNumber');
     }
 
     if (missing.length > 0) {
@@ -282,7 +282,7 @@ export class FetchIssuesNodeRuntime<TContext extends Record<string, unknown>>
       const duration = Date.now() - startTime;
 
       if (err instanceof ProjectsError) {
-        if (throwOnError) {
+        if (throwOnError === true) {
           throw new NodeExecutionError(
             `GitHub Projects error: ${err.message}`,
             'projects',
@@ -313,7 +313,7 @@ export class FetchIssuesNodeRuntime<TContext extends Record<string, unknown>>
         };
       }
 
-      if (throwOnError) {
+      if (throwOnError === true) {
         throw new NodeExecutionError(
           `Failed to fetch issues: ${err.message}`,
           'fetch',
@@ -366,7 +366,7 @@ export class FetchIssuesNodeRuntime<TContext extends Record<string, unknown>>
       token,
       projectOwner: projectOwner!,
       projectNumber: projectNumber!,
-      ...(verbose ? { verbose: true } : {}),
+      ...(verbose === true ? { verbose: true } : {}),
     };
 
     const client = new ProjectsClient(projectConfig);
@@ -534,7 +534,7 @@ export class FetchIssuesNodeRuntime<TContext extends Record<string, unknown>>
 
     // Build labels array from priority
     const labels: string[] = [];
-    if (priority) {
+    if (priority !== undefined && priority !== '') {
       labels.push(`priority:${priority.toLowerCase()}`);
     }
 

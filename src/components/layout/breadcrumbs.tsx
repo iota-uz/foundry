@@ -30,7 +30,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
             {index > 0 && (
               <ChevronRightIcon className="h-4 w-4 text-text-tertiary flex-shrink-0" />
             )}
-            {item.href && !isLast ? (
+            {item.href !== undefined && item.href !== null && item.href !== '' && !isLast ? (
               <Link
                 href={item.href}
                 className="text-sm text-text-secondary hover:text-text-primary transition-colors"

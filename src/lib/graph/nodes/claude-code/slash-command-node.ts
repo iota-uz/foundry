@@ -232,9 +232,9 @@ export class SlashCommandNodeRuntime<TContext extends Record<string, unknown>>
       );
 
       // Check for errors
-      if (throwOnError && !result.success) {
+      if (throwOnError === true && result.success !== true) {
         throw new NodeExecutionError(
-          `Slash command failed: ${result.error?.message || 'Unknown error'}`,
+          `Slash command failed: ${result.error?.message ?? 'Unknown error'}`,
           fullCommand,
           this.nodeType,
           undefined,
@@ -289,11 +289,11 @@ export class SlashCommandNodeRuntime<TContext extends Record<string, unknown>>
 
     // SDK options
     const sdkOptions: Options = {
-      cwd: cwd || process.cwd(),
+      cwd: (cwd !== undefined && cwd !== null && cwd !== '') ? cwd : process.cwd(),
       maxTurns: 50, // Allow more turns for complex operations
     };
 
-    if (model) {
+    if (model !== undefined && model !== null && model !== '') {
       sdkOptions.model = model;
     }
 
@@ -350,7 +350,7 @@ export class SlashCommandNodeRuntime<TContext extends Record<string, unknown>>
         }
 
         // Check for errors in the result
-        if ('error' in resultMessage && resultMessage.error) {
+        if ('error' in resultMessage && resultMessage.error !== undefined && resultMessage.error !== null) {
           success = false;
           error = {
             message: String(resultMessage.error),
@@ -362,7 +362,7 @@ export class SlashCommandNodeRuntime<TContext extends Record<string, unknown>>
       // Track file operations
       if (this.isFileOperationMessage(message)) {
         const filePath = this.extractFilePath(message);
-        if (filePath && !filesAffected.includes(filePath)) {
+        if (filePath !== undefined && filePath !== '' && !filesAffected.includes(filePath)) {
           filesAffected.push(filePath);
         }
       }
@@ -397,7 +397,7 @@ export class SlashCommandNodeRuntime<TContext extends Record<string, unknown>>
   ): string {
     const commandPrompt = `/${command} ${args}`;
 
-    if (additionalContext) {
+    if (additionalContext !== undefined && additionalContext !== '') {
       return `${additionalContext}\n\n${commandPrompt}`;
     }
 

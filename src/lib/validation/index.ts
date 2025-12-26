@@ -29,7 +29,7 @@ export async function validateBody<T>(
   schema: ZodSchema<T>
 ): Promise<T | NextResponse<ValidationErrorResponse>> {
   try {
-    const body = await request.json();
+    const body: unknown = await request.json();
     return schema.parse(body);
   } catch (error) {
     if (error instanceof ZodError) {

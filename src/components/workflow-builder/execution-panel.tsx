@@ -96,7 +96,7 @@ export function ExecutionPanel({ isOpen, onClose }: ExecutionPanelProps) {
     const text = filteredLogs
       .map((log) => `[${log.level.toUpperCase()}] ${log.message}`)
       .join('\n');
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
   };
 
   return (
@@ -115,11 +115,11 @@ export function ExecutionPanel({ isOpen, onClose }: ExecutionPanelProps) {
                 ${isPaused ? 'bg-accent-warning' : ''}
                 ${status === WorkflowStatus.Completed ? 'bg-accent-success' : ''}
                 ${status === WorkflowStatus.Failed ? 'bg-accent-error' : ''}
-                ${status === WorkflowStatus.Pending || !status ? 'bg-text-tertiary' : ''}
+                ${status === WorkflowStatus.Pending || status === undefined || status === null ? 'bg-text-tertiary' : ''}
               `}
             />
             <span className={`text-xs font-medium capitalize ${statusConfig?.textColor || 'text-text-tertiary'}`}>
-              {status || 'Idle'}
+              {status ?? 'Idle'}
             </span>
           </div>
         </div>
@@ -134,7 +134,7 @@ export function ExecutionPanel({ isOpen, onClose }: ExecutionPanelProps) {
       </div>
 
       {/* Controls */}
-      {executionId && (
+      {executionId !== null && executionId !== undefined && executionId !== '' && (
         <div className="flex items-center gap-2 px-4 py-2 border-b border-border-subtle">
           {isRunning && (
             <Button
@@ -235,7 +235,7 @@ export function ExecutionPanel({ isOpen, onClose }: ExecutionPanelProps) {
                       </span>
                     )}
                   </div>
-                  {nodeState?.error && (
+                  {nodeState?.error !== undefined && nodeState?.error !== null && nodeState?.error !== '' && (
                     <p
                       className="text-xs text-accent-error mt-0.5 truncate"
                       title={nodeState.error}
@@ -343,7 +343,7 @@ export function ExecutionPanel({ isOpen, onClose }: ExecutionPanelProps) {
                   >
                     {log.level}
                   </span>
-                  {log.nodeId && (
+                  {log.nodeId !== undefined && log.nodeId !== null && log.nodeId !== '' && (
                     <span
                       className="text-text-secondary flex-shrink-0 max-w-[60px] truncate"
                       title={nodeLabels[log.nodeId] ?? log.nodeId}
@@ -361,7 +361,7 @@ export function ExecutionPanel({ isOpen, onClose }: ExecutionPanelProps) {
       </div>
 
       {/* Footer */}
-      {executionId && (
+      {executionId !== null && executionId !== undefined && executionId !== '' && (
         <div className="px-4 py-2 border-t border-border-subtle">
           <span className="text-xs text-text-tertiary font-mono">
             ID: {executionId.slice(0, 8)}

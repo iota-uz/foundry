@@ -276,21 +276,21 @@ function generatePRBody(
   ];
 
   // Determine current active node based on state
-  const activeNode = isFinal ? 'REPORT' : state.currentNode || 'IMPLEMENT';
+  const activeNode = isFinal ? 'REPORT' : state.currentNode ?? 'IMPLEMENT';
 
   // Create diagram nodes with proper status
   const diagramNodes = createDiagramNodes(
     allNodeNames,
     activeNode,
-    completedNodes || [],
-    state.context.failedNodes || []
+    completedNodes ?? [],
+    state.context.failedNodes ?? []
   );
 
   // Get current task info
   const currentTask = tasks?.[currentTaskIndex];
-  const taskDescription = currentTask?.description || 'Processing...';
-  const completedCount = tasks?.filter((t) => t.completed).length || 0;
-  const totalCount = tasks?.length || 0;
+  const taskDescription = currentTask?.description ?? 'Processing...';
+  const completedCount = tasks?.filter((t) => t.completed).length ?? 0;
+  const totalCount = tasks?.length ?? 0;
 
   // Generate dashboard config
   const dashboardConfig: {
@@ -312,7 +312,7 @@ function generatePRBody(
     dashboardConfig.maxRetries = maxFixAttempts;
   }
 
-  if (actionsRunUrl) {
+  if (actionsRunUrl !== undefined && actionsRunUrl !== '') {
     dashboardConfig.actionsRunUrl = actionsRunUrl;
   }
 
@@ -510,7 +510,7 @@ gh pr create --draft \\
         };
 
         // Only set if we have values (avoid setting to undefined with exactOptionalPropertyTypes)
-        if (prUrlMatch) {
+        if (prUrlMatch !== null) {
           updates.prNumber = parseInt(prUrlMatch[1]!, 10);
           updates.prUrl = prUrlMatch[0];
         }
@@ -617,7 +617,7 @@ When done, the workflow will run tests to verify your changes.`,
       command: (state) => {
         const { prBodyMarkdown, repository, prNumber, issueNumber } = state.context;
 
-        if (!prNumber) {
+        if (prNumber === undefined || prNumber === null || prNumber === 0) {
           return 'echo "No PR number found, skipping PR update"';
         }
 
@@ -630,7 +630,7 @@ gh pr edit ${prNumber} --repo ${repository} --body-file /tmp/pr-body-${issueNumb
       timeout: 30000,
       then: (state) => {
         // Check if tests passed
-        if (state.context.testsPassed) {
+        if (state.context.testsPassed === true) {
           return 'NEXT_TASK';
         }
 
@@ -710,7 +710,7 @@ gh pr edit ${prNumber} --repo ${repository} --body-file /tmp/pr-body-${issueNumb
       command: (state) => {
         const { prBodyMarkdown, repository, prNumber, issueNumber } = state.context;
 
-        if (!prNumber) {
+        if (prNumber === undefined || prNumber === null || prNumber === 0) {
           return 'echo "No PR number found, skipping PR finalization"';
         }
 
@@ -746,9 +746,9 @@ gh pr edit ${prNumber} --repo ${repository} --body-file /tmp/pr-body-${issueNumb
     schema.dynamicCommand('REPORT', {
       command: (state: WorkflowState<IssueContext>): string => {
         const { issueNumber, repository, tasks, prUrl } = state.context;
-        const completedCount = tasks?.filter((t) => t.completed).length || 0;
-        const totalCount = tasks?.length || 0;
-        const prLink = prUrl ? `\n\n**Pull Request:** ${prUrl}` : '';
+        const completedCount = tasks?.filter((t) => t.completed).length ?? 0;
+        const totalCount = tasks?.length ?? 0;
+        const prLink = prUrl !== undefined && prUrl !== null && prUrl !== '' ? `\n\n**Pull Request:** ${prUrl}` : '';
 
         return `gh issue comment ${issueNumber} --repo ${repository} --body "## Workflow Complete
 

@@ -98,13 +98,13 @@ export function TransitionEditor({
                 border rounded-md
                 placeholder:text-text-muted
                 focus:outline-none focus:ring-1
-                ${errors?.customExpression
+                ${errors?.customExpression !== undefined && errors.customExpression !== ''
                   ? 'border-accent-error focus:ring-accent-error'
                   : 'border-border-default hover:border-border-hover focus:ring-purple-500 focus:border-purple-500'
                 }
               `}
             />
-            {errors?.customExpression && (
+            {errors?.customExpression !== undefined && errors.customExpression !== '' && (
               <p className="mt-1 text-xs text-accent-error">{errors.customExpression}</p>
             )}
             <p className="mt-1 text-[10px] text-text-muted">
@@ -127,7 +127,7 @@ export function TransitionEditor({
               border rounded-md
               appearance-none
               focus:outline-none focus:ring-1
-              ${errors?.nextStatus
+              ${errors?.nextStatus !== undefined && errors.nextStatus !== ''
                 ? 'border-accent-error focus:ring-accent-error'
                 : 'border-border-default hover:border-border-hover focus:ring-emerald-500 focus:border-emerald-500'
               }

@@ -118,17 +118,21 @@ export function generateWorkflowDiagram(config: WorkflowDiagramConfig): string {
   // Add edges
   for (const edge of edges) {
     if (edge.to === 'END') {
-      lines.push(`    ${edge.from} --> [*]${edge.label ? ` : ${escapeLabel(edge.label)}` : ''}`);
+      const labelPart = (edge.label !== undefined && edge.label !== null && edge.label !== '')
+        ? ` : ${escapeLabel(edge.label)}`
+        : '';
+      lines.push(`    ${edge.from} --> [*]${labelPart}`);
     } else {
-      lines.push(
-        `    ${edge.from} --> ${edge.to}${edge.label ? ` : ${escapeLabel(edge.label)}` : ''}`
-      );
+      const labelPart = (edge.label !== undefined && edge.label !== null && edge.label !== '')
+        ? ` : ${escapeLabel(edge.label)}`
+        : '';
+      lines.push(`    ${edge.from} --> ${edge.to}${labelPart}`);
     }
   }
 
   // Add node descriptions (for custom labels)
   for (const node of nodes) {
-    if (node.label && node.label !== node.id) {
+    if (node.label !== undefined && node.label !== null && node.label !== '' && node.label !== node.id) {
       lines.push(`    ${node.id} : ${escapeLabel(node.label)}`);
     }
   }
@@ -164,7 +168,7 @@ export function generateWorkflowDiagram(config: WorkflowDiagramConfig): string {
   }
 
   // Apply active highlight
-  if (activeNode) {
+  if (activeNode !== undefined && activeNode !== null && activeNode !== '') {
     lines.push(`    class ${activeNode} activeHighlight`);
   }
 

@@ -100,15 +100,15 @@ export function Modal({
                 `}
               >
                 {/* Header */}
-                {(title || showClose) && (
+                {((title !== undefined && title !== null && title !== '') || showClose === true) && (
                   <div className="flex items-start justify-between px-5 py-4 border-b border-border-subtle">
                     <div className="flex-1 min-w-0">
-                      {title && (
+                      {title !== undefined && title !== null && title !== '' && (
                         <Dialog.Title className="text-base font-semibold text-text-primary">
                           {title}
                         </Dialog.Title>
                       )}
-                      {description && (
+                      {description !== undefined && description !== null && description !== '' && (
                         <Dialog.Description className="mt-1 text-sm text-text-secondary">
                           {description}
                         </Dialog.Description>

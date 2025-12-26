@@ -52,7 +52,7 @@ function generateStatusTable(config: DashboardConfig): string {
   }
 
   // Actions link
-  if (config.actionsRunUrl) {
+  if (config.actionsRunUrl !== undefined && config.actionsRunUrl !== null && config.actionsRunUrl !== '') {
     rows.push(['**Actions**', `[View Logs →](${config.actionsRunUrl})`]);
   }
 
@@ -72,7 +72,7 @@ function generateStatusTable(config: DashboardConfig): string {
  * @returns Formatted timestamp string
  */
 function formatTimestamp(isoString?: string): string {
-  if (!isoString) {
+  if (isoString === undefined || isoString === null || isoString === '') {
     return new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
   }
 
@@ -224,7 +224,7 @@ export function updateDashboardInContent(
  * @returns True if dashboard section exists
  */
 export function hasDashboard(content: string, markerId?: string): boolean {
-  if (markerId) {
+  if (markerId !== undefined && markerId !== null && markerId !== '') {
     const { start } = createMarkers(markerId);
     return content.includes(start);
   }

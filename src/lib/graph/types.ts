@@ -114,9 +114,9 @@ export interface BaseState {
   /**
    * Persistence of the AI's short-term memory.
    * This allows the SDK to "wake up" remembering the previous conversation.
-   * Can be SDK messages or simplified stored messages for serialization.
+   * Using unknown[] for flexibility - actual SDK types are handled at runtime.
    */
-  conversationHistory: Array<Message | StoredMessage>;
+  conversationHistory: unknown[];
 }
 
 /**
@@ -178,7 +178,7 @@ export interface IAgentWrapper {
     tools: unknown[]
   ): Promise<{
     response: string;
-    updatedHistory: Array<Message | StoredMessage>;
+    updatedHistory: unknown[];
   }>;
 }
 

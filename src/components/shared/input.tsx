@@ -60,14 +60,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {/* Label row */}
-        {(label || (showCount && maxLength)) && (
+        {((label !== undefined && label !== null && label !== '') || (showCount === true && maxLength !== undefined)) && (
           <div className="flex items-center justify-between mb-2">
-            {label && (
+            {label !== undefined && label !== null && label !== '' && (
               <label className="block text-sm font-medium text-text-primary">
                 {label}
               </label>
             )}
-            {showCount && maxLength && (
+            {showCount === true && maxLength !== undefined && maxLength !== null && maxLength !== 0 && (
               <span className="text-xs text-text-tertiary tabular-nums">
                 {charCount}/{maxLength}
               </span>
@@ -78,7 +78,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {/* Input container */}
         <div className="relative">
           {/* Left icon */}
-          {leftIcon && (
+          {leftIcon !== undefined && leftIcon !== null && (
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <span className="text-text-tertiary">{leftIcon}</span>
             </div>
@@ -101,15 +101,15 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 ? 'border-accent-error focus:ring-accent-error focus:border-accent-error'
                 : 'border-border-default hover:border-border-hover focus:ring-accent-primary focus:border-accent-primary'
               }
-              ${leftIcon ? 'pl-10' : ''}
-              ${rightIcon ? 'pr-10' : ''}
+              ${leftIcon !== undefined && leftIcon !== null ? 'pl-10' : ''}
+              ${rightIcon !== undefined && rightIcon !== null ? 'pr-10' : ''}
               ${className}
             `}
             {...props}
           />
 
           {/* Right icon */}
-          {rightIcon && (
+          {rightIcon !== undefined && rightIcon !== null && (
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
               <span className="text-text-tertiary">{rightIcon}</span>
             </div>
@@ -117,13 +117,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         </div>
 
         {/* Error or helper text */}
-        {(error || helperText) && (
+        {((error !== undefined && error !== null && error !== '') || (helperText !== undefined && helperText !== null && helperText !== '')) && (
           <p
             className={`mt-1.5 text-sm ${
               hasError ? 'text-accent-error' : 'text-text-secondary'
             }`}
           >
-            {error || helperText}
+            {error ?? helperText}
           </p>
         )}
       </div>

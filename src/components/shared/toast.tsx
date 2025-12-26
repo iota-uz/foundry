@@ -99,7 +99,7 @@ export function Toast({ type, title, message, onClose }: ToastProps) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        {title && (
+        {title !== undefined && title !== null && title !== '' && (
           <p className={`text-sm font-medium ${config.titleColor} mb-0.5`}>
             {title}
           </p>

@@ -65,11 +65,11 @@ function BaseWorkflowNode({ id, data, selected }: WorkflowNodeProps) {
               ? 'border-accent-success'
               : isFailed
                 ? 'border-accent-error'
-                : selected
+                : selected === true
                   ? 'border-accent-primary shadow-lg shadow-accent-primary/20'
                   : colorConfig.borderColor
         }
-        ${selected ? 'ring-1 ring-accent-primary/30 ring-offset-1 ring-offset-bg-primary' : ''}
+        ${selected === true ? 'ring-1 ring-accent-primary/30 ring-offset-1 ring-offset-bg-primary' : ''}
       `}
     >
       {/* Input Handle */}
@@ -182,15 +182,15 @@ function getConfigPreview(data: WorkflowNodeData): string {
     case 'agent':
       return truncate(config.prompt || 'No prompt configured');
     case 'command':
-      return truncate(config.command || 'No command configured');
+      return truncate(config.command !== undefined && config.command !== '' ? config.command : 'No command configured');
     case 'slash-command':
-      return truncate(`/${config.command} ${config.args || ''}`);
+      return truncate(`/${config.command} ${config.args ?? ''}`);
     case 'eval':
-      return truncate(config.code?.split('\n')[0] || 'No code configured');
+      return truncate(config.code?.split('\n')[0] ?? 'No code configured');
     case 'http':
-      return truncate(`${config.method} ${config.url || ''}`);
+      return truncate(`${config.method} ${config.url ?? ''}`);
     case 'llm':
-      return truncate(config.prompt || 'No prompt configured');
+      return truncate(config.prompt !== undefined && config.prompt !== '' ? config.prompt : 'No prompt configured');
     case 'dynamic-agent':
       return 'Dynamic configuration at runtime';
     case 'dynamic-command':

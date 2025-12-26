@@ -78,7 +78,7 @@ export class GitService implements IGitService {
       ];
 
       return {
-        branch: status.current || 'main',
+        branch: status.current !== null && status.current !== undefined && status.current !== '' ? status.current : 'main',
         ahead: status.ahead,
         behind: status.behind,
         changes,
@@ -203,7 +203,7 @@ export class GitService implements IGitService {
   async getCurrentBranch(): Promise<string> {
     try {
       const status = await this.git.status();
-      return status.current || 'main';
+      return status.current !== null && status.current !== undefined && status.current !== '' ? status.current : 'main';
     } catch (error) {
       throw new Error(
         `Failed to get current branch: ${(error as Error).message}`
@@ -251,7 +251,7 @@ let gitServiceInstance: GitService | null = null;
 
 export function getGitService(projectPath?: string): GitService {
   if (!gitServiceInstance) {
-    if (!projectPath) {
+    if (projectPath === undefined || projectPath === null || projectPath === '') {
       throw new Error('Project path required to initialize GitService');
     }
     gitServiceInstance = new GitService(projectPath);

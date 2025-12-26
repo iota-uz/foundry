@@ -19,8 +19,8 @@ async function loadLayoutLibraries() {
       import('@dagrejs/dagre'),
       import('@dagrejs/graphlib'),
     ]);
-    dagre = (dagreModule.default || dagreModule) as typeof DagreTypes;
-    graphlib = (graphlibModule.default || graphlibModule) as typeof GraphlibTypes;
+    dagre = ((dagreModule.default !== undefined ? dagreModule.default : dagreModule)) as typeof DagreTypes;
+    graphlib = ((graphlibModule.default !== undefined ? graphlibModule.default : graphlibModule)) as typeof GraphlibTypes;
   }
   return { dagre, graphlib };
 }
@@ -58,8 +58,8 @@ export async function getLayoutedElements(
     // Add nodes with dimensions
     nodes.forEach((node) => {
       dagreGraph.setNode(node.id, {
-        width: node.width || 200,
-        height: node.height || 100,
+        width: node.width !== undefined && node.width !== 0 ? node.width : 200,
+        height: node.height !== undefined && node.height !== 0 ? node.height : 100,
       });
     });
 
@@ -73,15 +73,15 @@ export async function getLayoutedElements(
 
     // Map positions back to React Flow nodes
     const layoutedNodes = nodes.map((node) => {
-      const nodeWithPosition = dagreGraph.node(node.id);
+      const nodeWithPosition = dagreGraph.node(node.id) as { x?: number; y?: number } | undefined;
 
       return {
         ...node,
         targetPosition: direction === 'TB' ? Position.Top : Position.Left,
         sourcePosition: direction === 'TB' ? Position.Bottom : Position.Right,
         position: {
-          x: nodeWithPosition.x - (node.width || 200) / 2,
-          y: nodeWithPosition.y - (node.height || 100) / 2,
+          x: (nodeWithPosition?.x !== undefined && nodeWithPosition.x !== 0 ? nodeWithPosition.x : 0) - ((node.width !== undefined && node.width !== 0 ? node.width : 200)) / 2,
+          y: (nodeWithPosition?.y !== undefined && nodeWithPosition.y !== 0 ? nodeWithPosition.y : 0) - ((node.height !== undefined && node.height !== 0 ? node.height : 100)) / 2,
         },
       } as CustomNode;
     });
@@ -122,8 +122,8 @@ export function parseDBML(dbml: string) {
   let tableMatch: RegExpExecArray | null;
 
   while ((tableMatch = tableRegex.exec(dbml)) !== null) {
-    const tableName = tableMatch[1] || '';
-    const tableContent = tableMatch[2] || '';
+    const tableName = tableMatch[1] ?? '';
+    const tableContent = tableMatch[2] ?? '';
 
     const fields: Array<{
       id: string;
@@ -137,9 +137,9 @@ export function parseDBML(dbml: string) {
     let fieldMatch: RegExpExecArray | null;
 
     while ((fieldMatch = fieldRegex.exec(tableContent)) !== null) {
-      const fieldName = fieldMatch[1] || '';
-      const fieldType = fieldMatch[2] || '';
-      const fieldAttrs = fieldMatch[3] || '';
+      const fieldName = fieldMatch[1] ?? '';
+      const fieldType = fieldMatch[2] ?? '';
+      const fieldAttrs = fieldMatch[3] ?? '';
 
       fields.push({
         id: `${tableName}.${fieldName}`,
@@ -183,7 +183,7 @@ export function getMethodColor(method: string): string {
     DELETE: '#ef4444', // red
     PATCH: '#8b5cf6', // purple
   };
-  return colors[method] || '#6b7280'; // gray default
+  return colors[method] ?? '#6b7280'; // gray default
 }
 
 /**
@@ -197,7 +197,7 @@ export function getMethodBgColor(method: string): string {
     DELETE: 'bg-red-500/20',
     PATCH: 'bg-purple-500/20',
   };
-  return colors[method] || 'bg-gray-500/20';
+  return colors[method] ?? 'bg-gray-500/20';
 }
 
 /**
@@ -212,7 +212,7 @@ export function getTypeKindColor(kind: string): string {
     UNION: '#f59e0b', // amber
     INPUT_OBJECT: '#10b981', // green
   };
-  return colors[kind] || '#6b7280'; // gray
+  return colors[kind] ?? '#6b7280'; // gray
 }
 
 /**
@@ -224,7 +224,7 @@ export function getStatusColor(status?: string): string {
     in_progress: '#f59e0b', // amber
     completed: '#10b981', // green
   };
-  return colors[status || 'pending'] || '#6b7280';
+  return colors[status ?? 'pending'] ?? '#6b7280';
 }
 
 /**
@@ -304,5 +304,5 @@ export function formatCardinalityLabel(cardinality?: string): string {
     '1:N': '1:N',
     'N:M': 'N:M',
   };
-  return labels[cardinality || '1:N'] || '1:N';
+  return labels[cardinality ?? '1:N'] ?? '1:N';
 }

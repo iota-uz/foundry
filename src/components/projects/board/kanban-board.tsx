@@ -55,7 +55,7 @@ export function KanbanBoard() {
 
   // Get active issue for drag overlay
   const activeIssue = useMemo(() => {
-    if (!activeIssueId) return null;
+    if (activeIssueId === undefined || activeIssueId === null || activeIssueId === '') return null;
     return filteredIssues.find((issue) => issue.id === activeIssueId) || null;
   }, [activeIssueId, filteredIssues]);
 
@@ -91,11 +91,11 @@ export function KanbanBoard() {
 
     if (over) {
       // Check if over a column or an issue
-      const overData = over.data.current;
+      const overData = over.data.current as { type?: string; column?: { name: string }; issue?: { status: string } } | undefined;
       if (overData?.type === 'column') {
-        setOverColumn(overData.column.name);
+        setOverColumn(overData.column?.name ?? null);
       } else if (overData?.type === 'issue') {
-        setOverColumn(overData.issue.status);
+        setOverColumn(overData.issue?.status ?? null);
       }
     } else {
       setOverColumn(null);
@@ -114,17 +114,17 @@ export function KanbanBoard() {
     if (!activeIssue) return;
 
     // Determine target column
-    const overData = over.data.current;
+    const overData = over.data.current as { type?: string; column?: { name: string }; issue?: { status: string } } | undefined;
     let targetStatus: string | null = null;
 
     if (overData?.type === 'column') {
-      targetStatus = overData.column.name;
+      targetStatus = overData.column?.name ?? null;
     } else if (overData?.type === 'issue') {
-      targetStatus = overData.issue.status;
+      targetStatus = overData.issue?.status ?? null;
     }
 
-    if (targetStatus && targetStatus !== activeIssue.status) {
-      moveIssue(activeIssue.id, targetStatus);
+    if (targetStatus !== null && targetStatus !== '' && targetStatus !== activeIssue.status) {
+      void moveIssue(activeIssue.id, targetStatus);
     }
   };
 

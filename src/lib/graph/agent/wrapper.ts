@@ -6,7 +6,7 @@
  */
 
 import { query, type Options, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
-import type { BaseState, IAgentWrapper, Message, StoredMessage } from '../types';
+import type { BaseState, IAgentWrapper } from '../types';
 
 /**
  * Configuration for the AgentWrapper.
@@ -55,15 +55,15 @@ export class AgentWrapper implements IAgentWrapper {
     _tools: unknown[]
   ): Promise<{
     response: string;
-    updatedHistory: Array<Message | StoredMessage>;
+    updatedHistory: unknown[];
   }> {
     // Build prompt with context from previous conversation
-    const contextPrompt = this.buildContextFromHistory(state.conversationHistory || []);
+    const contextPrompt = this.buildContextFromHistory(state.conversationHistory);
     const fullPrompt = contextPrompt ? `${contextPrompt}\n\n${userInstruction}` : userInstruction;
 
     // Build SDK options - only set defined values
     const sdkOptions: Options = {};
-    if (this.config.model) {
+    if (this.config.model !== undefined) {
       sdkOptions.model = this.config.model;
     }
     if (this.config.sdkOptions) {
@@ -90,8 +90,8 @@ export class AgentWrapper implements IAgentWrapper {
     }
 
     // Combine existing history with new messages
-    const existingHistory = state.conversationHistory || [];
-    const updatedHistory: Array<Message | StoredMessage> = [
+    const existingHistory = state.conversationHistory;
+    const updatedHistory: unknown[] = [
       ...existingHistory,
       // Add user message
       {
@@ -116,16 +116,23 @@ export class AgentWrapper implements IAgentWrapper {
   /**
    * Builds context string from conversation history.
    */
-  private buildContextFromHistory(history: Array<Message | StoredMessage>): string {
+  private buildContextFromHistory(history: unknown[]): string {
     if (history.length === 0) {
       return '';
     }
 
     const contextParts: string[] = [];
     for (const msg of history) {
-      if ('content' in msg && typeof msg.content === 'string') {
-        const role = 'type' in msg ? msg.type : 'unknown';
-        contextParts.push(`[${role}]: ${msg.content}`);
+      // Type guard for message-like objects
+      if (
+        msg !== null &&
+        typeof msg === 'object' &&
+        'content' in msg &&
+        typeof (msg as { content: unknown }).content === 'string'
+      ) {
+        const typedMsg = msg as { content: string; type?: string };
+        const role = typedMsg.type ?? 'unknown';
+        contextParts.push(`[${role}]: ${typedMsg.content}`);
       }
     }
 

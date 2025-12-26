@@ -107,7 +107,7 @@ export class StateManager<TState extends BaseState> {
       await fs.unlink(filePath);
     } catch (error: unknown) {
       // Ignore if file doesn't exist
-      if (error && typeof error === 'object' && 'code' in error && error.code !== 'ENOENT') {
+      if (error !== null && error !== undefined && typeof error === 'object' && 'code' in error && error.code !== 'ENOENT') {
         throw new Error(`Failed to delete state for workflow ${id}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
