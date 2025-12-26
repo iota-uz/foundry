@@ -34,7 +34,7 @@ async function ensureFoundryHome(): Promise<void> {
 export async function loadCredentials(): Promise<Credentials | null> {
   try {
     const content = await fs.readFile(CREDENTIALS_FILE, 'utf-8');
-    return JSON.parse(content);
+    return JSON.parse(content) as Credentials;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null;
@@ -54,7 +54,7 @@ export async function saveCredentials(credentials: Credentials): Promise<void> {
     const fullCredentials: Credentials = {
       ...credentials,
       updated_at: now,
-      created_at: credentials.created_at || now,
+      created_at: credentials.created_at ?? now,
     };
 
     const content = JSON.stringify(fullCredentials, null, 2);
@@ -72,7 +72,7 @@ export async function saveCredentials(credentials: Credentials): Promise<void> {
  */
 export async function getApiKeyFromCredentials(): Promise<string | null> {
   const credentials = await loadCredentials();
-  return credentials?.anthropic_api_key || null;
+  return credentials?.anthropic_api_key ?? null;
 }
 
 /**
@@ -115,7 +115,7 @@ export async function credentialsExist(): Promise<boolean> {
 export async function getApiKey(): Promise<string | null> {
   // First check environment
   const envKey = process.env.ANTHROPIC_API_KEY;
-  if (envKey) {
+  if (envKey !== undefined && envKey !== null && envKey !== '') {
     return envKey;
   }
 
