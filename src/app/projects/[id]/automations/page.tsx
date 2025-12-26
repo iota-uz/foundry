@@ -61,22 +61,31 @@ export default function ProjectAutomationsPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
   const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
+  const [statusesLoading, setStatusesLoading] = useState(true);
+  const [statusesError, setStatusesError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Automation | null>(null);
 
   // Fetch available statuses from the project
   const fetchStatuses = useCallback(async () => {
+    setStatusesLoading(true);
+    setStatusesError(null);
     try {
       const response = await fetch(`/api/projects/${projectId}/board`);
-      if (response.ok) {
-        const data = await response.json() as { statuses?: string[] };
-        // Extract status names from board API response
-        if (data.statuses != null && Array.isArray(data.statuses)) {
-          setAvailableStatuses(data.statuses);
-        }
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        setStatusesError(data.error ?? `Failed to fetch statuses (${response.status})`);
+        return;
       }
-    } catch {
-      // Fallback to common statuses
-      setAvailableStatuses(['Backlog', 'Todo', 'In Progress', 'In Review', 'Done']);
+      const data = await response.json() as { statuses?: string[] };
+      if (data.statuses != null && Array.isArray(data.statuses) && data.statuses.length > 0) {
+        setAvailableStatuses(data.statuses);
+      } else {
+        setStatusesError('No statuses configured for this project');
+      }
+    } catch (err) {
+      setStatusesError(err instanceof Error ? err.message : 'Failed to fetch statuses');
+    } finally {
+      setStatusesLoading(false);
     }
   }, [projectId]);
 
@@ -241,6 +250,8 @@ export default function ProjectAutomationsPage() {
       <AutomationEditor
         automation={currentEditingAutomation}
         availableStatuses={availableStatuses}
+        statusesLoading={statusesLoading}
+        statusesError={statusesError}
         isOpen={isEditorOpen}
         onClose={handleCloseEditor}
         onSave={handleSaveAutomation}

@@ -36,6 +36,8 @@ import type {
 interface AutomationEditorProps {
   automation: Automation | null; // null = create mode
   availableStatuses: string[];
+  statusesLoading?: boolean;
+  statusesError?: string | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: CreateAutomationData | UpdateAutomationData) => Promise<void>;
@@ -53,6 +55,8 @@ interface AutomationEditorProps {
 export function AutomationEditor({
   automation,
   availableStatuses,
+  statusesLoading,
+  statusesError,
   isOpen,
   onClose,
   onSave,
@@ -212,7 +216,7 @@ export function AutomationEditor({
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Error display */}
-            {error !== undefined && error !== '' && (
+            {error != null && error !== '' && (
               <div
                 className={`
                   flex items-start gap-3 p-4
@@ -237,6 +241,8 @@ export function AutomationEditor({
                 triggerStatus={triggerStatus}
                 buttonLabel={buttonLabel}
                 availableStatuses={availableStatuses}
+                statusesLoading={statusesLoading}
+                statusesError={statusesError}
                 onTriggerTypeChange={setTriggerType}
                 onTriggerStatusChange={setTriggerStatus}
                 onButtonLabelChange={setButtonLabel}
