@@ -1,0 +1,14 @@
+{
+  "name": "foundry-workflow-runner",
+  "version": "1.0.0",
+  "description": "Foundry Workflow Runner - Execute AI workflows in containers",
+  "type": "module",
+  "main": "src/execute.ts",
+  "scripts": {
+    "start": "bun run src/execute.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/bun": "^1.1.0"
+  }
+}
