@@ -67,6 +67,7 @@ export function AutomationEditor({
   error,
 }: AutomationEditorProps) {
   // Form state
+  const [name, setName] = useState('');
   const [triggerType, setTriggerType] = useState<'status_enter' | 'manual'>('status_enter');
   const [triggerStatus, setTriggerStatus] = useState('');
   const [buttonLabel, setButtonLabel] = useState('');
@@ -82,6 +83,7 @@ export function AutomationEditor({
   // Reset form when automation changes
   useEffect(() => {
     if (automation !== null) {
+      setName(automation.name);
       setTriggerType(automation.triggerType);
       setTriggerStatus(automation.triggerStatus ?? '');
       setButtonLabel(automation.buttonLabel ?? '');
@@ -89,6 +91,7 @@ export function AutomationEditor({
       setPriority(automation.priority);
       setEnabled(automation.enabled);
     } else {
+      setName('');
       setTriggerType('status_enter');
       setTriggerStatus('');
       setButtonLabel('');
@@ -102,6 +105,10 @@ export function AutomationEditor({
   // Validate form
   const validate = useCallback(() => {
     const errors: Record<string, string> = {};
+
+    if (name.trim() === '') {
+      errors.name = 'Please enter an automation name';
+    }
 
     if (workflowId === '') {
       errors.workflowId = 'Please select a workflow';
@@ -117,7 +124,7 @@ export function AutomationEditor({
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [workflowId, triggerType, triggerStatus, buttonLabel]);
+  }, [name, workflowId, triggerType, triggerStatus, buttonLabel]);
 
   // Handle save
   const handleSave = useCallback(async () => {
@@ -125,6 +132,7 @@ export function AutomationEditor({
 
     // Build data object conditionally to avoid undefined values
     const baseData = {
+      name,
       triggerType,
       workflowId,
       priority,
@@ -136,7 +144,7 @@ export function AutomationEditor({
       : { ...baseData, buttonLabel };
 
     await onSave(data);
-  }, [validate, triggerType, workflowId, priority, enabled, triggerStatus, buttonLabel, onSave]);
+  }, [validate, name, triggerType, workflowId, priority, enabled, triggerStatus, buttonLabel, onSave]);
 
   // Handle keyboard
   useEffect(() => {
@@ -230,6 +238,38 @@ export function AutomationEditor({
                 </div>
               </div>
             )}
+
+            {/* Name */}
+            <section>
+              <h3 className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider mb-4">
+                Details
+              </h3>
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Deploy to staging when ready"
+                  className={`
+                    w-full h-10 px-3
+                    bg-bg-secondary text-text-primary text-sm
+                    border rounded-lg
+                    focus:outline-none focus:ring-1
+                    ${
+                      validationErrors.name !== undefined && validationErrors.name !== ''
+                        ? 'border-red-500/50 focus:ring-red-500 focus:border-red-500'
+                        : 'border-border-default focus:ring-emerald-500 focus:border-emerald-500'
+                    }
+                  `}
+                />
+                {validationErrors.name !== undefined && validationErrors.name !== '' && (
+                  <p className="mt-1.5 text-xs text-red-400">{validationErrors.name}</p>
+                )}
+              </div>
+            </section>
 
             {/* Trigger Configuration */}
             <section>
