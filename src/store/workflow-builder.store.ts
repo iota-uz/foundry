@@ -11,8 +11,9 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { Node, Edge, XYPosition } from '@xyflow/react';
-import { NodeType, AgentModel, StdlibTool } from '@/lib/graph/enums';
+import { NodeType, AgentModel, StdlibTool, type LLMModelId } from '@/lib/graph/enums';
 import { createWorkflowAction, updateWorkflowAction } from '@/lib/actions/workflows';
+import type { FieldUpdate } from '@/lib/github-projects';
 
 // ============================================================================
 // Helpers
@@ -82,7 +83,8 @@ export type NodeConfig =
   | HttpNodeConfig
   | LlmNodeConfig
   | DynamicAgentNodeConfig
-  | DynamicCommandNodeConfig;
+  | DynamicCommandNodeConfig
+  | GitHubProjectNodeConfig;
 
 export interface AgentNodeConfig {
   type: 'agent';
@@ -124,12 +126,78 @@ export interface HttpNodeConfig {
   timeout?: number;
 }
 
+/**
+ * LLM Node Configuration.
+ *
+ * Supports both legacy AgentModel-based config and new multi-provider LLMModelId config.
+ * During the transition period, both `prompt`/`model` (legacy) and
+ * `systemPrompt`/`userPrompt`/`llmModel` (new) are supported.
+ *
+ * The runtime normalizes the config before execution, preferring new fields.
+ */
 export interface LlmNodeConfig {
   type: 'llm';
-  prompt: string;
+
+  // === Legacy fields (for backward compatibility with existing UI) ===
+
+  /**
+   * Legacy model field (AgentModel only).
+   * The existing UI uses this. For new multi-provider models, use `llmModel`.
+   */
   model: AgentModel;
+
+  /**
+   * Combined prompt for legacy UI.
+   * When the new systemPrompt/userPrompt are available, this is used as fallback.
+   */
+  prompt: string;
+
+  // === New multi-provider fields ===
+
+  /**
+   * New model field supporting all providers (Anthropic, OpenAI, Gemini).
+   * When set, takes precedence over the legacy `model` field.
+   */
+  llmModel?: LLMModelId;
+
+  /**
+   * System prompt (instructions for the model).
+   * If not set, falls back to a default system prompt.
+   */
+  systemPrompt?: string;
+
+  /**
+   * User prompt (supports {{variable}} interpolation).
+   * If not set, falls back to the legacy `prompt` field.
+   */
+  userPrompt?: string;
+
+  /** Output mode: text for free-form, json for structured output */
+  outputMode?: 'text' | 'json';
+
+  /** JSON schema string for structured output validation (when outputMode is 'json') */
+  outputSchema?: string;
+
+  /** Temperature for generation (0-1) */
   temperature?: number;
+
+  /** Maximum tokens to generate */
   maxTokens?: number;
+
+  /** Enable web search (only for models that support it) */
+  enableWebSearch?: boolean;
+
+  /** Reasoning effort level (only for models that support reasoning) */
+  reasoningEffort?: 'low' | 'medium' | 'high';
+
+  /** API key override (uses env var if not provided) */
+  apiKey?: string;
+
+  /** Key in context to store the result */
+  resultKey?: string;
+
+  /** Whether to throw on error */
+  throwOnError?: boolean;
 }
 
 export interface DynamicAgentNodeConfig {
@@ -143,6 +211,20 @@ export interface DynamicCommandNodeConfig {
   type: 'dynamic-command';
   commandExpression: string;
   cwdExpression?: string;
+}
+
+export interface GitHubProjectNodeConfig {
+  type: 'github-project';
+  token: string;
+  projectOwner: string;
+  projectNumber: number;
+  owner: string;
+  repo: string;
+  updates: FieldUpdate[];
+  issueNumber?: number;
+  issueNumberKey?: string;
+  throwOnError?: boolean;
+  resultKey?: string;
 }
 
 /**
@@ -232,8 +314,13 @@ const defaultConfigs: Record<NodeType, () => NodeConfig> = {
   }),
   [NodeType.Llm]: () => ({
     type: 'llm',
-    prompt: 'Enter your prompt...',
+    // Legacy field for UI compatibility
     model: AgentModel.Sonnet,
+    prompt: 'Enter your prompt here...',
+    // New multi-provider fields (optional for now)
+    systemPrompt: 'You are a helpful assistant.',
+    userPrompt: 'Enter your prompt here...',
+    outputMode: 'text' as const,
   }),
   [NodeType.DynamicAgent]: () => ({
     type: 'dynamic-agent',
@@ -245,8 +332,13 @@ const defaultConfigs: Record<NodeType, () => NodeConfig> = {
     commandExpression: 'state.context.command',
   }),
   [NodeType.GitHubProject]: () => ({
-    type: 'command',
-    command: 'gh project item-list',
+    type: 'github-project',
+    token: '',
+    projectOwner: '',
+    projectNumber: 1,
+    owner: '',
+    repo: '',
+    updates: [],
   }),
 };
 

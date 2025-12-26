@@ -973,12 +973,34 @@ export class ProjectsClient {
   }
 
   /**
+   * Check if an update is a project field update (not an issue operation)
+   */
+  private isProjectFieldUpdate(
+    update: FieldUpdate
+  ): update is Exclude<FieldUpdate, { type: 'add_labels' | 'remove_labels' | 'add_assignees' | 'remove_assignees' }> {
+    return update.type !== 'add_labels' &&
+      update.type !== 'remove_labels' &&
+      update.type !== 'add_assignees' &&
+      update.type !== 'remove_assignees';
+  }
+
+  /**
    * Update a single field on a project item
    */
   private async updateSingleField(
     itemId: string,
     update: FieldUpdate
   ): Promise<FieldUpdateResult> {
+    // Skip issue operations - they should be handled by IssuesClient
+    if (!this.isProjectFieldUpdate(update)) {
+      return {
+        field: `${update.type}`,
+        success: false,
+        newValue: '',
+        error: `Issue operation "${update.type}" should be handled separately, not by ProjectsClient`,
+      };
+    }
+
     const field = this.fieldsMap.get(update.field.toLowerCase());
     if (!field) {
       const availableFields = Array.from(this.fieldsMap.keys()).join(', ');
@@ -1039,13 +1061,15 @@ export class ProjectsClient {
           break;
 
         default: {
-          // TypeScript exhaustiveness - this should never be reached
+          // TypeScript exhaustiveness check
+          // Since we filtered out issue operations, only project field types remain
           const exhaustiveCheck: never = update;
+          void exhaustiveCheck; // Suppress unused variable warning
           return {
-            field: (exhaustiveCheck as FieldUpdate).field,
+            field: 'unknown',
             success: false,
             newValue: '',
-            error: `Unknown update type: ${(exhaustiveCheck as FieldUpdate).type}`,
+            error: `Unknown update type (this should never happen)`,
           };
         }
       }

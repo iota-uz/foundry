@@ -82,7 +82,8 @@ export interface Project {
 export interface CreateProjectData {
   name: string;
   description?: string | undefined;
-  githubToken: string;
+  githubCredentialId?: string | null | undefined;
+  githubToken?: string | undefined;
   githubProjectOwner: string;
   githubProjectNumber: number;
   syncIntervalMinutes?: number | undefined;
@@ -92,6 +93,7 @@ export interface CreateProjectData {
 export interface UpdateProjectData {
   name?: string;
   description?: string;
+  githubCredentialId?: string | null;
   githubToken?: string;
   githubProjectOwner?: string;
   githubProjectNumber?: number;
@@ -194,6 +196,7 @@ export const useProjectStore = create<ProjectState>()(
         const result = await createProjectAction({
           name: data.name,
           description: data.description,
+          githubCredentialId: data.githubCredentialId ?? undefined,
           githubToken: data.githubToken,
           githubProjectOwner: data.githubProjectOwner,
           githubProjectNumber: data.githubProjectNumber,

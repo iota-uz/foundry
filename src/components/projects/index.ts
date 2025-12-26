@@ -4,6 +4,8 @@
 
 export { ProjectCard } from './project-card';
 export { GitHubTokenInput } from './github-token-input';
+export { GitHubPATSelector } from './github-pat-selector';
+export { GitHubCredentialModal } from './github-credential-modal';
 
 // Wizard components
 export {

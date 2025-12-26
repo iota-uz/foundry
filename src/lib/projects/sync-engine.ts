@@ -15,6 +15,7 @@ import {
   type IssueMetadata,
 } from '@/lib/db/repositories/issue-metadata.repository';
 import { updateLastSynced } from '@/lib/db/repositories/project.repository';
+import { resolveProjectToken } from '@/lib/github';
 
 /**
  * Result of validating a project's GitHub configuration
@@ -58,8 +59,11 @@ export class SyncEngine {
    */
   async validateProject(project: Project): Promise<SyncValidationResult> {
     try {
+      // Resolve token using new credential system
+      const token = await resolveProjectToken(project);
+
       const config: ProjectsConfig = {
-        token: project.githubToken,
+        token,
         projectOwner: project.githubProjectOwner,
         projectNumber: project.githubProjectNumber,
         verbose: false,
@@ -97,8 +101,11 @@ export class SyncEngine {
     };
 
     try {
+      // Resolve token using new credential system
+      const token = await resolveProjectToken(project);
+
       const config: ProjectsConfig = {
-        token: project.githubToken,
+        token,
         projectOwner: project.githubProjectOwner,
         projectNumber: project.githubProjectNumber,
         verbose: false,
@@ -231,8 +238,11 @@ export class SyncEngine {
     issue: IssueMetadata,
     newStatus: string
   ): Promise<void> {
+    // Resolve token using new credential system
+    const token = await resolveProjectToken(project);
+
     const config: ProjectsConfig = {
-      token: project.githubToken,
+      token,
       projectOwner: project.githubProjectOwner,
       projectNumber: project.githubProjectNumber,
       verbose: false,

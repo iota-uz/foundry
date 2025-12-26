@@ -13,6 +13,10 @@ import type {
   CommandNodeConfig,
   SlashCommandNodeConfig,
   EvalNodeConfig,
+  LlmNodeConfig,
+  HttpNodeConfig,
+  DynamicAgentNodeConfig,
+  DynamicCommandNodeConfig,
 } from '@/store/workflow-builder.store';
 import {
   NodeType,
@@ -24,6 +28,7 @@ import {
   type WorkflowConfig,
   type NodeDef,
   type NodeSchema,
+  type LLMModelId,
 } from '@/lib/graph';
 
 // ============================================================================
@@ -133,7 +138,6 @@ function convertNode<TNames extends string>(
     case NodeType.Eval: {
       const config = data.config as EvalNodeConfig;
       // Parse the code string into an actual function
-      // eslint-disable-next-line @typescript-eslint/no-implied-eval
       const updateFn = new Function('state', config.code) as (
         state: unknown
       ) => Partial<Record<string, unknown>>;
@@ -144,17 +148,91 @@ function convertNode<TNames extends string>(
       });
     }
 
-    // TODO: Add support for remaining node types
-    case NodeType.Http:
-    case NodeType.Llm:
-    case NodeType.DynamicAgent:
-    case NodeType.DynamicCommand:
-    case NodeType.GitHubProject:
-      // For now, convert these as command nodes with placeholder
-      return schema.command(node.id as TNames, {
-        command: `echo "Node type ${data.nodeType} not yet implemented"`,
+    case NodeType.GitHubProject: {
+      if (data.config.type !== 'github-project') {
+        return null;
+      }
+      const config = data.config;
+      // Create a generic node with github-project type
+      // The GraphEngine runtime will handle it via custom node registration
+      return {
+        name: node.id as TNames,
+        type: NodeType.GitHubProject,
+        token: config.token,
+        projectOwner: config.projectOwner,
+        projectNumber: config.projectNumber,
+        owner: config.owner,
+        repo: config.repo,
+        updates: config.updates,
+        ...(config.issueNumber !== undefined && { issueNumber: config.issueNumber }),
+        ...(config.issueNumberKey !== undefined && { issueNumberKey: config.issueNumberKey }),
+        ...(config.throwOnError !== undefined && { throwOnError: config.throwOnError }),
+        ...(config.resultKey !== undefined && { resultKey: config.resultKey }),
         then: transitionFn,
-      });
+      } as unknown as NodeDef<TNames, Record<string, unknown>>;
+    }
+
+    case NodeType.Llm: {
+      const config = data.config as LlmNodeConfig;
+      // Create LLM node definition with all new multi-provider fields
+      return {
+        name: node.id as TNames,
+        type: NodeType.Llm,
+        model: config.model,
+        systemPrompt: config.systemPrompt,
+        userPrompt: config.userPrompt,
+        outputMode: config.outputMode,
+        ...(config.outputSchema !== undefined && { outputSchema: config.outputSchema }),
+        ...(config.temperature !== undefined && { temperature: config.temperature }),
+        ...(config.maxTokens !== undefined && { maxTokens: config.maxTokens }),
+        ...(config.enableWebSearch !== undefined && { enableWebSearch: config.enableWebSearch }),
+        ...(config.reasoningEffort !== undefined && { reasoningEffort: config.reasoningEffort }),
+        ...(config.apiKey !== undefined && { apiKey: config.apiKey }),
+        ...(config.resultKey !== undefined && { resultKey: config.resultKey }),
+        ...(config.throwOnError !== undefined && { throwOnError: config.throwOnError }),
+        then: transitionFn,
+      } as unknown as NodeDef<TNames, Record<string, unknown>>;
+    }
+
+    case NodeType.Http: {
+      const config = data.config as HttpNodeConfig;
+      // Create HTTP node definition
+      return {
+        name: node.id as TNames,
+        type: NodeType.Http,
+        url: config.url,
+        method: config.method,
+        ...(config.headers !== undefined && { headers: config.headers }),
+        ...(config.body !== undefined && { body: config.body }),
+        ...(config.timeout !== undefined && { timeout: config.timeout }),
+        then: transitionFn,
+      } as unknown as NodeDef<TNames, Record<string, unknown>>;
+    }
+
+    case NodeType.DynamicAgent: {
+      const config = data.config as DynamicAgentNodeConfig;
+      // Create DynamicAgent node definition
+      return {
+        name: node.id as TNames,
+        type: NodeType.DynamicAgent,
+        modelExpression: config.modelExpression,
+        promptExpression: config.promptExpression,
+        ...(config.systemExpression !== undefined && { systemExpression: config.systemExpression }),
+        then: transitionFn,
+      } as unknown as NodeDef<TNames, Record<string, unknown>>;
+    }
+
+    case NodeType.DynamicCommand: {
+      const config = data.config as DynamicCommandNodeConfig;
+      // Create DynamicCommand node definition
+      return {
+        name: node.id as TNames,
+        type: NodeType.DynamicCommand,
+        commandExpression: config.commandExpression,
+        ...(config.cwdExpression !== undefined && { cwdExpression: config.cwdExpression }),
+        then: transitionFn,
+      } as unknown as NodeDef<TNames, Record<string, unknown>>;
+    }
 
     default:
       return null;
@@ -252,6 +330,16 @@ function getDefaultPosition(index: number): { x: number; y: number } {
 }
 
 /**
+ * Generic node definition with common properties.
+ * Used for conversion when the strict NodeDef union doesn't cover all node types.
+ */
+interface GenericNodeDef {
+  name: string;
+  type: NodeType;
+  [key: string]: unknown;
+}
+
+/**
  * Convert a GraphEngine node definition back to React Flow format
  */
 function nodeDefToReactFlow(
@@ -262,17 +350,20 @@ function nodeDefToReactFlow(
   let config: NodeConfig;
   let label: string;
 
-  switch (nodeDef.type) {
+  // Cast to generic type for accessing properties that may not be in the union
+  const def = nodeDef as unknown as GenericNodeDef;
+
+  switch (def.type) {
     case NodeType.Agent:
-      label = nodeDef.role ?? 'Agent';
+      label = (def.role as string) ?? 'Agent';
       config = {
         type: 'agent',
-        role: nodeDef.role,
-        prompt: nodeDef.prompt,
-        capabilities: (nodeDef.capabilities as StdlibTool[]) ?? [],
-        model: nodeDef.model ?? AgentModel.Sonnet,
-        ...(nodeDef.maxTurns !== undefined && { maxTurns: nodeDef.maxTurns }),
-        ...(nodeDef.temperature !== undefined && { temperature: nodeDef.temperature }),
+        role: def.role as string,
+        prompt: def.prompt as string,
+        capabilities: (def.capabilities as StdlibTool[]) ?? [],
+        model: (def.model as AgentModel) ?? AgentModel.Sonnet,
+        ...(def.maxTurns !== undefined && { maxTurns: def.maxTurns as number }),
+        ...(def.temperature !== undefined && { temperature: def.temperature as number }),
       };
       break;
 
@@ -280,20 +371,20 @@ function nodeDefToReactFlow(
       label = 'Command';
       config = {
         type: 'command',
-        command: nodeDef.command,
-        ...(nodeDef.cwd !== undefined && { cwd: nodeDef.cwd }),
-        ...(nodeDef.env !== undefined && { env: nodeDef.env }),
-        ...(nodeDef.timeout !== undefined && { timeout: nodeDef.timeout }),
-        ...(nodeDef.throwOnError !== undefined && { throwOnError: nodeDef.throwOnError }),
+        command: def.command as string,
+        ...(def.cwd !== undefined && { cwd: def.cwd as string }),
+        ...(def.env !== undefined && { env: def.env as Record<string, string> }),
+        ...(def.timeout !== undefined && { timeout: def.timeout as number }),
+        ...(def.throwOnError !== undefined && { throwOnError: def.throwOnError as boolean }),
       };
       break;
 
     case NodeType.SlashCommand:
-      label = `/${nodeDef.command}`;
+      label = `/${def.command as string}`;
       config = {
         type: 'slash-command',
-        command: nodeDef.command,
-        args: nodeDef.args,
+        command: def.command as string,
+        args: def.args as string,
       };
       break;
 
@@ -301,12 +392,72 @@ function nodeDefToReactFlow(
       label = 'Eval';
       config = {
         type: 'eval',
-        code: nodeDef.update.toString(),
+        code: typeof def.update === 'function' ? def.update.toString() : '',
+      };
+      break;
+
+    case NodeType.Llm: {
+      label = 'LLM';
+      // Normalize: prefer userPrompt/systemPrompt, fallback to legacy prompt
+      const userPromptVal = (def.userPrompt as string | undefined) ?? (def.prompt as string | undefined) ?? '';
+      // Determine if model is an LLMModelId or AgentModel
+      const modelStr = (def.model as string) ?? '';
+      const isLLMModelId = modelStr.startsWith('claude-') || modelStr.startsWith('gpt-') || modelStr.startsWith('gemini-');
+      config = {
+        type: 'llm',
+        // Legacy fields (required for backward compat)
+        model: isLLMModelId ? AgentModel.Sonnet : (modelStr as AgentModel) || AgentModel.Sonnet,
+        prompt: userPromptVal,
+        // New fields
+        ...(isLLMModelId && { llmModel: modelStr as LLMModelId }),
+        systemPrompt: (def.systemPrompt as string | undefined) ?? '',
+        userPrompt: userPromptVal,
+        outputMode: ((def.outputMode as string) ?? 'text') as 'text' | 'json',
+        ...(def.outputSchema !== undefined && { outputSchema: def.outputSchema as string }),
+        ...(def.temperature !== undefined && { temperature: def.temperature as number }),
+        ...(def.maxTokens !== undefined && { maxTokens: def.maxTokens as number }),
+        ...(def.enableWebSearch !== undefined && { enableWebSearch: def.enableWebSearch as boolean }),
+        ...(def.reasoningEffort !== undefined && { reasoningEffort: def.reasoningEffort as 'low' | 'medium' | 'high' }),
+        ...(def.apiKey !== undefined && { apiKey: def.apiKey as string }),
+        ...(def.resultKey !== undefined && { resultKey: def.resultKey as string }),
+        ...(def.throwOnError !== undefined && { throwOnError: def.throwOnError as boolean }),
+      };
+      break;
+    }
+
+    case NodeType.Http:
+      label = 'HTTP';
+      config = {
+        type: 'http',
+        url: (def.url as string) ?? '',
+        method: ((def.method as string) ?? 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+        ...(def.headers !== undefined && { headers: def.headers as Record<string, string> }),
+        ...(def.body !== undefined && { body: def.body as string }),
+        ...(def.timeout !== undefined && { timeout: def.timeout as number }),
+      };
+      break;
+
+    case NodeType.DynamicAgent:
+      label = 'Dynamic Agent';
+      config = {
+        type: 'dynamic-agent',
+        modelExpression: (def.modelExpression as string) ?? '',
+        promptExpression: (def.promptExpression as string) ?? '',
+        ...(def.systemExpression !== undefined && { systemExpression: def.systemExpression as string }),
+      };
+      break;
+
+    case NodeType.DynamicCommand:
+      label = 'Dynamic Command';
+      config = {
+        type: 'dynamic-command',
+        commandExpression: (def.commandExpression as string) ?? '',
+        ...(def.cwdExpression !== undefined && { cwdExpression: def.cwdExpression as string }),
       };
       break;
 
     default:
-      label = nodeDef.name;
+      label = def.name;
       config = {
         type: 'command',
         command: 'echo "Unknown node type"',

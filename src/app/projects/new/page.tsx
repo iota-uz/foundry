@@ -36,7 +36,7 @@ const STEPS: WizardStep[] = [
 
 interface FormState {
   name: string;
-  githubToken: string;
+  githubCredentialId: string | null;
   projectUrl: string;
 }
 
@@ -47,7 +47,7 @@ export default function CreateProjectPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formState, setFormState] = useState<FormState>({
     name: '',
-    githubToken: '',
+    githubCredentialId: null,
     projectUrl: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -83,8 +83,8 @@ export default function CreateProjectPage() {
         break;
 
       case 1: // GitHub Connection
-        if (!formState.githubToken.trim()) {
-          newErrors.token = 'GitHub token is required';
+        if (!formState.githubCredentialId) {
+          newErrors.credentialId = 'GitHub credential is required';
         }
         if (!formState.projectUrl.trim()) {
           newErrors.projectUrl = 'GitHub project URL is required';
@@ -127,7 +127,7 @@ export default function CreateProjectPage() {
 
         const project = await createProject({
           name: formState.name.trim(),
-          githubToken: formState.githubToken,
+          githubCredentialId: formState.githubCredentialId,
           githubProjectOwner: parsedProject.owner,
           githubProjectNumber: parsedProject.projectNumber,
         });
@@ -150,7 +150,7 @@ export default function CreateProjectPage() {
         return formState.name.trim().length > 0;
       case 1:
         return (
-          formState.githubToken.trim().length > 0 &&
+          formState.githubCredentialId !== null &&
           formState.projectUrl.trim().length > 0 &&
           isGitHubValid
         );
@@ -174,13 +174,13 @@ export default function CreateProjectPage() {
       case 1:
         return (
           <StepGitHubConnection
-            token={formState.githubToken}
+            credentialId={formState.githubCredentialId}
             projectUrl={formState.projectUrl}
-            onTokenChange={(v) => updateField('githubToken', v)}
+            onCredentialChange={(v) => updateField('githubCredentialId', v)}
             onProjectUrlChange={(v) => updateField('projectUrl', v)}
             onValidationChange={setIsGitHubValid}
             errors={{
-              token: errors.token,
+              credentialId: errors.credentialId,
               projectUrl: errors.projectUrl,
             }}
           />

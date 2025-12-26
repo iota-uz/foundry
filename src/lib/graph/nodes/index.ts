@@ -108,8 +108,8 @@ export {
   LLMNodeRuntime,
   type LLMNodeConfig,
   type LLMResult,
-  type LLMModel,
   type ReasoningEffort,
+  type OutputMode,
 } from './general/llm-node';
 
 // Re-export as module namespace

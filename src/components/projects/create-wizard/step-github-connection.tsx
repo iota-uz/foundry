@@ -10,22 +10,20 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Input } from '@/components/shared';
-import { GitHubTokenInput } from '../github-token-input';
+import { GitHubPATSelector } from '../github-pat-selector';
 import { parseGitHubProjectUrl } from '@/lib/projects/github-url-parser';
 
 interface StepGitHubConnectionProps {
-  token: string;
+  credentialId: string | null;
   projectUrl: string;
-  onTokenChange: (token: string) => void;
+  onCredentialChange: (credentialId: string | null) => void;
   onProjectUrlChange: (url: string) => void;
   onValidationChange: (isValid: boolean) => void;
   errors?: {
-    token?: string | undefined;
+    credentialId?: string | undefined;
     projectUrl?: string | undefined;
   };
 }
-
-type ValidationStatus = 'idle' | 'validating' | 'valid' | 'invalid';
 
 interface ParsedProject {
   owner: string;
@@ -34,32 +32,26 @@ interface ParsedProject {
 }
 
 export function StepGitHubConnection({
-  token,
+  credentialId,
   projectUrl,
-  onTokenChange,
+  onCredentialChange,
   onProjectUrlChange,
   onValidationChange,
   errors,
 }: StepGitHubConnectionProps) {
-  const [validationStatus, setValidationStatus] = useState<ValidationStatus>('idle');
-  const [tokenMessage, setTokenMessage] = useState('');
   const [urlMessage, setUrlMessage] = useState('');
   const [parsedProject, setParsedProject] = useState<ParsedProject | null>(null);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Validate GitHub connection
   const validateConnection = useCallback(async () => {
-    if (!token || !projectUrl) {
-      setValidationStatus('idle');
-      setTokenMessage('');
+    if (!credentialId || !projectUrl) {
       setUrlMessage('');
       setParsedProject(null);
       onValidationChange(false);
       return;
     }
 
-    setValidationStatus('validating');
-    setTokenMessage('');
     setUrlMessage('');
 
     try {
@@ -67,33 +59,19 @@ export function StepGitHubConnection({
       const parsed = parseGitHubProjectUrl(projectUrl);
 
       if (!parsed) {
-        setValidationStatus('invalid');
         setUrlMessage('Invalid GitHub project URL format');
         setParsedProject(null);
         onValidationChange(false);
         return;
       }
 
-      // Basic token format check
-      if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
-        setValidationStatus('invalid');
-        setTokenMessage('Invalid token format. Expected ghp_* or github_pat_*');
-        setParsedProject(parsed);
-        onValidationChange(false);
-        return;
-      }
-
-      setValidationStatus('valid');
-      setTokenMessage('Token format valid');
       setParsedProject(parsed);
       onValidationChange(true);
     } catch {
-      setValidationStatus('invalid');
-      setTokenMessage('Failed to validate connection');
       setParsedProject(null);
       onValidationChange(false);
     }
-  }, [token, projectUrl, onValidationChange]);
+  }, [credentialId, projectUrl, onValidationChange]);
 
   // Debounced validation
   useEffect(() => {
@@ -101,10 +79,9 @@ export function StepGitHubConnection({
       clearTimeout(debounceTimeout.current);
     }
 
-    if (token && projectUrl) {
+    if (credentialId && projectUrl) {
       debounceTimeout.current = setTimeout(validateConnection, 500);
     } else {
-      setValidationStatus('idle');
       setParsedProject(null);
       onValidationChange(false);
     }
@@ -114,17 +91,15 @@ export function StepGitHubConnection({
         clearTimeout(debounceTimeout.current);
       }
     };
-  }, [token, projectUrl, validateConnection, onValidationChange]);
+  }, [credentialId, projectUrl, validateConnection, onValidationChange]);
 
   return (
     <div className="space-y-6">
-      {/* GitHub Token */}
-      <GitHubTokenInput
-        value={token}
-        onChange={onTokenChange}
-        validationStatus={validationStatus}
-        validationMessage={tokenMessage}
-        error={errors?.token}
+      {/* GitHub Credential Selector */}
+      <GitHubPATSelector
+        value={credentialId}
+        onChange={onCredentialChange}
+        {...(errors?.credentialId ? { error: errors.credentialId } : {})}
       />
 
       {/* Project URL */}

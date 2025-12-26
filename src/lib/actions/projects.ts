@@ -5,6 +5,7 @@ import { actionClient } from './client';
 import { createProjectSchema, updateProjectSchema } from '@/lib/validation';
 import * as repo from '@/lib/db/repositories/project.repository';
 import { createSyncEngine } from '@/lib/projects';
+import { resolveProjectToken } from '@/lib/github';
 
 /**
  * Safe project type (excludes sensitive data like githubToken)
@@ -44,11 +45,11 @@ function toSafeProject(project: repo.Project): SafeProject {
 export const createProjectAction = actionClient
   .schema(createProjectSchema)
   .action(async ({ parsedInput }) => {
-    // Validate GitHub connection before creating project
-    const syncEngine = createSyncEngine();
-    const validation = await syncEngine.validateProject({
+    // Build temporary project object for validation
+    const tempProject: repo.Project = {
       id: '', // Not needed for validation
-      githubToken: parsedInput.githubToken,
+      githubCredentialId: parsedInput.githubCredentialId ?? null,
+      githubToken: parsedInput.githubToken ?? '',
       githubProjectOwner: parsedInput.githubProjectOwner,
       githubProjectNumber: parsedInput.githubProjectNumber,
       name: parsedInput.name,
@@ -57,17 +58,28 @@ export const createProjectAction = actionClient
       lastSyncedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+    };
+
+    // Resolve the actual token for validation
+    const token = await resolveProjectToken(tempProject);
+
+    // Validate GitHub connection before creating project
+    const syncEngine = createSyncEngine();
+    const validation = await syncEngine.validateProject({
+      ...tempProject,
+      githubToken: token,
     });
 
     if (!validation.valid) {
       throw new Error(`GitHub project validation failed: ${validation.errors.join(', ')}`);
     }
 
-    // Create project
+    // Create project with credential ID or token
     const project = await repo.createProject({
       name: parsedInput.name,
       description: parsedInput.description ?? null,
-      githubToken: parsedInput.githubToken,
+      githubCredentialId: parsedInput.githubCredentialId ?? null,
+      githubToken: parsedInput.githubToken ?? '',
       githubProjectOwner: parsedInput.githubProjectOwner,
       githubProjectNumber: parsedInput.githubProjectNumber,
       syncIntervalMinutes: parsedInput.syncIntervalMinutes ?? 5,
@@ -102,13 +114,15 @@ export const updateProjectAction = actionClient
 
     // If GitHub config is being updated, validate it
     if (
+      data.githubCredentialId !== undefined ||
       data.githubToken !== undefined ||
       data.githubProjectOwner !== undefined ||
       data.githubProjectNumber !== undefined
     ) {
-      const syncEngine = createSyncEngine();
-      const validation = await syncEngine.validateProject({
+      // Build updated project for validation
+      const updatedProject: repo.Project = {
         id,
+        githubCredentialId: data.githubCredentialId !== undefined ? data.githubCredentialId : existing.githubCredentialId,
         githubToken: data.githubToken ?? existing.githubToken,
         githubProjectOwner: data.githubProjectOwner ?? existing.githubProjectOwner,
         githubProjectNumber: data.githubProjectNumber ?? existing.githubProjectNumber,
@@ -118,6 +132,15 @@ export const updateProjectAction = actionClient
         lastSyncedAt: existing.lastSyncedAt,
         createdAt: existing.createdAt,
         updatedAt: existing.updatedAt,
+      };
+
+      // Resolve token for validation
+      const token = await resolveProjectToken(updatedProject);
+
+      const syncEngine = createSyncEngine();
+      const validation = await syncEngine.validateProject({
+        ...updatedProject,
+        githubToken: token,
       });
 
       if (!validation.valid) {
@@ -129,6 +152,7 @@ export const updateProjectAction = actionClient
     const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
+    if (data.githubCredentialId !== undefined) updateData.githubCredentialId = data.githubCredentialId;
     if (data.githubToken !== undefined) updateData.githubToken = data.githubToken;
     if (data.githubProjectOwner !== undefined) updateData.githubProjectOwner = data.githubProjectOwner;
     if (data.githubProjectNumber !== undefined) updateData.githubProjectNumber = data.githubProjectNumber;

@@ -6,6 +6,7 @@
  */
 
 import { pgTable, text, timestamp, uuid, integer, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { githubCredentials } from './github-credentials';
 
 /**
  * Projects table - GitHub Projects V2 integration
@@ -22,7 +23,11 @@ export const projects = pgTable(
     /** Optional description */
     description: text('description'),
 
-    /** Encrypted GitHub Personal Access Token */
+    /** Reference to stored GitHub credential (optional) */
+    githubCredentialId: uuid('github_credential_id')
+      .references(() => githubCredentials.id, { onDelete: 'set null' }),
+
+    /** Encrypted GitHub Personal Access Token (deprecated, for backward compatibility) */
     githubToken: text('github_token').notNull(),
 
     /** GitHub project owner (user or organization) */

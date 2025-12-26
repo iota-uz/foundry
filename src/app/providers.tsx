@@ -5,6 +5,7 @@
 'use client';
 
 import React from 'react';
+import { SessionProvider } from 'next-auth/react';
 import { ToastProvider } from '@/components/shared';
 import { AppShell } from '@/components/layout';
 
@@ -14,8 +15,10 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ToastProvider>
-      <AppShell>{children}</AppShell>
-    </ToastProvider>
+    <SessionProvider>
+      <ToastProvider>
+        <AppShell>{children}</AppShell>
+      </ToastProvider>
+    </SessionProvider>
   );
 }

@@ -28,7 +28,8 @@ import {
   CheckIcon,
 } from '@heroicons/react/24/outline';
 import { useWorkflowBuilderStore, useSelectedNode } from '@/store';
-import { NodeType, AgentModel, StdlibTool } from '@/lib/graph/enums';
+import { NodeType, AgentModel, StdlibTool, LLM_MODELS, LLMProvider, getModelMetadata } from '@/lib/graph/enums';
+import type { LLMModelId } from '@/lib/graph/enums';
 import { getNodeColor } from '@/lib/design-system';
 import type { NodeConfig } from '@/store/workflow-builder.store';
 import { Modal, ModalBody, ModalFooter } from '@/components/shared/modal';
@@ -569,8 +570,29 @@ function HttpConfigForm({
 }
 
 // ============================================================================
-// LLM Config Form
+// LLM Config Form - Multi-Provider with Full Feature Support
 // ============================================================================
+
+/**
+ * Provider colors for visual distinction in model selector
+ */
+const PROVIDER_COLORS: Record<LLMProvider, { bg: string; text: string; border: string }> = {
+  [LLMProvider.Anthropic]: { bg: '#cc785c', text: '#fff', border: '#cc785c' },
+  [LLMProvider.OpenAI]: { bg: '#10a37f', text: '#fff', border: '#10a37f' },
+  [LLMProvider.Gemini]: { bg: '#4285f4', text: '#fff', border: '#4285f4' },
+};
+
+const PROVIDER_LABELS: Record<LLMProvider, string> = {
+  [LLMProvider.Anthropic]: 'Anthropic',
+  [LLMProvider.OpenAI]: 'OpenAI',
+  [LLMProvider.Gemini]: 'Google',
+};
+
+const PROVIDER_ABBREV: Record<LLMProvider, string> = {
+  [LLMProvider.Anthropic]: 'ANT',
+  [LLMProvider.OpenAI]: 'OAI',
+  [LLMProvider.Gemini]: 'GEM',
+};
 
 function LlmConfigForm({
   config,
@@ -581,50 +603,283 @@ function LlmConfigForm({
   nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
+  const [showSystemPrompt, setShowSystemPrompt] = useState(
+    Boolean(config.type === 'llm' && config.systemPrompt)
+  );
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close dropdown - must be before early return
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setModelDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (config.type !== 'llm') return null;
 
+  // Get current model metadata
+  const currentModelId = config.llmModel ?? 'claude-sonnet-4-5';
+  const currentModel = getModelMetadata(currentModelId);
+  const currentProvider = currentModel?.provider ?? LLMProvider.Anthropic;
+
+  // Group models by provider
+  const modelsByProvider = LLM_MODELS.reduce((acc, model) => {
+    if (!acc[model.provider]) acc[model.provider] = [];
+    acc[model.provider].push(model);
+    return acc;
+  }, {} as Record<LLMProvider, typeof LLM_MODELS>);
+
+  const handleModelChange = (modelId: LLMModelId) => {
+    onChange({ llmModel: modelId });
+    setModelDropdownOpen(false);
+  };
+
   return (
     <div className="divide-y divide-border-subtle">
-      {/* Prompt */}
-      <FieldGroup>
-        <FieldLabel hint={`${config.prompt.length} chars`}>
-          Prompt
-        </FieldLabel>
-        <PromptTextarea
-          value={config.prompt}
-          onChange={(v) => onChange({ prompt: v })}
-          placeholder="Enter your prompt..."
-          accentColor={nodeColor}
-        />
-      </FieldGroup>
-
-      {/* Model */}
+      {/* Model Selection - Grouped by Provider */}
       <FieldGroup>
         <FieldLabel>Model</FieldLabel>
-        <ModelSelect
-          value={config.model}
-          onChange={(v) => onChange({ model: v })}
-          accentColor={nodeColor}
-        />
+        <div className="relative" ref={dropdownRef}>
+          {/* Selected Model Display */}
+          <button
+            onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+            className={`
+              w-full h-10 px-3 flex items-center justify-between gap-2
+              bg-bg-primary border rounded-lg text-left
+              transition-all duration-150 cursor-pointer
+              ${modelDropdownOpen ? 'border-border-hover ring-1' : 'border-border-default hover:border-border-hover'}
+            `}
+            style={{
+              boxShadow: modelDropdownOpen ? `0 0 0 1px ${nodeColor}30` : undefined,
+            }}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Provider Badge */}
+              <span
+                className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide shrink-0"
+                style={{
+                  background: PROVIDER_COLORS[currentProvider].bg,
+                  color: PROVIDER_COLORS[currentProvider].text,
+                }}
+              >
+                {PROVIDER_ABBREV[currentProvider]}
+              </span>
+              <span className="text-sm font-medium text-text-primary truncate">
+                {currentModel?.displayName ?? currentModelId}
+              </span>
+              {/* Capability badges */}
+              <div className="flex items-center gap-1 shrink-0">
+                {currentModel?.supportsReasoning && (
+                  <span className="px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[9px] font-medium">
+                    ✦ Think
+                  </span>
+                )}
+                {currentModel?.supportsWebSearch && (
+                  <span className="px-1 py-0.5 rounded bg-blue-500/15 text-blue-400 text-[9px] font-medium">
+                    🌐 Web
+                  </span>
+                )}
+              </div>
+            </div>
+            <ChevronDownIcon
+              className={`w-4 h-4 text-text-muted transition-transform duration-150 shrink-0 ${modelDropdownOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {/* Dropdown Menu */}
+          {modelDropdownOpen && (
+            <div
+              className="absolute z-50 w-full mt-1.5 py-1 bg-bg-secondary border border-border-default rounded-lg shadow-xl overflow-hidden"
+              style={{ maxHeight: '320px', overflowY: 'auto' }}
+            >
+              {Object.entries(modelsByProvider).map(([provider, models]) => (
+                <div key={provider}>
+                  {/* Provider Header */}
+                  <div
+                    className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 sticky top-0 bg-bg-secondary/95 backdrop-blur-sm border-b border-border-subtle"
+                    style={{ color: PROVIDER_COLORS[provider as LLMProvider].bg }}
+                  >
+                    <div
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ background: PROVIDER_COLORS[provider as LLMProvider].bg }}
+                    />
+                    {PROVIDER_LABELS[provider as LLMProvider]}
+                  </div>
+                  {/* Models */}
+                  {models.map((model) => {
+                    const isSelected = model.id === currentModelId;
+                    return (
+                      <button
+                        key={model.id}
+                        onClick={() => handleModelChange(model.id)}
+                        className={`
+                          w-full px-3 py-2 flex items-center justify-between gap-2 text-left
+                          transition-colors duration-100
+                          ${isSelected
+                            ? 'bg-bg-tertiary'
+                            : 'hover:bg-bg-tertiary/50'}
+                        `}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm ${isSelected ? 'text-text-primary font-medium' : 'text-text-secondary'}`}>
+                            {model.displayName}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {model.supportsReasoning && (
+                              <span className="text-[9px] text-amber-400">✦</span>
+                            )}
+                            {model.supportsWebSearch && (
+                              <span className="text-[9px] text-blue-400">🌐</span>
+                            )}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <CheckIcon className="w-3.5 h-3.5" style={{ color: nodeColor }} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </FieldGroup>
 
-      {/* Advanced Section */}
+      {/* System Prompt - Collapsible */}
+      <div className="border-t border-border-subtle">
+        <button
+          onClick={() => setShowSystemPrompt(!showSystemPrompt)}
+          className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="w-3.5 h-3.5" />
+            <span className="font-medium">System Prompt</span>
+            {config.systemPrompt && (
+              <span className="text-[10px] text-text-muted font-mono">
+                {config.systemPrompt.length} chars
+              </span>
+            )}
+          </div>
+          {showSystemPrompt ? (
+            <ChevronDownIcon className="w-3.5 h-3.5" />
+          ) : (
+            <ChevronRightIcon className="w-3.5 h-3.5" />
+          )}
+        </button>
+        {showSystemPrompt && (
+          <div className="px-4 pb-4">
+            <PromptTextarea
+              value={config.systemPrompt ?? ''}
+              onChange={(v) => onChange({ systemPrompt: v })}
+              placeholder="You are a helpful assistant..."
+              accentColor={nodeColor}
+              rows={3}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* User Prompt */}
+      <FieldGroup>
+        <FieldLabel hint={`${(config.userPrompt ?? config.prompt).length} chars`}>
+          User Prompt
+        </FieldLabel>
+        <PromptTextarea
+          value={config.userPrompt ?? config.prompt}
+          onChange={(v) => onChange({ userPrompt: v, prompt: v })}
+          placeholder="Enter your prompt... Use {{context.key}} for variables"
+          accentColor={nodeColor}
+          rows={4}
+        />
+        <p className="text-[10px] text-text-muted mt-1.5 flex items-center gap-1">
+          <CodeBracketIcon className="w-3 h-3" />
+          <span>Use <code className="px-1 py-0.5 rounded bg-bg-tertiary font-mono">{`{{context.key}}`}</code> for variable interpolation</span>
+        </p>
+      </FieldGroup>
+
+      {/* Output Mode */}
+      <FieldGroup>
+        <FieldLabel>Output Mode</FieldLabel>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onChange({ outputMode: 'text' })}
+            className={`
+              flex-1 h-9 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5
+              border transition-all duration-150
+              ${(config.outputMode ?? 'text') === 'text'
+                ? 'border-transparent text-white'
+                : 'border-border-default text-text-secondary hover:border-border-hover hover:text-text-primary bg-bg-primary'
+              }
+            `}
+            style={{
+              background: (config.outputMode ?? 'text') === 'text' ? nodeColor : undefined,
+            }}
+          >
+            <span>Plain Text</span>
+          </button>
+          <button
+            onClick={() => onChange({ outputMode: 'json' })}
+            className={`
+              flex-1 h-9 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5
+              border transition-all duration-150
+              ${config.outputMode === 'json'
+                ? 'border-transparent text-white'
+                : 'border-border-default text-text-secondary hover:border-border-hover hover:text-text-primary bg-bg-primary'
+              }
+            `}
+            style={{
+              background: config.outputMode === 'json' ? nodeColor : undefined,
+            }}
+          >
+            <CodeBracketIcon className="w-3.5 h-3.5" />
+            <span>JSON</span>
+          </button>
+        </div>
+      </FieldGroup>
+
+      {/* JSON Schema Editor - Only shown when JSON mode is selected */}
+      {config.outputMode === 'json' && (
+        <FieldGroup>
+          <FieldLabel optional hint="JSON Schema">
+            Output Schema
+          </FieldLabel>
+          <CodeEditor
+            value={config.outputSchema ?? '{\n  "type": "object",\n  "properties": {}\n}'}
+            onChange={(v) => onChange({ outputSchema: v })}
+            accentColor={nodeColor}
+            language="json"
+            placeholder='{ "type": "object", "properties": { ... } }'
+          />
+          <p className="text-[10px] text-text-muted mt-1.5">
+            Define the expected JSON structure for validation
+          </p>
+        </FieldGroup>
+      )}
+
+      {/* Advanced Settings */}
       <CollapsibleSection
         title="Advanced"
         isOpen={showAdvanced}
         onToggle={() => setShowAdvanced(!showAdvanced)}
       >
         <div className="space-y-4">
+          {/* Temperature & Max Tokens */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <FieldLabel size="sm">Temperature</FieldLabel>
               <SliderInput
-                value={config.temperature ?? 1}
+                value={config.temperature ?? 0.7}
                 onChange={(v) => onChange({ temperature: v })}
                 min={0}
-                max={1}
+                max={2}
                 step={0.1}
                 accentColor={nodeColor}
               />
@@ -634,10 +889,113 @@ function LlmConfigForm({
               <NumberInput
                 value={config.maxTokens ?? null}
                 onChange={(v) => onChange({ ...(v != null && { maxTokens: v }) })}
-                placeholder="4096"
+                placeholder={String(currentModel?.maxOutputTokens ?? 4096)}
                 min={1}
               />
             </div>
+          </div>
+
+          {/* Web Search Toggle - Only for models that support it */}
+          {currentModel?.supportsWebSearch && (
+            <div className="pt-2 border-t border-border-subtle">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GlobeAltIcon className="w-4 h-4 text-blue-400" />
+                  <div>
+                    <p className="text-xs font-medium text-text-secondary">Web Search</p>
+                    <p className="text-[10px] text-text-muted">Allow model to search the web</p>
+                  </div>
+                </div>
+                <ToggleSwitch
+                  label=""
+                  checked={config.enableWebSearch ?? false}
+                  onChange={(v) => onChange({ enableWebSearch: v })}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Reasoning Effort - Only for models that support reasoning */}
+          {currentModel?.supportsReasoning && (
+            <div className="pt-2 border-t border-border-subtle">
+              <FieldLabel size="sm">
+                <span className="flex items-center gap-1.5">
+                  <span className="text-amber-400">✦</span>
+                  Reasoning Effort
+                </span>
+              </FieldLabel>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {(['low', 'medium', 'high'] as const).map((level) => {
+                  const isSelected = (config.reasoningEffort ?? 'medium') === level;
+                  const labels = { low: 'Light', medium: 'Balanced', high: 'Deep' };
+                  const descs = { low: 'Fast', medium: 'Default', high: 'Thorough' };
+                  return (
+                    <button
+                      key={level}
+                      onClick={() => onChange({ reasoningEffort: level })}
+                      className={`
+                        p-2 rounded-lg border text-left transition-all duration-150
+                        ${isSelected
+                          ? 'border-transparent bg-amber-500/10'
+                          : 'border-border-subtle hover:border-border-default bg-bg-primary'
+                        }
+                      `}
+                      style={{
+                        boxShadow: isSelected ? '0 0 0 1px rgba(245, 158, 11, 0.3)' : undefined,
+                      }}
+                    >
+                      <div className={`text-xs font-medium ${isSelected ? 'text-amber-400' : 'text-text-primary'}`}>
+                        {labels[level]}
+                      </div>
+                      <div className="text-[10px] text-text-muted">{descs[level]}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      {/* Credentials Section */}
+      <CollapsibleSection
+        title="Credentials"
+        isOpen={showCredentials}
+        onToggle={() => setShowCredentials(!showCredentials)}
+      >
+        <div className="space-y-4">
+          <div>
+            <FieldLabel size="sm" optional>API Key</FieldLabel>
+            <input
+              type="password"
+              value={config.apiKey ?? ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value) {
+                  onChange({ apiKey: value });
+                }
+                // Note: Cannot set to undefined due to exactOptionalPropertyTypes
+              }}
+              placeholder="Uses environment variable if empty"
+              className="w-full h-8 px-3 bg-bg-primary border border-border-default rounded-lg text-xs font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-hover transition-colors"
+            />
+            <p className="text-[10px] text-text-muted mt-1">
+              {currentProvider === LLMProvider.Anthropic && 'Falls back to ANTHROPIC_API_KEY'}
+              {currentProvider === LLMProvider.OpenAI && 'Falls back to OPENAI_API_KEY'}
+              {currentProvider === LLMProvider.Gemini && 'Falls back to GEMINI_API_KEY'}
+            </p>
+          </div>
+          <div>
+            <FieldLabel size="sm" optional>Result Key</FieldLabel>
+            <TextInput
+              value={config.resultKey ?? 'lastLLMResult'}
+              onChange={(v) => onChange({ resultKey: v })}
+              placeholder="lastLLMResult"
+              mono
+            />
+            <p className="text-[10px] text-text-muted mt-1">
+              Context key to store the response
+            </p>
           </div>
         </div>
       </CollapsibleSection>
@@ -788,7 +1146,7 @@ function GitHubProjectConfigForm({
   nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
-  if (config.type !== 'command') return null;
+  if (config.type !== 'github-project') return null;
 
   return (
     <div className="divide-y divide-border-subtle">
@@ -803,31 +1161,140 @@ function GitHubProjectConfigForm({
         >
           <GlobeAltIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: nodeColor }} />
           <span className="text-text-secondary">
-            Uses <code className="px-1 py-0.5 rounded bg-bg-tertiary">gh</code> CLI for GitHub Projects
+            Update GitHub Project fields and issue metadata (status, labels, assignees, etc.)
           </span>
         </div>
       </div>
 
-      {/* Command */}
+      {/* GitHub Token */}
       <FieldGroup>
-        <FieldLabel>Project Command</FieldLabel>
-        <TerminalInput
-          value={config.command}
-          onChange={(v) => onChange({ command: v })}
-          placeholder="gh project item-list 123 --owner @me"
-          accentColor={nodeColor}
+        <FieldLabel>GitHub Token</FieldLabel>
+        <TextInput
+          value={config.token}
+          onChange={(v) => onChange({ token: v })}
+          placeholder="ghp_..."
+          mono
+        />
+        <p className="text-xs text-text-tertiary mt-1">Personal access token with repo and project permissions</p>
+      </FieldGroup>
+
+      {/* Project Configuration */}
+      <FieldGroup>
+        <FieldLabel>Project Owner</FieldLabel>
+        <TextInput
+          value={config.projectOwner}
+          onChange={(v) => onChange({ projectOwner: v })}
+          placeholder="octocat or org-name"
+          mono
         />
       </FieldGroup>
 
-      {/* Working Directory */}
       <FieldGroup>
-        <FieldLabel optional>Working Directory</FieldLabel>
+        <FieldLabel>Project Number</FieldLabel>
         <TextInput
-          value={config.cwd ?? ''}
-          onChange={(v) => onChange({ ...(v && { cwd: v }) })}
-          placeholder="./"
+          value={String(config.projectNumber)}
+          onChange={(v) => onChange({ projectNumber: parseInt(v, 10) || 1 })}
+          placeholder="1"
           mono
         />
+      </FieldGroup>
+
+      {/* Repository Configuration */}
+      <FieldGroup>
+        <FieldLabel>Repository Owner</FieldLabel>
+        <TextInput
+          value={config.owner}
+          onChange={(v) => onChange({ owner: v })}
+          placeholder="octocat"
+          mono
+        />
+      </FieldGroup>
+
+      <FieldGroup>
+        <FieldLabel>Repository Name</FieldLabel>
+        <TextInput
+          value={config.repo}
+          onChange={(v) => onChange({ repo: v })}
+          placeholder="hello-world"
+          mono
+        />
+      </FieldGroup>
+
+      {/* Issue Number Source */}
+      <FieldGroup>
+        <FieldLabel optional>Issue Number (static)</FieldLabel>
+        <TextInput
+          value={String(config.issueNumber ?? '')}
+          onChange={(v) => {
+            if (v) {
+              onChange({ issueNumber: parseInt(v, 10) });
+            }
+            // Note: Cannot set issueNumber to undefined due to exactOptionalPropertyTypes
+            // The field will retain its previous value if cleared
+          }}
+          placeholder="Leave empty to use context"
+          mono
+        />
+      </FieldGroup>
+
+      <FieldGroup>
+        <FieldLabel optional>Issue Number Key (from context)</FieldLabel>
+        <TextInput
+          value={config.issueNumberKey ?? 'issueNumber'}
+          onChange={(v) => onChange({ issueNumberKey: v })}
+          placeholder="issueNumber"
+          mono
+        />
+        <p className="text-xs text-text-tertiary mt-1">
+          Context key to read issue number from (used if static number not set)
+        </p>
+      </FieldGroup>
+
+      {/* Updates Configuration */}
+      <FieldGroup>
+        <FieldLabel>Field Updates (JSON)</FieldLabel>
+        <CodeEditor
+          value={JSON.stringify(config.updates, null, 2)}
+          onChange={(v) => {
+            try {
+              const parsed = JSON.parse(v);
+              onChange({ updates: Array.isArray(parsed) ? parsed : [] });
+            } catch {
+              // Invalid JSON, don't update
+            }
+          }}
+          placeholder={`[\n  { "type": "single_select", "field": "Status", "value": "In Progress" },\n  { "type": "add_labels", "labels": ["bug"] }\n]`}
+          language="json"
+          accentColor={nodeColor}
+        />
+        <p className="text-xs text-text-tertiary mt-2">
+          <strong>Supported operations:</strong> single_select, text, number, date, clear, add_labels, remove_labels, add_assignees, remove_assignees
+        </p>
+      </FieldGroup>
+
+      {/* Options */}
+      <FieldGroup>
+        <FieldLabel optional>Result Key</FieldLabel>
+        <TextInput
+          value={config.resultKey ?? 'lastProjectResult'}
+          onChange={(v) => onChange({ resultKey: v })}
+          placeholder="lastProjectResult"
+          mono
+        />
+      </FieldGroup>
+
+      <FieldGroup>
+        <div className="flex items-center justify-between">
+          <div>
+            <FieldLabel>Throw on Error</FieldLabel>
+            <p className="text-xs text-text-tertiary mt-1">Fail workflow if update fails</p>
+          </div>
+          <ToggleSwitch
+            label=""
+            checked={config.throwOnError ?? true}
+            onChange={(v) => onChange({ throwOnError: v })}
+          />
+        </div>
       </FieldGroup>
     </div>
   );
@@ -905,9 +1372,10 @@ function TextInput({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
+        style={{ outline: 'none' }}
         className={`
           flex-1 h-full px-3 bg-transparent text-sm text-text-primary
-          placeholder:text-text-muted focus:outline-none
+          placeholder:text-text-muted
           ${mono === true ? 'font-mono text-xs' : ''}
         `}
       />
@@ -950,7 +1418,8 @@ function PromptTextarea({
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
         rows={rows}
-        className="w-full p-3 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none resize-none leading-relaxed"
+        style={{ outline: 'none' }}
+        className="w-full p-3 bg-transparent text-sm text-text-primary placeholder:text-text-muted resize-none leading-relaxed"
       />
       {/* Character count bar */}
       <div className="h-1 bg-bg-tertiary">

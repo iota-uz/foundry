@@ -8,6 +8,7 @@ import { ZodError, type ZodSchema } from 'zod';
 export * from './workflow.schemas';
 export * from './project.schemas';
 export * from './automation.schemas';
+export * from './github-credential.schemas';
 
 /**
  * Validation error response

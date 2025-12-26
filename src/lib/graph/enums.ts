@@ -191,3 +191,153 @@ export const END_NODE = SpecialNode.End;
  * Type for special node constants.
  */
 export type EndNode = SpecialNode;
+
+// ============================================================================
+// Multi-Provider LLM Support
+// ============================================================================
+
+/**
+ * LLM Provider enum.
+ * Identifies the AI provider for an LLM node.
+ */
+export enum LLMProvider {
+  Anthropic = 'anthropic',
+  OpenAI = 'openai',
+  Gemini = 'gemini',
+}
+
+/**
+ * LLM Model IDs for all supported providers.
+ * Uses the latest generation models only.
+ */
+export type LLMModelId =
+  // Anthropic Claude 4.5
+  | 'claude-opus-4-5'
+  | 'claude-sonnet-4-5'
+  | 'claude-haiku-4-5'
+  // OpenAI GPT-5
+  | 'gpt-5.2'
+  | 'gpt-5-pro'
+  | 'gpt-5-mini'
+  | 'gpt-5-nano'
+  // Gemini 3.0
+  | 'gemini-3-pro'
+  | 'gemini-3-flash-preview';
+
+/**
+ * Metadata for an LLM model.
+ */
+export interface LLMModelMetadata {
+  /** Model identifier */
+  id: LLMModelId;
+  /** Provider for this model */
+  provider: LLMProvider;
+  /** Human-readable display name */
+  displayName: string;
+  /** Whether the model supports reasoning/thinking mode */
+  supportsReasoning: boolean;
+  /** Whether the model supports web search */
+  supportsWebSearch: boolean;
+  /** Maximum output tokens */
+  maxOutputTokens: number;
+}
+
+/**
+ * Registry of all supported LLM models with their metadata.
+ */
+export const LLM_MODELS: LLMModelMetadata[] = [
+  // Anthropic Claude 4.5
+  {
+    id: 'claude-opus-4-5',
+    provider: LLMProvider.Anthropic,
+    displayName: 'Claude Opus 4.5',
+    supportsReasoning: true,
+    supportsWebSearch: true,
+    maxOutputTokens: 8192,
+  },
+  {
+    id: 'claude-sonnet-4-5',
+    provider: LLMProvider.Anthropic,
+    displayName: 'Claude Sonnet 4.5',
+    supportsReasoning: true,
+    supportsWebSearch: true,
+    maxOutputTokens: 8192,
+  },
+  {
+    id: 'claude-haiku-4-5',
+    provider: LLMProvider.Anthropic,
+    displayName: 'Claude Haiku 4.5',
+    supportsReasoning: true,
+    supportsWebSearch: true,
+    maxOutputTokens: 8192,
+  },
+  // OpenAI GPT-5
+  {
+    id: 'gpt-5.2',
+    provider: LLMProvider.OpenAI,
+    displayName: 'GPT-5.2',
+    supportsReasoning: true,
+    supportsWebSearch: true,
+    maxOutputTokens: 16384,
+  },
+  {
+    id: 'gpt-5-pro',
+    provider: LLMProvider.OpenAI,
+    displayName: 'GPT-5 Pro',
+    supportsReasoning: true,
+    supportsWebSearch: true,
+    maxOutputTokens: 16384,
+  },
+  {
+    id: 'gpt-5-mini',
+    provider: LLMProvider.OpenAI,
+    displayName: 'GPT-5 Mini',
+    supportsReasoning: false,
+    supportsWebSearch: true,
+    maxOutputTokens: 16384,
+  },
+  {
+    id: 'gpt-5-nano',
+    provider: LLMProvider.OpenAI,
+    displayName: 'GPT-5 Nano',
+    supportsReasoning: false,
+    supportsWebSearch: true,
+    maxOutputTokens: 8192,
+  },
+  // Gemini 3.0
+  {
+    id: 'gemini-3-pro',
+    provider: LLMProvider.Gemini,
+    displayName: 'Gemini 3 Pro',
+    supportsReasoning: true,
+    supportsWebSearch: true,
+    maxOutputTokens: 8192,
+  },
+  {
+    id: 'gemini-3-flash-preview',
+    provider: LLMProvider.Gemini,
+    displayName: 'Gemini 3 Flash',
+    supportsReasoning: true,
+    supportsWebSearch: true,
+    maxOutputTokens: 8192,
+  },
+];
+
+/**
+ * Get metadata for a specific model ID.
+ */
+export function getModelMetadata(modelId: LLMModelId): LLMModelMetadata | undefined {
+  return LLM_MODELS.find((m) => m.id === modelId);
+}
+
+/**
+ * Get the provider for a given model ID.
+ * Throws if the model is not found.
+ */
+export function getProviderForModel(modelId: LLMModelId): LLMProvider {
+  const metadata = getModelMetadata(modelId);
+  if (!metadata) {
+    throw new Error(`Unknown model: ${modelId}`);
+  }
+  return metadata.provider;
+}

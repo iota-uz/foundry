@@ -10,16 +10,14 @@
  */
 
 import {
-  CpuChipIcon,
   CommandLineIcon,
-  BoltIcon,
   CodeBracketIcon,
   GlobeAltIcon,
   ChatBubbleLeftRightIcon,
   CogIcon,
   PlayCircleIcon,
-  FolderIcon,
 } from '@heroicons/react/24/outline';
+import { ClaudeIcon, GitHubIcon } from '@/components/icons';
 import { NodeType } from '@/lib/graph/enums';
 
 // =============================================================================
@@ -53,7 +51,7 @@ export const NODE_COLORS: Record<NodeType, NodeColorConfig> = {
   [NodeType.Agent]: {
     label: 'Agent',
     description: 'AI agent with tools and conversation',
-    icon: CpuChipIcon,
+    icon: ClaudeIcon,
     hex: '#a855f7',
     textColor: 'text-purple-400',
     bgColor: 'bg-purple-500/10',
@@ -73,7 +71,7 @@ export const NODE_COLORS: Record<NodeType, NodeColorConfig> = {
   [NodeType.SlashCommand]: {
     label: 'Slash Command',
     description: 'Run Claude Code slash commands',
-    icon: BoltIcon,
+    icon: ClaudeIcon,
     hex: '#eab308',
     textColor: 'text-yellow-400',
     bgColor: 'bg-yellow-500/10',
@@ -133,7 +131,7 @@ export const NODE_COLORS: Record<NodeType, NodeColorConfig> = {
   [NodeType.GitHubProject]: {
     label: 'GitHub Project',
     description: 'Update GitHub Project status',
-    icon: FolderIcon,
+    icon: GitHubIcon,
     hex: '#8b5cf6',
     textColor: 'text-violet-400',
     bgColor: 'bg-violet-500/10',

@@ -19,6 +19,10 @@ import {
   type FieldUpdateResult,
   ProjectsError,
 } from '../../../github-projects';
+import {
+  IssuesClient,
+  type IssuesConfig,
+} from '../../../github-issues';
 
 /**
  * Result of a GitHub Project field update.
@@ -161,8 +165,11 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
 
   public readonly nodeType = 'github-project';
 
-  /** Cached client instance */
-  private client: ProjectsClient | null = null;
+  /** Cached project client instance */
+  private projectClient: ProjectsClient | null = null;
+
+  /** Cached issues client instance */
+  private issuesClient: IssuesClient | null = null;
 
   constructor(config: GitHubProjectNodeConfig<TContext>) {
     super({
@@ -227,50 +234,87 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
       const updateArray = Array.isArray(updates) ? updates : [updates];
 
       context.logger.info(
-        `[GitHubProjectNode] Updating ${updateArray.length} field(s) on ${owner}/${repo}#${issueNumber}`
+        `[GitHubProjectNode] Processing ${updateArray.length} update(s) on ${owner}/${repo}#${issueNumber}`
       );
 
-      // Create project config
-      const projectConfig: ProjectsConfig = {
-        token,
-        projectOwner,
-        projectNumber,
-      };
+      // Separate project field updates from issue operations
+      const issueOperationTypes = new Set(['add_labels', 'remove_labels', 'add_assignees', 'remove_assignees']);
+      const projectUpdates = updateArray.filter(u => !issueOperationTypes.has(u.type));
+      const issueOperations = updateArray.filter(u => issueOperationTypes.has(u.type));
 
-      if (verbose === true) {
-        projectConfig.verbose = true;
+      const allResults: FieldUpdateResult[] = [];
+
+      // Execute project field updates
+      if (projectUpdates.length > 0) {
+        // Create project config
+        const projectConfig: ProjectsConfig = {
+          token,
+          projectOwner,
+          projectNumber,
+        };
+
+        if (verbose === true) {
+          projectConfig.verbose = true;
+        }
+
+        // Create and validate client
+        const projectClient = await this.getProjectClient(projectConfig, context);
+
+        // Update project fields
+        const updateResult = await projectClient.updateFields({
+          owner,
+          repo,
+          issueNumber,
+          updates: projectUpdates,
+        });
+
+        allResults.push(...updateResult.updatedFields);
       }
 
-      // Create and validate client
-      const client = await this.getClient(projectConfig, context);
+      // Execute issue operations
+      if (issueOperations.length > 0) {
+        const issuesConfig: IssuesConfig = {
+          token,
+        };
 
-      // Update fields
-      const updateResult = await client.updateFields({
-        owner,
-        repo,
-        issueNumber,
-        updates: updateArray,
-      });
+        if (verbose === true) {
+          issuesConfig.verbose = true;
+        }
+
+        const issuesClient = this.getIssuesClient(issuesConfig);
+
+        const issueResults = await this.executeIssueOperations(
+          issuesClient,
+          owner,
+          repo,
+          issueNumber,
+          issueOperations
+        );
+
+        allResults.push(...issueResults);
+      }
 
       const duration = Date.now() - startTime;
 
+      const allSucceeded = allResults.every(r => r.success);
+
       const result: GitHubProjectResult = {
-        success: updateResult.success,
-        updatedFields: updateResult.updatedFields,
+        success: allSucceeded,
+        updatedFields: allResults,
         issueNumber,
         repository: `${owner}/${repo}`,
         duration,
-        ...(updateResult.error !== undefined && updateResult.error !== '' ? { error: updateResult.error } : {}),
+        ...(!allSucceeded ? { error: `${allResults.filter(r => !r.success).length} update(s) failed` } : {}),
       };
 
-      if (!updateResult.success && throwOnError === true) {
-        const failedFields = updateResult.updatedFields
+      if (!allSucceeded && throwOnError === true) {
+        const failed = allResults
           .filter(f => !f.success)
           .map(f => `${f.field}: ${f.error}`)
           .join('; ');
 
         throw new NodeExecutionError(
-          `Failed to update project fields: ${failedFields}`,
+          `Failed to apply updates: ${failed}`,
           `${owner}/${repo}#${issueNumber}`,
           this.nodeType,
           undefined,
@@ -278,13 +322,13 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
         );
       }
 
-      const updatedFieldNames = result.updatedFields
+      const successfulUpdates = result.updatedFields
         .filter(f => f.success)
         .map(f => f.field)
         .join(', ');
 
       context.logger.info(
-        `[GitHubProjectNode] Updated fields: ${updatedFieldNames || 'none'} in ${duration}ms`
+        `[GitHubProjectNode] Applied updates: ${successfulUpdates || 'none'} in ${duration}ms`
       );
 
       // Store result in context
@@ -363,12 +407,12 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
   /**
    * Gets or creates a validated ProjectsClient.
    */
-  private async getClient(
+  private async getProjectClient(
     config: ProjectsConfig,
     context: GraphContext
   ): Promise<ProjectsClient> {
-    if (this.client) {
-      return this.client;
+    if (this.projectClient) {
+      return this.projectClient;
     }
 
     const client = new ProjectsClient(config);
@@ -390,8 +434,83 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
       }
     }
 
-    this.client = client;
+    this.projectClient = client;
     return client;
+  }
+
+  /**
+   * Gets or creates an IssuesClient.
+   */
+  private getIssuesClient(config: IssuesConfig): IssuesClient {
+    if (this.issuesClient) {
+      return this.issuesClient;
+    }
+
+    this.issuesClient = new IssuesClient(config);
+    return this.issuesClient;
+  }
+
+  /**
+   * Execute issue operations (labels, assignees).
+   */
+  private async executeIssueOperations(
+    client: IssuesClient,
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    operations: FieldUpdate[]
+  ): Promise<FieldUpdateResult[]> {
+    const results: FieldUpdateResult[] = [];
+
+    for (const operation of operations) {
+      switch (operation.type) {
+        case 'add_labels': {
+          const result = await client.addLabels(owner, repo, issueNumber, operation.labels);
+          results.push({
+            field: 'labels',
+            success: result.success,
+            newValue: `+${operation.labels.join(', ')}`,
+            ...(result.error !== undefined && { error: result.error }),
+          });
+          break;
+        }
+
+        case 'remove_labels': {
+          const result = await client.removeLabels(owner, repo, issueNumber, operation.labels);
+          results.push({
+            field: 'labels',
+            success: result.success,
+            newValue: `-${operation.labels.join(', ')}`,
+            ...(result.error !== undefined && { error: result.error }),
+          });
+          break;
+        }
+
+        case 'add_assignees': {
+          const result = await client.addAssignees(owner, repo, issueNumber, operation.assignees);
+          results.push({
+            field: 'assignees',
+            success: result.success,
+            newValue: `+${operation.assignees.join(', ')}`,
+            ...(result.error !== undefined && { error: result.error }),
+          });
+          break;
+        }
+
+        case 'remove_assignees': {
+          const result = await client.removeAssignees(owner, repo, issueNumber, operation.assignees);
+          results.push({
+            field: 'assignees',
+            success: result.success,
+            newValue: `-${operation.assignees.join(', ')}`,
+            ...(result.error !== undefined && { error: result.error }),
+          });
+          break;
+        }
+      }
+    }
+
+    return results;
   }
 }
 

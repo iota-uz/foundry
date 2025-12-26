@@ -73,17 +73,17 @@ export default function ProjectAutomationsPage() {
       const response = await fetch(`/api/projects/${projectId}/board`);
       if (!response.ok) {
         const data = await response.json().catch(() => ({})) as { error?: string };
-        setStatusesError(data.error ?? `Failed to fetch statuses (${response.status})`);
+        setStatusesError(data.error ?? `Failed to load project data (${response.status})`);
         return;
       }
       const data = await response.json() as { statuses?: string[] };
       if (data.statuses != null && Array.isArray(data.statuses) && data.statuses.length > 0) {
         setAvailableStatuses(data.statuses);
       } else {
-        setStatusesError('No statuses configured for this project');
+        setStatusesError('No statuses found. Check that the GitHub Project has a Status field configured.');
       }
     } catch (err) {
-      setStatusesError(err instanceof Error ? err.message : 'Failed to fetch statuses');
+      setStatusesError(err instanceof Error ? err.message : 'Failed to connect to project');
     } finally {
       setStatusesLoading(false);
     }

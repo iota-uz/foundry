@@ -1,12 +1,14 @@
 /**
  * @sys/graph - LLMNode Implementation
  *
- * Structured LLM node for JSON I/O with Claude models.
- * Supports schema validation, reasoning effort, and multiple models.
+ * Multi-provider LLM node supporting Anthropic, OpenAI, and Gemini models.
+ * Features:
+ * - Schema validation for structured output
+ * - Reasoning/thinking mode for supported models
+ * - Web search for supported models
+ * - Variable interpolation in prompts
  */
 
-import Anthropic from '@anthropic-ai/sdk';
-import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import type { ZodType } from 'zod';
 
 import {
@@ -16,17 +18,29 @@ import {
   NodeExecutionError,
 } from '../base';
 import type { WorkflowState, GraphContext } from '../../types';
-
-/**
- * Model selection for LLMNode.
- */
-export type LLMModel = 'haiku' | 'sonnet' | 'opus';
+import {
+  type LLMModelId,
+  getModelMetadata,
+  getProviderForModel,
+} from '../../enums';
+import {
+  getProvider,
+  resolveApiKey,
+  type LLMRequest,
+  type LLMResponse,
+} from '../llm/providers';
+import { interpolatePrompt } from '../llm/interpolation';
 
 /**
  * Reasoning effort level.
  * Controls how much "thinking" the model does before responding.
  */
 export type ReasoningEffort = 'low' | 'medium' | 'high';
+
+/**
+ * Output mode for LLM responses.
+ */
+export type OutputMode = 'text' | 'json';
 
 /**
  * Result of an LLM invocation.
@@ -47,6 +61,9 @@ export interface LLMResult<TOutput = unknown> {
   /** Model that was used */
   model: string;
 
+  /** Provider that was used */
+  provider: string;
+
   /** Token usage */
   usage: {
     inputTokens: number;
@@ -65,35 +82,30 @@ export interface LLMResult<TOutput = unknown> {
  */
 export interface LLMNodeConfig<
   TContext extends Record<string, unknown>,
-  TInput = unknown,
   TOutput = unknown,
 > extends BaseNodeConfig<TContext> {
   /**
-   * Model to use.
+   * Model to use (supports all providers).
    */
-  model: LLMModel;
+  model: LLMModelId;
 
   /**
-   * System prompt.
+   * System prompt (instructions for the model).
    */
-  system: string;
+  systemPrompt: string;
 
   /**
    * User prompt.
+   * Supports {{variable}} interpolation from workflow context.
    * Can be a static string or a function that builds the prompt from state.
    */
-  prompt: string | ((state: WorkflowState<TContext>) => string);
+  userPrompt: string | ((state: WorkflowState<TContext>) => string);
 
   /**
-   * Input schema for validation (optional).
-   * If provided, validates input from context before sending to the model.
+   * Output mode: 'text' for free-form, 'json' for structured output.
+   * @default 'text'
    */
-  inputSchema?: ZodType<TInput>;
-
-  /**
-   * Key in context to read input from (used with inputSchema).
-   */
-  inputKey?: keyof TContext;
+  outputMode?: OutputMode;
 
   /**
    * Output schema for validation (optional).
@@ -114,15 +126,24 @@ export interface LLMNodeConfig<
   maxTokens?: number;
 
   /**
+   * Enable web search (for models that support it).
+   * @default false
+   */
+  enableWebSearch?: boolean;
+
+  /**
    * Reasoning effort level.
    * Enables extended thinking for more complex reasoning.
-   * Only available for claude-sonnet-4.5 and above.
+   * Only effective for models that support reasoning.
    */
   reasoningEffort?: ReasoningEffort;
 
   /**
-   * Anthropic API key.
-   * Falls back to ANTHROPIC_API_KEY environment variable.
+   * API key for the provider.
+   * Falls back to provider-specific environment variables:
+   * - Anthropic: ANTHROPIC_API_KEY
+   * - OpenAI: OPENAI_API_KEY
+   * - Gemini: GEMINI_API_KEY
    */
   apiKey?: string;
 
@@ -140,55 +161,47 @@ export interface LLMNodeConfig<
 }
 
 /**
- * Maps model aliases to actual Anthropic model IDs.
- */
-const MODEL_MAP: Record<LLMModel, string> = {
-  haiku: 'claude-haiku-4.5',
-  sonnet: 'claude-sonnet-4.5',
-  opus: 'claude-opus-4.5',
-};
-
-// TODO: Implement extended thinking support when SDK adds this capability
-// Reasoning effort will map to thinking budget tokens:
-// - low: 1024 tokens
-// - medium: 4096 tokens
-// - high: 16384 tokens
-
-/**
- * LLMNode - Structured LLM invocation with JSON I/O.
+ * LLMNode - Multi-provider LLM invocation with structured I/O.
+ *
+ * Supports:
+ * - Anthropic Claude (opus, sonnet, haiku)
+ * - OpenAI GPT-5 (5.2, pro, mini, nano)
+ * - Google Gemini (3 pro, 3 flash)
  *
  * Features:
- * - Model selection (haiku, sonnet, opus)
- * - Input/output schema validation
+ * - Model selection across providers
+ * - Output schema validation
  * - Extended thinking / reasoning effort
- * - Dynamic prompts from state
+ * - Web search (for supported models)
+ * - Variable interpolation in prompts
  *
  * @example
  * ```typescript
- * nodes.LLMNode({
- *   model: 'sonnet',
- *   system: 'You are a task planner.',
- *   prompt: (state) => `Plan: ${state.context.request}`,
- *   outputSchema: TaskPlanSchema,
+ * schema.llm('ANALYZE', {
+ *   model: 'claude-sonnet-4-5',
+ *   systemPrompt: 'You are a code analyzer.',
+ *   userPrompt: 'Analyze: {{request}}',
+ *   outputMode: 'json',
+ *   outputSchema: AnalysisSchema,
  *   reasoningEffort: 'medium',
- *   next: 'IMPLEMENT',
+ *   then: 'IMPLEMENT',
  * })
  * ```
  */
 export class LLMNodeRuntime<
   TContext extends Record<string, unknown>,
-  TInput = unknown,
   TOutput = unknown,
-> extends BaseNode<TContext, LLMNodeConfig<TContext, TInput, TOutput>> {
+> extends BaseNode<TContext, LLMNodeConfig<TContext, TOutput>> {
 
   public readonly nodeType = 'llm';
-  private client: Anthropic | null = null;
 
-  constructor(config: LLMNodeConfig<TContext, TInput, TOutput>) {
+  constructor(config: LLMNodeConfig<TContext, TOutput>) {
     super({
       ...config,
+      outputMode: config.outputMode ?? 'text',
       temperature: config.temperature ?? 0,
       maxTokens: config.maxTokens ?? 4096,
+      enableWebSearch: config.enableWebSearch ?? false,
       throwOnError: config.throwOnError ?? true,
       resultKey: config.resultKey ?? 'lastLLMResult',
     });
@@ -203,116 +216,120 @@ export class LLMNodeRuntime<
   ): Promise<NodeExecutionResult<TContext>> {
     const {
       model,
-      system,
-      prompt,
-      inputSchema,
-      inputKey,
+      systemPrompt,
+      userPrompt,
+      outputMode,
       outputSchema,
       temperature,
       maxTokens,
+      enableWebSearch,
+      reasoningEffort,
       apiKey,
       throwOnError,
       resultKey,
     } = this.config;
 
     const startTime = Date.now();
-    const modelId = MODEL_MAP[model];
+    const metadata = getModelMetadata(model);
+    const providerType = getProviderForModel(model);
 
-    // TODO: Use _reasoningEffort when SDK supports extended thinking
+    context.logger.info(
+      `[LLMNode] Invoking ${model} (${metadata?.displayName ?? model}) via ${providerType}`
+    );
 
     try {
-      // Validate input if schema provided
-      if (inputSchema !== undefined && inputKey !== undefined) {
-        const inputData = state.context[inputKey];
-        const parseResult = inputSchema.safeParse(inputData);
-        if (!parseResult.success) {
-          throw new NodeExecutionError(
-            `Input validation failed: ${parseResult.error.message}`,
-            String(inputKey),
-            this.nodeType,
-            undefined,
-            { errors: parseResult.error.errors }
-          );
-        }
+      // Resolve API key
+      const resolvedApiKey = resolveApiKey(model, apiKey);
+
+      // Build the user prompt with interpolation
+      let resolvedUserPrompt: string;
+      if (typeof userPrompt === 'function') {
+        resolvedUserPrompt = userPrompt(state);
+      } else {
+        resolvedUserPrompt = interpolatePrompt(userPrompt, state.context);
       }
 
-      // Build prompt
-      const resolvedPrompt = typeof prompt === 'function' ? prompt(state) : prompt;
+      // Also interpolate system prompt
+      const resolvedSystemPrompt = interpolatePrompt(systemPrompt, state.context);
 
-      context.logger.info(`[LLMNode] Invoking ${model} (${modelId})`);
-
-      // Get or create client
-      const client = this.getClient(apiKey);
-
-      // Build messages
-      const messages: MessageParam[] = [
-        { role: 'user', content: resolvedPrompt },
-      ];
-
-      // Build request parameters
-      // Note: Extended thinking (reasoningEffort) requires specific API support
-      // For now, we use standard parameters; thinking support can be added later
-      const requestParams: Anthropic.MessageCreateParams = {
-        model: modelId,
-        max_tokens: maxTokens ?? 4096,
-        system,
-        messages,
-        temperature: temperature ?? 0,
+      // Build LLM request
+      const request: LLMRequest = {
+        model,
+        systemPrompt: resolvedSystemPrompt,
+        userPrompt: resolvedUserPrompt,
+        outputMode: outputMode ?? 'text',
       };
 
-      // Make the API call
-      const response = await client.messages.create(requestParams);
+      // Add optional parameters only if defined
+      if (temperature !== undefined) {
+        request.temperature = temperature;
+      }
+      if (maxTokens !== undefined) {
+        request.maxTokens = maxTokens;
+      }
+      if (enableWebSearch !== undefined) {
+        request.enableWebSearch = enableWebSearch;
+      }
+      if (reasoningEffort !== undefined) {
+        request.reasoningEffort = reasoningEffort;
+      }
+
+      // Get provider and execute
+      const provider = getProvider(model);
+      const response: LLMResponse = await provider.execute(request, resolvedApiKey);
 
       const duration = Date.now() - startTime;
 
-      // Extract response content
-      let rawOutput = '';
+      // Validate output with Zod schema if provided
+      let validatedOutput: TOutput | undefined;
+      let validationError: string | undefined;
 
-      for (const block of response.content) {
-        if (block.type === 'text') {
-          rawOutput += block.text;
+      if (response.success && outputSchema !== undefined && response.output !== undefined) {
+        const parseResult = outputSchema.safeParse(response.output);
+        if (parseResult.success) {
+          validatedOutput = parseResult.data;
+        } else {
+          validationError = `Output validation failed: ${parseResult.error.message}`;
         }
-      }
-
-      // Parse output if schema provided
-      let output: TOutput | undefined;
-      let parseError: string | undefined;
-
-      if (outputSchema) {
+      } else if (response.success && outputSchema !== undefined && outputMode === 'json') {
+        // Try to parse rawOutput as JSON and validate
         try {
-          // Try to parse as JSON
-          const jsonMatch = rawOutput.match(/```json\n?([\s\S]*?)\n?```/) ||
-                           rawOutput.match(/\{[\s\S]*\}/);
-          const jsonStr = jsonMatch !== null ? (jsonMatch[1] ?? jsonMatch[0]) : rawOutput;
-          const parsed: unknown = JSON.parse(jsonStr);
+          const parsed: unknown = JSON.parse(response.rawOutput);
           const parseResult = outputSchema.safeParse(parsed);
-
           if (parseResult.success) {
-            output = parseResult.data;
+            validatedOutput = parseResult.data;
           } else {
-            parseError = `Output validation failed: ${parseResult.error.message}`;
+            validationError = `Output validation failed: ${parseResult.error.message}`;
           }
         } catch (e) {
-          parseError = `Failed to parse output as JSON: ${(e as Error).message}`;
+          validationError = `Failed to parse output as JSON: ${(e as Error).message}`;
         }
       }
 
+      // Build result
       const result: LLMResult<TOutput> = {
-        success: parseError === undefined,
-        rawOutput,
-        model: modelId,
-        usage: {
-          inputTokens: response.usage.input_tokens,
-          outputTokens: response.usage.output_tokens,
-        },
+        success: response.success && validationError === undefined,
+        rawOutput: response.rawOutput,
+        model,
+        provider: providerType,
+        usage: response.usage,
         duration,
       };
 
-      if (output !== undefined) {
-        result.output = output;
+      if (validatedOutput !== undefined) {
+        result.output = validatedOutput;
+      } else if (response.output !== undefined) {
+        result.output = response.output as TOutput;
       }
-      if (parseError !== undefined && parseError !== '') {
-        result.error = parseError;
+
+      if (response.thinking !== undefined) {
+        result.thinking = response.thinking;
+      }
+
+      if (response.error !== undefined) {
+        result.error = response.error;
+      } else if (validationError !== undefined) {
+        result.error = validationError;
       }
 
       context.logger.info(
@@ -320,13 +337,14 @@ export class LLMNodeRuntime<
       );
 
       // Check for errors
-      if (throwOnError === true && parseError !== undefined && parseError !== '') {
+      const hasError = !result.success || result.error !== undefined;
+      if (throwOnError === true && hasError) {
         throw new NodeExecutionError(
-          parseError,
+          result.error ?? 'LLM invocation failed',
           model,
           this.nodeType,
           undefined,
-          { rawOutput }
+          { rawOutput: response.rawOutput }
         );
       }
 
@@ -341,7 +359,8 @@ export class LLMNodeRuntime<
           context: contextUpdate,
         },
         metadata: {
-          model: modelId,
+          model,
+          provider: providerType,
           duration,
           usage: result.usage,
         },
@@ -363,26 +382,4 @@ export class LLMNodeRuntime<
       );
     }
   }
-
-  /**
-   * Gets or creates the Anthropic client.
-   */
-  private getClient(apiKey?: string): Anthropic {
-    if (this.client) {
-      return this.client;
-    }
-
-    const key = apiKey ?? process.env.ANTHROPIC_API_KEY;
-    if (key === undefined || key === '') {
-      throw new NodeExecutionError(
-        'Anthropic API key not provided. Set apiKey in config or ANTHROPIC_API_KEY env var.',
-        'config',
-        this.nodeType
-      );
-    }
-
-    this.client = new Anthropic({ apiKey: key });
-    return this.client;
-  }
 }
-

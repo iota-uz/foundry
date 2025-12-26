@@ -136,6 +136,7 @@ export interface UpdateStatusRequest {
 
 /**
  * Field update types for different GitHub Projects field types.
+ * Also includes GitHub Issues operations (labels, assignees).
  */
 export type FieldUpdate =
   | { type: 'single_select'; field: string; value: string }
@@ -143,7 +144,11 @@ export type FieldUpdate =
   | { type: 'number'; field: string; value: number }
   | { type: 'date'; field: string; value: string }
   | { type: 'iteration'; field: string; value: string }
-  | { type: 'clear'; field: string };
+  | { type: 'clear'; field: string }
+  | { type: 'add_labels'; labels: string[] }
+  | { type: 'remove_labels'; labels: string[] }
+  | { type: 'add_assignees'; assignees: string[] }
+  | { type: 'remove_assignees'; assignees: string[] };
 
 /**
  * Request to update fields on an issue in a project

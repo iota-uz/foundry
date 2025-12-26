@@ -14,6 +14,7 @@
 import React from 'react';
 import { MagnifyingGlassIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import { useUIStore } from '@/store';
+import { UserMenu } from './user-menu';
 
 // =============================================================================
 // Component
@@ -81,6 +82,9 @@ export function Header() {
           <span className="text-xs">⌘</span>K
         </kbd>
       </button>
+
+      {/* User menu */}
+      <UserMenu />
     </header>
   );
 }

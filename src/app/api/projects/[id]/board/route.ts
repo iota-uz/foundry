@@ -8,8 +8,8 @@ import { NextResponse } from 'next/server';
 import { getProject, getProjectRepos } from '@/lib/db/repositories/project.repository';
 import { listIssueMetadata, getLatestExecution } from '@/lib/db/repositories/issue-metadata.repository';
 import { validateUuid } from '@/lib/validation';
-import { createSyncEngine } from '@/lib/projects';
 import { createProjectsClient } from '@/lib/github-projects/client';
+import { resolveProjectToken } from '@/lib/github';
 import type { ProjectItemWithFields, ProjectsConfig } from '@/lib/github-projects/types';
 
 interface RouteParams {
@@ -40,25 +40,28 @@ export async function GET(
     // Get all issue metadata for this project
     const issueMetadata = await listIssueMetadata(validId);
 
-    // Get GitHub Project status options and create client for fetching issue data
-    const syncEngine = createSyncEngine();
-    const validation = await syncEngine.validateProject(project);
-
-    const statuses = validation.statusOptions ?? [];
-
-    // Fetch actual issue data from GitHub
+    // Resolve token and create GitHub Projects client
+    let statuses: string[] = [];
     const githubIssueMap = new Map<string, ProjectItemWithFields>();
 
     try {
+      const token = await resolveProjectToken(project);
       const config: ProjectsConfig = {
-        token: project.githubToken,
+        token,
         projectOwner: project.githubProjectOwner,
         projectNumber: project.githubProjectNumber,
         verbose: false,
       };
 
       const client = createProjectsClient(config);
-      await client.validate();
+      const validation = await client.validate();
+
+      if (!validation.valid) {
+        console.warn('GitHub project validation failed:', validation.errors);
+      }
+
+      // Get statuses from validation
+      statuses = validation.statusOptions?.map((opt) => opt.name) ?? [];
 
       // Fetch all items from all statuses
       for (const status of statuses) {

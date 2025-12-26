@@ -74,8 +74,18 @@ export {
   SpecialNode,
   MODEL_IDS,
   END_NODE,
+  // Multi-provider LLM support
+  LLMProvider,
+  LLM_MODELS,
+  getModelMetadata,
+  getProviderForModel,
 } from './enums';
-export type { EndNode } from './enums';
+export type {
+  EndNode,
+  // Multi-provider LLM types
+  LLMModelId,
+  LLMModelMetadata,
+} from './enums';
 
 // Schema-based workflow definition
 export {
@@ -237,8 +247,8 @@ export type {
   // LLMNode
   LLMNodeConfig,
   LLMResult,
-  LLMModel,
   ReasoningEffort,
+  OutputMode,
   // GitHubProjectNode
   GitHubProjectNodeConfig,
   GitHubProjectResult,

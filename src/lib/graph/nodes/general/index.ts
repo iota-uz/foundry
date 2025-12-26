@@ -24,6 +24,6 @@ export {
   LLMNodeRuntime,
   type LLMNodeConfig,
   type LLMResult,
-  type LLMModel,
   type ReasoningEffort,
+  type OutputMode,
 } from './llm-node';

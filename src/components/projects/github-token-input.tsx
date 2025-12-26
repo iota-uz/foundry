@@ -142,18 +142,18 @@ export function GitHubTokenInput({
       </div>
 
       {/* Helper text / error / validation message */}
-      {((error !== undefined && error !== null && error !== '') || (validationMessage !== undefined && validationMessage !== null && validationMessage !== '')) && (
+      {(error || validationMessage) && (
         <p
           className={`mt-2 text-sm ${
             hasError ? 'text-accent-error' : 'text-emerald-400'
           }`}
         >
-          {error !== undefined && error !== null && error !== '' ? error : validationMessage}
+          {error ?? validationMessage}
         </p>
       )}
 
       {/* Help text when idle */}
-      {validationStatus === 'idle' && !(error !== undefined && error !== null && error !== '') && (
+      {validationStatus === 'idle' && !error && (
         <p className="mt-2 text-xs text-text-tertiary">
           Requires <code className="px-1 py-0.5 bg-bg-tertiary rounded text-text-secondary">repo</code> and{' '}
           <code className="px-1 py-0.5 bg-bg-tertiary rounded text-text-secondary">project</code> scopes

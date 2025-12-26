@@ -33,6 +33,7 @@ import { getProject } from '@/lib/db/repositories/project.repository';
 import { runWorkflow } from '@/lib/workflow-builder/workflow-runner';
 import { WorkflowStatus } from '@/lib/graph';
 import { createProjectsClient } from '@/lib/github-projects/client';
+import { resolveProjectToken } from '@/lib/github';
 import type { Node, Edge } from '@xyflow/react';
 import type { WorkflowNodeData } from '@/store/workflow-builder.store';
 
@@ -183,9 +184,10 @@ async function updateGitHubStatus(
       return false;
     }
 
-    // Create GitHub Projects client
+    // Resolve token and create GitHub Projects client
+    const token = await resolveProjectToken(project);
     const client = createProjectsClient({
-      token: project.githubToken,
+      token,
       projectOwner: project.githubProjectOwner,
       projectNumber: project.githubProjectNumber,
     });
