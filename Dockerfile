@@ -24,6 +24,10 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy source code
 COPY . .
 
+# Accept DATABASE_URL as build argument (required for Next.js page data collection)
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 # Set environment variables for build
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
