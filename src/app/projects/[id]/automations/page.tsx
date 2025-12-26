@@ -68,10 +68,10 @@ export default function ProjectAutomationsPage() {
     try {
       const response = await fetch(`/api/projects/${projectId}/board`);
       if (response.ok) {
-        const data = await response.json() as { columns?: Array<{ name: string }> };
-        // Extract status names from columns
-        if (data.columns != null && Array.isArray(data.columns)) {
-          setAvailableStatuses(data.columns.map((col: { name: string }) => col.name));
+        const data = await response.json() as { statuses?: string[] };
+        // Extract status names from board API response
+        if (data.statuses != null && Array.isArray(data.statuses)) {
+          setAvailableStatuses(data.statuses);
         }
       }
     } catch {

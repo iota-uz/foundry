@@ -9,6 +9,8 @@ import { getProject, getProjectRepos } from '@/lib/db/repositories/project.repos
 import { listIssueMetadata, getLatestExecution } from '@/lib/db/repositories/issue-metadata.repository';
 import { validateUuid } from '@/lib/validation';
 import { createSyncEngine } from '@/lib/projects';
+import { createProjectsClient } from '@/lib/github-projects/client';
+import type { ProjectItemWithFields, ProjectsConfig } from '@/lib/github-projects/types';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -38,11 +40,40 @@ export async function GET(
     // Get all issue metadata for this project
     const issueMetadata = await listIssueMetadata(validId);
 
-    // Get GitHub Project status options
+    // Get GitHub Project status options and create client for fetching issue data
     const syncEngine = createSyncEngine();
     const validation = await syncEngine.validateProject(project);
 
     const statuses = validation.statusOptions ?? [];
+
+    // Fetch actual issue data from GitHub
+    const githubIssueMap = new Map<string, ProjectItemWithFields>();
+
+    try {
+      const config: ProjectsConfig = {
+        token: project.githubToken,
+        projectOwner: project.githubProjectOwner,
+        projectNumber: project.githubProjectNumber,
+        verbose: false,
+      };
+
+      const client = createProjectsClient(config);
+      await client.validate();
+
+      // Fetch all items from all statuses
+      for (const status of statuses) {
+        const items = await client.fetchItemsByStatus({ status });
+        for (const item of items) {
+          if (item.content) {
+            // Key by owner/repo/number for lookup
+            const key = `${item.content.repository.owner.login}/${item.content.repository.name}#${item.content.number}`;
+            githubIssueMap.set(key, item);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch GitHub issue data, using metadata only:', error);
+    }
 
     // Group issues by status
     const issuesByStatus: Record<string, Array<{
@@ -76,19 +107,22 @@ export async function GET(
       // Get latest execution for this issue
       const latestExecution = await getLatestExecution(metadata.id);
 
-      // TODO: Fetch actual issue data from GitHub (title, body, state, labels, assignees)
-      // For now, we'll use placeholder data since we don't have GitHub issue fetch in ProjectsClient
+      // Look up actual GitHub issue data
+      const key = `${metadata.owner}/${metadata.repo}#${metadata.issueNumber}`;
+      const githubData = githubIssueMap.get(key);
+      const content = githubData?.content;
+
       const issue = {
         id: metadata.id,
         githubIssueId: metadata.githubIssueId,
         owner: metadata.owner,
         repo: metadata.repo,
         issueNumber: metadata.issueNumber,
-        title: `Issue #${metadata.issueNumber}`, // Placeholder
-        body: '', // Placeholder
-        state: 'OPEN' as const, // Placeholder
-        labels: [] as string[], // Placeholder
-        assignees: [] as string[], // Placeholder
+        title: content?.title ?? `Issue #${metadata.issueNumber}`,
+        body: content?.body ?? '',
+        state: content?.state ?? ('OPEN' as const),
+        labels: [] as string[], // TODO: Add labels to GraphQL query if needed
+        assignees: [] as string[], // TODO: Add assignees to GraphQL query if needed
         hasPlan: metadata.planContent !== null,
         ...(latestExecution?.result && { lastExecutionStatus: latestExecution.result }),
       };

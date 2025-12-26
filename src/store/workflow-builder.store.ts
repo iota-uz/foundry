@@ -167,6 +167,9 @@ interface WorkflowBuilderState {
   edges: Edge[];
   selectedNodeId: string | null;
 
+  // UI state
+  isLibraryCollapsed: boolean;
+
   // Metadata
   metadata: WorkflowMetadata;
   isDirty: boolean;
@@ -195,6 +198,10 @@ interface WorkflowBuilderState {
   saveWorkflow: () => Promise<void>;
   loadWorkflow: (id: string) => Promise<void>;
   newWorkflow: () => void;
+
+  // UI actions
+  toggleLibrary: () => void;
+  setLibraryCollapsed: (collapsed: boolean) => void;
 
   // Utilities
   markDirty: () => void;
@@ -276,6 +283,9 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
       nodes: [],
       edges: [],
       selectedNodeId: null,
+      isLibraryCollapsed: typeof window !== 'undefined'
+        ? localStorage.getItem('workflow-library-collapsed') === 'true'
+        : false,
       metadata: {
         id: null,
         name: 'Untitled Workflow',
@@ -497,6 +507,21 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
           isDirty: false,
           error: null,
         });
+      },
+
+      // UI actions
+      toggleLibrary: () => {
+        const newValue = !get().isLibraryCollapsed;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('workflow-library-collapsed', String(newValue));
+        }
+        set({ isLibraryCollapsed: newValue });
+      },
+      setLibraryCollapsed: (collapsed: boolean) => {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('workflow-library-collapsed', String(collapsed));
+        }
+        set({ isLibraryCollapsed: collapsed });
       },
 
       // Utilities

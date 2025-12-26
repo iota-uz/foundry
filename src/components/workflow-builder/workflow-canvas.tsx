@@ -1,22 +1,22 @@
 /**
  * Workflow Canvas
  *
- * Production-grade React Flow canvas with Linear/Vercel-inspired styling.
+ * Production-grade React Flow canvas with Railway-inspired styling.
  * Features:
  * - Centralized node colors for MiniMap
  * - Minimal empty state without backdrop blur
  * - Clean grid background
+ * - Right-click context menu
  * - Styled controls
  */
 
 'use client';
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   addEdge,
   useReactFlow,
   type OnConnect,
@@ -33,9 +33,9 @@ import '@xyflow/react/dist/style.css';
 import { useWorkflowBuilderStore } from '@/store';
 import type { WorkflowNodeData } from '@/store/workflow-builder.store';
 import { NodeType } from '@/lib/graph/enums';
-import { getNodeHexColor } from '@/lib/design-system';
 import { WorkflowNode } from './nodes/base-workflow-node';
 import { WorkflowEdge } from './edges/workflow-edge';
+import { CanvasContextMenu } from './canvas-context-menu';
 
 // ============================================================================
 // Custom Node/Edge Types
@@ -50,12 +50,24 @@ const edgeTypes: EdgeTypes = {
 };
 
 // ============================================================================
+// Context Menu State Type
+// ============================================================================
+
+interface ContextMenuState {
+  x: number;
+  y: number;
+  flowX: number;
+  flowY: number;
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
 export function WorkflowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   const { nodes, edges, setNodes, setEdges, addNode, selectNode } =
     useWorkflowBuilderStore();
@@ -96,6 +108,7 @@ export function WorkflowCanvas() {
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: { id: string }) => {
       selectNode(node.id);
+      setContextMenu(null);
     },
     [selectNode]
   );
@@ -103,7 +116,28 @@ export function WorkflowCanvas() {
   // Handle pane click (deselect)
   const onPaneClick = useCallback(() => {
     selectNode(null);
+    setContextMenu(null);
   }, [selectNode]);
+
+  // Handle context menu (right-click)
+  const onContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+
+      const flowPosition = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        flowX: flowPosition.x,
+        flowY: flowPosition.y,
+      });
+    },
+    [screenToFlowPosition]
+  );
 
   // Handle drag over (for drag-drop from library)
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -135,14 +169,13 @@ export function WorkflowCanvas() {
     [screenToFlowPosition, addNode, selectNode]
   );
 
-  // MiniMap node color using centralized design system
-  const getNodeColorForMiniMap = useCallback((node: Node) => {
-    const nodeType = node.data?.nodeType as NodeType | undefined;
-    return getNodeHexColor(nodeType ?? NodeType.Command);
+  // Close context menu
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null);
   }, []);
 
   return (
-    <div ref={reactFlowWrapper} className="flex-1 h-full relative">
+    <div ref={reactFlowWrapper} className="flex-1 h-full relative overflow-hidden">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -153,6 +186,7 @@ export function WorkflowCanvas() {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
+        onContextMenu={onContextMenu}
         onDragOver={onDragOver}
         onDrop={onDrop}
         fitView
@@ -176,15 +210,6 @@ export function WorkflowCanvas() {
         <Controls
           className="!bg-bg-secondary !border-border-default !rounded-lg !shadow-lg"
           showInteractive={false}
-        />
-
-        {/* MiniMap */}
-        <MiniMap
-          className="!bg-bg-secondary !border-border-default !rounded-lg"
-          nodeColor={getNodeColorForMiniMap}
-          maskColor="rgba(0, 0, 0, 0.7)"
-          pannable
-          zoomable
         />
       </ReactFlow>
 
@@ -211,10 +236,18 @@ export function WorkflowCanvas() {
               Start building your workflow
             </p>
             <p className="text-xs text-text-tertiary">
-              Drag nodes from the library to add them here
+              Drag nodes from the library or right-click to add
             </p>
           </div>
         </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu !== null && (
+        <CanvasContextMenu
+          position={contextMenu}
+          onClose={closeContextMenu}
+        />
       )}
     </div>
   );

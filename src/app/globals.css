@@ -22,15 +22,15 @@
      COLORS - Core Palette
      ========================================================================= */
 
-  /* Background colors - 3-tier hierarchy */
-  --color-bg-primary: #09090b;
-  --color-bg-secondary: #131316;
-  --color-bg-tertiary: #1c1c21;
-  --color-bg-elevated: #222228;
+  /* Background colors - 3-tier hierarchy (Railway-inspired) */
+  --color-bg-primary: #111114;
+  --color-bg-secondary: #18181b;
+  --color-bg-tertiary: #1f1f24;
+  --color-bg-elevated: #27272d;
 
   /* Interactive states */
-  --color-bg-hover: #1f1f24;
-  --color-bg-active: #27272d;
+  --color-bg-hover: #232328;
+  --color-bg-active: #2b2b32;
   --color-bg-selected: #2563eb15;
 
   /* Text colors - 3-tier hierarchy */
@@ -50,8 +50,8 @@
   --color-accent-error-dim: #ef444440;
 
   /* Border colors */
-  --color-border-default: #27272a;
-  --color-border-subtle: #1f1f23;
+  --color-border-default: #2a2a2f;
+  --color-border-subtle: #232328;
   --color-border-hover: #3f3f46;
   --color-border-focus: #3b82f6;
 

@@ -1,25 +1,25 @@
 /**
  * Workflow Editor Page
  *
- * Production-grade visual workflow builder with Linear/Vercel-inspired styling.
+ * Production-grade visual workflow builder with Railway-inspired styling.
  * Features:
  * - Polished loading state with skeleton
  * - Clean error state
- * - Smooth tab transitions
- * - Auto-switching between panels
+ * - Sliding config drawer (opens when node selected)
+ * - Execution/History tabs in toolbar dropdown
  */
 
 'use client';
 
-import React, { useEffect, useState, use } from 'react';
+import React, { useEffect, useState, use, useCallback } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useRouter } from 'next/navigation';
 import {
   PlayCircleIcon,
   ClockIcon,
-  Cog6ToothIcon,
   ArrowLeftIcon,
   ExclamationCircleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useWorkflowBuilderStore, useWorkflowExecutionStore } from '@/store';
 import {
@@ -37,7 +37,7 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-type RightPanelView = 'config' | 'execution' | 'history';
+type RightDrawerView = 'config' | 'execution' | 'history' | null;
 
 // ============================================================================
 // Loading Skeleton
@@ -45,7 +45,7 @@ type RightPanelView = 'config' | 'execution' | 'history';
 
 function EditorSkeleton() {
   return (
-    <div className="flex flex-col h-screen bg-bg-primary">
+    <div className="flex flex-col h-full bg-bg-primary">
       {/* Toolbar skeleton */}
       <div className="h-12 bg-bg-secondary border-b border-border-default flex items-center px-4">
         <Skeleton className="w-32 h-5" />
@@ -75,20 +75,6 @@ function EditorSkeleton() {
             <p className="text-sm text-text-secondary">Loading workflow...</p>
           </div>
         </div>
-
-        {/* Right panel skeleton */}
-        <div className="w-80 border-l border-border-default bg-bg-secondary">
-          <div className="flex border-b border-border-default">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="flex-1 h-10 mx-1" />
-            ))}
-          </div>
-          <div className="p-4 space-y-4">
-            <Skeleton className="w-32 h-4" />
-            <Skeleton className="w-full h-9 rounded-lg" />
-            <Skeleton className="w-full h-9 rounded-lg" />
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -101,12 +87,19 @@ function EditorSkeleton() {
 export default function WorkflowEditorPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
-  const { loadWorkflow, isLoading, error, selectedNodeId } =
+  const { loadWorkflow, isLoading, error, selectedNodeId, selectNode } =
     useWorkflowBuilderStore();
   const { status: executionStatus, reset: resetExecution } =
     useWorkflowExecutionStore();
 
-  const [rightPanelView, setRightPanelView] = useState<RightPanelView>('config');
+  const [rightDrawerView, setRightDrawerView] = useState<RightDrawerView>(null);
+
+  // Auto-open config drawer when a node is selected
+  useEffect(() => {
+    if (selectedNodeId !== null && selectedNodeId !== '') {
+      setRightDrawerView('config');
+    }
+  }, [selectedNodeId]);
 
   // Auto-switch to execution panel when running
   useEffect(() => {
@@ -114,24 +107,26 @@ export default function WorkflowEditorPage({ params }: PageProps) {
       executionStatus === WorkflowStatus.Running ||
       executionStatus === WorkflowStatus.Paused
     ) {
-      setRightPanelView('execution');
+      setRightDrawerView('execution');
     }
   }, [executionStatus]);
 
-  // Auto-switch to config when a node is selected
   useEffect(() => {
-    if ((selectedNodeId != null && selectedNodeId !== '') && rightPanelView !== 'config') {
-      setRightPanelView('config');
-    }
-  }, [selectedNodeId, rightPanelView]);
-
-  useEffect(() => {
-    if (id != null && id !== '') {
+    if (id !== null && id !== '') {
       void loadWorkflow(id);
       // Reset execution state when loading a new workflow
       resetExecution();
     }
   }, [id, loadWorkflow, resetExecution]);
+
+  // Close drawer handler
+  const closeDrawer = useCallback(() => {
+    setRightDrawerView(null);
+    // Also deselect node when closing config drawer
+    if (rightDrawerView === 'config') {
+      selectNode(null);
+    }
+  }, [rightDrawerView, selectNode]);
 
   // Show loading state
   if (isLoading) {
@@ -139,9 +134,9 @@ export default function WorkflowEditorPage({ params }: PageProps) {
   }
 
   // Show error state
-  if (error != null && error !== '') {
+  if (error !== null && error !== '') {
     return (
-      <div className="flex items-center justify-center h-screen bg-bg-primary">
+      <div className="flex items-center justify-center h-full bg-bg-primary">
         <div className="text-center max-w-md">
           <div className="w-12 h-12 rounded-full bg-accent-error/10 flex items-center justify-center mx-auto mb-4">
             <ExclamationCircleIcon className="w-6 h-6 text-accent-error" />
@@ -166,117 +161,108 @@ export default function WorkflowEditorPage({ params }: PageProps) {
     executionStatus === WorkflowStatus.Running ||
     executionStatus === WorkflowStatus.Paused;
 
+  const isDrawerOpen = rightDrawerView !== null;
+
   return (
     <ReactFlowProvider>
-      <div className="flex flex-col h-screen bg-bg-primary">
-        {/* Toolbar */}
-        <WorkflowToolbar />
+      <div className="flex flex-col h-full bg-bg-primary">
+        {/* Toolbar with execution/history buttons */}
+        <WorkflowToolbar
+          onExecutionClick={() => setRightDrawerView(rightDrawerView === 'execution' ? null : 'execution')}
+          onHistoryClick={() => setRightDrawerView(rightDrawerView === 'history' ? null : 'history')}
+          isExecuting={isExecuting}
+          executionActive={rightDrawerView === 'execution'}
+          historyActive={rightDrawerView === 'history'}
+        />
 
         {/* Main content area */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden relative">
           {/* Left: Node library */}
           <NodeLibrarySidebar />
 
           {/* Center: Canvas */}
           <WorkflowCanvas />
 
-          {/* Right: Panel with tabs */}
-          <div className="w-80 flex flex-col border-l border-border-default bg-bg-secondary">
-            {/* Tab buttons */}
-            <div className="flex h-10 border-b border-border-default bg-bg-secondary flex-shrink-0">
-              <TabButton
-                active={rightPanelView === 'config'}
-                onClick={() => setRightPanelView('config')}
-                icon={<Cog6ToothIcon className="w-4 h-4" />}
-                label="Config"
+          {/* Right: Sliding Drawer */}
+          <>
+            {/* Backdrop (subtle, only for config) */}
+            {isDrawerOpen && (
+              <div
+                className={`
+                  absolute inset-0 z-10
+                  transition-opacity duration-200
+                  ${rightDrawerView === 'config' ? 'bg-black/20' : 'bg-transparent pointer-events-none'}
+                `}
+                onClick={closeDrawer}
               />
-              <TabButton
-                active={rightPanelView === 'execution'}
-                onClick={() => setRightPanelView('execution')}
-                icon={
-                  <PlayCircleIcon
-                    className={`w-4 h-4 ${isExecuting ? 'animate-pulse' : ''}`}
-                  />
-                }
-                label="Execution"
-                highlight={isExecuting}
-              />
-              <TabButton
-                active={rightPanelView === 'history'}
-                onClick={() => setRightPanelView('history')}
-                icon={<ClockIcon className="w-4 h-4" />}
-                label="History"
-              />
-            </div>
+            )}
 
-            {/* Panel content */}
-            <div className="flex-1 overflow-hidden">
-              {rightPanelView === 'config' && <NodeConfigPanel />}
-              {rightPanelView === 'execution' && (
-                <ExecutionPanel
-                  isOpen={true}
-                  onClose={() => setRightPanelView('config')}
-                />
-              )}
-              {rightPanelView === 'history' && (
-                <div className="h-full overflow-y-auto p-4">
-                  <ExecutionHistory
-                    workflowId={id}
-                    onSelect={(executionId) => {
-                      // TODO: Load execution details
-                      console.log('Selected execution:', executionId);
-                    }}
-                    onRetry={() => {
-                      // TODO: Retry failed execution
-                    }}
-                  />
+            {/* Drawer Panel */}
+            <div
+              className={`
+                absolute top-0 right-0 bottom-0 z-20
+                w-80 bg-bg-secondary border-l border-border-default
+                transform transition-transform duration-200 ease-out
+                ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full'}
+                flex flex-col
+                shadow-xl shadow-black/20
+              `}
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between h-10 px-3 border-b border-border-default flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  {rightDrawerView === 'execution' && (
+                    <>
+                      <PlayCircleIcon className={`w-4 h-4 ${isExecuting ? 'text-accent-success animate-pulse' : 'text-text-tertiary'}`} />
+                      <span className="text-xs font-medium text-text-primary">Execution</span>
+                    </>
+                  )}
+                  {rightDrawerView === 'history' && (
+                    <>
+                      <ClockIcon className="w-4 h-4 text-text-tertiary" />
+                      <span className="text-xs font-medium text-text-primary">History</span>
+                    </>
+                  )}
+                  {rightDrawerView === 'config' && (
+                    <span className="text-xs font-medium text-text-primary">Node Config</span>
+                  )}
                 </div>
-              )}
+                <button
+                  onClick={closeDrawer}
+                  className="p-1 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
+                  aria-label="Close drawer"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-hidden">
+                {rightDrawerView === 'config' && <NodeConfigPanel />}
+                {rightDrawerView === 'execution' && (
+                  <ExecutionPanel
+                    isOpen={true}
+                    onClose={closeDrawer}
+                  />
+                )}
+                {rightDrawerView === 'history' && (
+                  <div className="h-full overflow-y-auto p-4">
+                    <ExecutionHistory
+                      workflowId={id}
+                      onSelect={(executionId) => {
+                        console.log('Selected execution:', executionId);
+                      }}
+                      onRetry={() => {
+                        // TODO: Retry failed execution
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         </div>
       </div>
     </ReactFlowProvider>
-  );
-}
-
-// ============================================================================
-// Tab Button Component
-// ============================================================================
-
-interface TabButtonProps {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  highlight?: boolean;
-}
-
-function TabButton({ active, onClick, icon, label, highlight }: TabButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        flex-1 flex items-center justify-center gap-1.5
-        text-xs font-medium
-        transition-colors duration-150
-        relative
-        ${
-          active
-            ? 'text-text-primary'
-            : (highlight === true)
-              ? 'text-accent-primary'
-              : 'text-text-tertiary hover:text-text-secondary'
-        }
-      `}
-    >
-      {icon}
-      <span>{label}</span>
-
-      {/* Active indicator */}
-      {active && (
-        <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent-primary rounded-full" />
-      )}
-    </button>
   );
 }

@@ -1,23 +1,31 @@
 /**
  * Node Configuration Panel
  *
- * Production-grade right-side panel for configuring the selected node.
+ * A refined, industrial-aesthetic configuration panel for workflow nodes.
  * Features:
- * - Header with node type badge and icon
- * - Section dividers between config sections
- * - Fixed-height textareas (no resize)
- * - Character counters for long text fields
- * - Danger zone section with confirmation
- * - All node type config forms implemented
+ * - Node-type-specific accent colors
+ * - Custom input components with focus animations
+ * - Terminal-style command inputs
+ * - Code editor feel for eval nodes
+ * - Modern toggle switches
+ * - Tool capability grid with chips
+ * - Slider + input hybrid for ranges
+ * - Collapsible advanced sections
  */
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  XMarkIcon,
   ExclamationTriangleIcon,
-  InformationCircleIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  CodeBracketIcon,
+  GlobeAltIcon,
+  SparklesIcon,
+  CpuChipIcon,
+  BoltIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 import { useWorkflowBuilderStore, useSelectedNode } from '@/store';
 import { NodeType, AgentModel, StdlibTool } from '@/lib/graph/enums';
@@ -32,22 +40,22 @@ import { Button } from '@/components/shared/button';
 
 export function NodeConfigPanel() {
   const selectedNode = useSelectedNode();
-  const { updateNode, updateNodeConfig, deleteNode, selectNode } =
+  const { updateNode, updateNodeConfig, deleteNode } =
     useWorkflowBuilderStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   if (!selectedNode) {
     return (
       <div className="h-full flex items-center justify-center p-6">
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-lg bg-bg-tertiary border border-border-subtle flex items-center justify-center mx-auto mb-3">
-            <InformationCircleIcon className="w-5 h-5 text-text-tertiary" />
+        <div className="text-center opacity-60">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-bg-tertiary to-bg-secondary border border-border-subtle flex items-center justify-center mx-auto mb-4">
+            <CpuChipIcon className="w-6 h-6 text-text-muted" />
           </div>
-          <p className="text-sm font-medium text-text-secondary mb-1">
+          <p className="text-sm font-medium text-text-tertiary mb-1">
             No node selected
           </p>
-          <p className="text-xs text-text-tertiary">
-            Click a node on the canvas to configure it
+          <p className="text-xs text-text-muted">
+            Click a node to configure
           </p>
         </div>
       </div>
@@ -65,75 +73,63 @@ export function NodeConfigPanel() {
 
   return (
     <div className="h-full flex flex-col bg-bg-secondary">
-      {/* Header */}
-      <div className="flex items-center justify-between h-12 px-4 border-b border-border-default flex-shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Node type badge */}
-          <div
-            className={`
-              flex items-center gap-1.5 px-2 py-1 rounded-md
-              ${nodeColor.bgColor} ${nodeColor.borderColor} border
-            `}
-          >
-            <IconComponent className={`w-3.5 h-3.5 ${nodeColor.textColor}`} />
-            <span className={`text-xs font-medium ${nodeColor.textColor}`}>
-              {nodeColor.label}
-            </span>
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Node Identity Section */}
+        <div className="p-4 border-b border-border-subtle">
+          <div className="flex items-center gap-3 mb-4">
+            {/* Node icon with glow */}
+            <div
+              className="relative w-10 h-10 rounded-lg flex items-center justify-center"
+              style={{
+                background: `linear-gradient(135deg, ${nodeColor.hex}15, ${nodeColor.hex}05)`,
+                boxShadow: `0 0 20px ${nodeColor.hex}10`,
+              }}
+            >
+              <div
+                className="absolute inset-0 rounded-lg border opacity-50"
+                style={{ borderColor: nodeColor.hex }}
+              />
+              <IconComponent
+                className="w-5 h-5"
+                style={{ color: nodeColor.hex }}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div
+                className="text-[10px] font-semibold uppercase tracking-widest mb-0.5"
+                style={{ color: nodeColor.hex }}
+              >
+                {nodeColor.label}
+              </div>
+              <input
+                type="text"
+                value={data.label}
+                onChange={(e) =>
+                  updateNode(selectedNode.id, { label: e.target.value })
+                }
+                className="w-full bg-transparent text-sm font-medium text-text-primary border-none outline-none placeholder:text-text-muted"
+                placeholder="Node name"
+              />
+            </div>
           </div>
         </div>
 
-        <button
-          onClick={() => selectNode(null)}
-          className="p-1.5 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors"
-          aria-label="Close panel"
-        >
-          <XMarkIcon className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Node Label Section */}
-        <Section title="Display">
-          <Field label="Label">
-            <input
-              type="text"
-              value={data.label}
-              onChange={(e) =>
-                updateNode(selectedNode.id, { label: e.target.value })
-              }
-              className="input-field"
-              placeholder="Node label"
-            />
-          </Field>
-        </Section>
-
         {/* Type-specific config */}
-        <Section title="Configuration">
-          <ConfigForm
-            nodeType={data.nodeType}
-            config={data.config}
-            onChange={(config) => updateNodeConfig(selectedNode.id, config)}
-          />
-        </Section>
+        <ConfigForm
+          nodeType={data.nodeType}
+          config={data.config}
+          nodeColor={nodeColor.hex}
+          onChange={(config) => updateNodeConfig(selectedNode.id, config)}
+        />
 
         {/* Danger Zone */}
-        <div className="p-4 border-t border-border-subtle">
-          <h4 className="text-xs font-medium text-accent-error uppercase tracking-wider mb-3">
-            Danger Zone
-          </h4>
+        <div className="p-4 mt-auto">
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className={`
-              w-full py-2.5 px-4 rounded-lg
-              border border-accent-error/30
-              bg-accent-error/10 hover:bg-accent-error/20
-              text-accent-error text-sm font-medium
-              transition-colors duration-150
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-error focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary
-            `}
+            className="w-full py-2 px-3 rounded-lg text-xs font-medium text-text-muted hover:text-accent-error border border-transparent hover:border-accent-error/20 hover:bg-accent-error/5 transition-all duration-150"
           >
-            Delete Node
+            Delete this node
           </button>
         </div>
       </div>
@@ -152,12 +148,10 @@ export function NodeConfigPanel() {
             </div>
             <div>
               <p className="text-sm text-text-primary mb-1">
-                Are you sure you want to delete{' '}
-                <span className="font-medium">&ldquo;{data.label}&rdquo;</span>?
+                Delete <span className="font-semibold">{data.label}</span>?
               </p>
               <p className="text-xs text-text-tertiary">
-                This will also remove all connections to this node. This action
-                cannot be undone.
+                All connections will be removed. This cannot be undone.
               </p>
             </div>
           </div>
@@ -182,34 +176,34 @@ export function NodeConfigPanel() {
 interface ConfigFormProps {
   nodeType: NodeType;
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }
 
-function ConfigForm({ nodeType, config, onChange }: ConfigFormProps) {
+function ConfigForm({ nodeType, config, nodeColor, onChange }: ConfigFormProps) {
   switch (nodeType) {
     case NodeType.Agent:
-      return <AgentConfigForm config={config} onChange={onChange} />;
+      return <AgentConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.Command:
-      return <CommandConfigForm config={config} onChange={onChange} />;
+      return <CommandConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.SlashCommand:
-      return <SlashCommandConfigForm config={config} onChange={onChange} />;
+      return <SlashCommandConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.Eval:
-      return <EvalConfigForm config={config} onChange={onChange} />;
+      return <EvalConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.Http:
-      return <HttpConfigForm config={config} onChange={onChange} />;
+      return <HttpConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.Llm:
-      return <LlmConfigForm config={config} onChange={onChange} />;
+      return <LlmConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.DynamicAgent:
-      return <DynamicAgentConfigForm config={config} onChange={onChange} />;
+      return <DynamicAgentConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.DynamicCommand:
-      return <DynamicCommandConfigForm config={config} onChange={onChange} />;
+      return <DynamicCommandConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.GitHubProject:
-      return <GitHubProjectConfigForm config={config} onChange={onChange} />;
+      return <GitHubProjectConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     default:
       return (
-        <div className="flex items-center gap-2 text-text-tertiary text-sm">
-          <InformationCircleIcon className="w-4 h-4" />
-          <span>Configuration for {nodeType} not yet implemented.</span>
+        <div className="p-4 text-center text-text-muted text-sm">
+          Configuration not available
         </div>
       );
   }
@@ -221,114 +215,90 @@ function ConfigForm({ nodeType, config, onChange }: ConfigFormProps) {
 
 function AgentConfigForm({
   config,
+  nodeColor,
   onChange,
 }: {
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   if (config.type !== 'agent') return null;
 
   const tools = Object.values(StdlibTool);
   const selectedTools = config.capabilities ?? [];
-  const promptLength = config.prompt.length;
 
   return (
-    <div className="space-y-4">
-      <Field label="Role">
-        <input
-          type="text"
+    <div className="divide-y divide-border-subtle">
+      {/* Role */}
+      <FieldGroup>
+        <FieldLabel>Role</FieldLabel>
+        <TextInput
           value={config.role}
-          onChange={(e) => onChange({ role: e.target.value })}
-          className="input-field"
-          placeholder="e.g., architect, developer"
+          onChange={(v) => onChange({ role: v })}
+          placeholder="architect, developer, reviewer..."
+          icon={<SparklesIcon className="w-3.5 h-3.5" />}
+          accentColor={nodeColor}
         />
-      </Field>
+      </FieldGroup>
 
-      <Field
-        label="Prompt"
-        hint={`${promptLength} characters`}
-        {...(promptLength > 2000 && { hintColor: 'text-accent-warning' })}
-      >
-        <textarea
+      {/* Prompt */}
+      <FieldGroup>
+        <FieldLabel hint={`${config.prompt.length} chars`}>
+          System Prompt
+        </FieldLabel>
+        <PromptTextarea
           value={config.prompt}
-          onChange={(e) => onChange({ prompt: e.target.value })}
-          className="input-field h-[120px] resize-none font-mono text-sm"
-          placeholder="Enter the agent's instructions..."
+          onChange={(v) => onChange({ prompt: v })}
+          placeholder="Describe the agent's behavior and capabilities..."
+          accentColor={nodeColor}
         />
-      </Field>
+      </FieldGroup>
 
-      <Field label="Model">
-        <select
+      {/* Model */}
+      <FieldGroup>
+        <FieldLabel>Model</FieldLabel>
+        <ModelSelect
           value={config.model}
-          onChange={(e) => onChange({ model: e.target.value as AgentModel })}
-          className="input-field"
-        >
-          <option value={AgentModel.Haiku}>Haiku (fast)</option>
-          <option value={AgentModel.Sonnet}>Sonnet (balanced)</option>
-          <option value={AgentModel.Opus}>Opus (powerful)</option>
-        </select>
-      </Field>
-
-      <Field label="Tools">
-        <div className="max-h-36 overflow-y-auto space-y-0.5 bg-bg-tertiary rounded-lg p-2 border border-border-subtle">
-          {tools.map((tool) => (
-            <label
-              key={tool}
-              className={`
-                flex items-center gap-2 px-2 py-1.5 rounded
-                hover:bg-bg-hover cursor-pointer transition-colors
-              `}
-            >
-              <input
-                type="checkbox"
-                checked={selectedTools.includes(tool)}
-                onChange={(e) => {
-                  const newTools = e.target.checked
-                    ? [...selectedTools, tool]
-                    : selectedTools.filter((t) => t !== tool);
-                  onChange({ capabilities: newTools });
-                }}
-                className="rounded border-border-default text-accent-primary focus:ring-accent-primary focus:ring-offset-0"
-              />
-              <span className="text-sm text-text-primary">{tool}</span>
-            </label>
-          ))}
-        </div>
-      </Field>
-
-      <Divider />
-
-      <Field label="Max Turns" optional>
-        <input
-          type="number"
-          value={config.maxTurns ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ maxTurns: parseInt(e.target.value) });
-            }
-          }}
-          className="input-field"
-          placeholder="Default: unlimited"
-          min={1}
+          onChange={(v) => onChange({ model: v })}
+          accentColor={nodeColor}
         />
-      </Field>
+      </FieldGroup>
 
-      <Field label="Temperature" optional>
-        <input
-          type="number"
-          value={config.temperature ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ temperature: parseFloat(e.target.value) });
-            }
-          }}
-          className="input-field"
-          placeholder="0.0 - 1.0"
-          min={0}
-          max={1}
-          step={0.1}
+      {/* Tools */}
+      <FieldGroup>
+        <FieldLabel hint={`${selectedTools.length} selected`}>
+          Capabilities
+        </FieldLabel>
+        <ToolGrid
+          tools={tools}
+          selected={selectedTools}
+          onChange={(v) => onChange({ capabilities: v })}
+          accentColor={nodeColor}
         />
-      </Field>
+      </FieldGroup>
+
+      {/* Advanced Section */}
+      <CollapsibleSection
+        title="Advanced"
+        isOpen={showAdvanced}
+        onToggle={() => setShowAdvanced(!showAdvanced)}
+      >
+        <FieldGroup>
+          <FieldLabel size="sm">Max Turns</FieldLabel>
+          <NumberInput
+            value={config.maxTurns ?? null}
+            onChange={(v) => onChange({ ...(v != null && { maxTurns: v }) })}
+            placeholder="∞"
+            min={1}
+            max={100}
+          />
+          <p className="text-[10px] text-text-muted mt-1">
+            Maximum conversation turns before stopping
+          </p>
+        </FieldGroup>
+      </CollapsibleSection>
     </div>
   );
 }
@@ -339,68 +309,71 @@ function AgentConfigForm({
 
 function CommandConfigForm({
   config,
+  nodeColor,
   onChange,
 }: {
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   if (config.type !== 'command') return null;
 
   return (
-    <div className="space-y-4">
-      <Field label="Command">
-        <textarea
+    <div className="divide-y divide-border-subtle">
+      {/* Command */}
+      <FieldGroup>
+        <FieldLabel>Command</FieldLabel>
+        <TerminalInput
           value={config.command}
-          onChange={(e) => onChange({ command: e.target.value })}
-          className="input-field font-mono text-sm h-[80px] resize-none"
-          placeholder="e.g., bun test"
+          onChange={(v) => onChange({ command: v })}
+          placeholder="bun test --watch"
+          accentColor={nodeColor}
         />
-      </Field>
+      </FieldGroup>
 
-      <Field label="Working Directory" optional>
-        <input
-          type="text"
+      {/* Working Directory */}
+      <FieldGroup>
+        <FieldLabel optional>Working Directory</FieldLabel>
+        <TextInput
           value={config.cwd ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ cwd: e.target.value });
-            }
-          }}
-          className="input-field font-mono text-sm"
-          placeholder="Default: current directory"
+          onChange={(v) => onChange({ ...(v && { cwd: v }) })}
+          placeholder="./"
+          mono
+          icon={<span className="text-[10px] font-bold">CD</span>}
         />
-      </Field>
+      </FieldGroup>
 
-      <Divider />
-
-      <Field label="Timeout (ms)" optional>
-        <input
-          type="number"
-          value={config.timeout ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ timeout: parseInt(e.target.value) });
-            }
-          }}
-          className="input-field"
-          placeholder="Default: 60000"
-          min={1000}
-        />
-      </Field>
-
-      <Field label="Error Handling">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={config.throwOnError ?? true}
-            onChange={(e) => onChange({ throwOnError: e.target.checked })}
-            className="rounded border-border-default text-accent-primary focus:ring-accent-primary focus:ring-offset-0"
-          />
-          <span className="text-sm text-text-primary">
-            Fail workflow on non-zero exit code
-          </span>
-        </label>
-      </Field>
+      {/* Advanced Section */}
+      <CollapsibleSection
+        title="Advanced"
+        isOpen={showAdvanced}
+        onToggle={() => setShowAdvanced(!showAdvanced)}
+      >
+        <div className="space-y-4">
+          <div>
+            <FieldLabel size="sm">Timeout</FieldLabel>
+            <div className="flex items-center gap-2">
+              <NumberInput
+                value={config.timeout ?? null}
+                onChange={(v) => onChange({ ...(v != null && { timeout: v }) })}
+                placeholder="60000"
+                min={1000}
+                className="flex-1"
+              />
+              <span className="text-xs text-text-muted">ms</span>
+            </div>
+          </div>
+          <div>
+            <ToggleSwitch
+              label="Fail on non-zero exit"
+              checked={config.throwOnError ?? true}
+              onChange={(v) => onChange({ throwOnError: v })}
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
     </div>
   );
 }
@@ -411,38 +384,47 @@ function CommandConfigForm({
 
 function SlashCommandConfigForm({
   config,
+  nodeColor,
   onChange,
 }: {
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
   if (config.type !== 'slash-command') return null;
 
   return (
-    <div className="space-y-4">
-      <Field label="Command">
-        <div className="flex items-center gap-0">
-          <span className="h-9 px-3 flex items-center bg-bg-tertiary border border-r-0 border-border-default rounded-l-lg text-text-tertiary text-sm">
-            /
-          </span>
+    <div className="divide-y divide-border-subtle">
+      {/* Command */}
+      <FieldGroup>
+        <FieldLabel>Slash Command</FieldLabel>
+        <div className="flex">
+          <div className="h-9 px-3 flex items-center bg-bg-tertiary border border-r-0 border-border-default rounded-l-lg">
+            <span className="text-sm font-semibold" style={{ color: nodeColor }}>/</span>
+          </div>
           <input
             type="text"
             value={config.command}
             onChange={(e) => onChange({ command: e.target.value })}
-            className="input-field flex-1 rounded-l-none"
-            placeholder="e.g., commit, review-pr"
+            className="flex-1 h-9 px-3 bg-bg-primary border border-border-default rounded-r-lg text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-hover transition-colors"
+            placeholder="commit"
           />
         </div>
-      </Field>
+      </FieldGroup>
 
-      <Field label="Arguments" hint={`${config.args.length} characters`}>
-        <textarea
+      {/* Arguments */}
+      <FieldGroup>
+        <FieldLabel hint={`${config.args.length} chars`}>
+          Arguments
+        </FieldLabel>
+        <PromptTextarea
           value={config.args}
-          onChange={(e) => onChange({ args: e.target.value })}
-          className="input-field h-[80px] resize-none"
-          placeholder="Instructions/arguments for the command..."
+          onChange={(v) => onChange({ args: v })}
+          placeholder="Additional instructions or arguments..."
+          accentColor={nodeColor}
+          rows={3}
         />
-      </Field>
+      </FieldGroup>
     </div>
   );
 }
@@ -453,34 +435,40 @@ function SlashCommandConfigForm({
 
 function EvalConfigForm({
   config,
+  nodeColor,
   onChange,
 }: {
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
   if (config.type !== 'eval') return null;
 
   return (
-    <div className="space-y-4">
-      <Field label="JavaScript Code" hint={`${config.code.length} characters`}>
-        <textarea
+    <div className="divide-y divide-border-subtle">
+      {/* Code Editor */}
+      <FieldGroup>
+        <FieldLabel hint={`${config.code.length} chars`}>
+          JavaScript
+        </FieldLabel>
+        <CodeEditor
           value={config.code}
-          onChange={(e) => onChange({ code: e.target.value })}
-          className="input-field font-mono text-xs h-[180px] resize-none leading-relaxed"
-          placeholder={`// Access state.context for workflow context
-// Return an object to merge with context
-return {
-  result: true,
-  counter: state.context.counter + 1
-};`}
+          onChange={(v) => onChange({ code: v })}
+          accentColor={nodeColor}
         />
-      </Field>
-      <p className="text-xs text-text-tertiary leading-relaxed">
-        The code receives <code className="px-1 py-0.5 rounded bg-bg-tertiary text-text-secondary">state</code> with{' '}
-        <code className="px-1 py-0.5 rounded bg-bg-tertiary text-text-secondary">context</code>,{' '}
-        <code className="px-1 py-0.5 rounded bg-bg-tertiary text-text-secondary">currentNode</code>, etc.
-        Return an object to merge with the context.
-      </p>
+      </FieldGroup>
+
+      {/* Help */}
+      <div className="p-4">
+        <div className="text-[11px] text-text-muted leading-relaxed space-y-1">
+          <p>
+            <code className="px-1 py-0.5 rounded bg-bg-tertiary text-text-tertiary">state.context</code> — workflow context object
+          </p>
+          <p>
+            <code className="px-1 py-0.5 rounded bg-bg-tertiary text-text-tertiary">return {'{}'}</code> — merge into context
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -491,30 +479,40 @@ return {
 
 function HttpConfigForm({
   config,
+  nodeColor,
   onChange,
 }: {
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   if (config.type !== 'http') return null;
 
+  const methodColors: Record<string, string> = {
+    GET: '#22c55e',
+    POST: '#3b82f6',
+    PUT: '#f59e0b',
+    DELETE: '#ef4444',
+    PATCH: '#a855f7',
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-[100px_1fr] gap-2">
-        <Field label="Method">
+    <div className="divide-y divide-border-subtle">
+      {/* Method + URL */}
+      <FieldGroup>
+        <FieldLabel>Endpoint</FieldLabel>
+        <div className="flex gap-2">
           <select
             value={config.method}
             onChange={(e) =>
               onChange({
-                method: e.target.value as
-                  | 'GET'
-                  | 'POST'
-                  | 'PUT'
-                  | 'DELETE'
-                  | 'PATCH',
+                method: e.target.value as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
               })
             }
-            className="input-field"
+            className="h-9 px-2 bg-bg-tertiary border border-border-default rounded-lg text-xs font-bold cursor-pointer focus:outline-none focus:border-border-hover transition-colors"
+            style={{ color: methodColors[config.method] }}
           >
             <option value="GET">GET</option>
             <option value="POST">POST</option>
@@ -522,48 +520,50 @@ function HttpConfigForm({
             <option value="DELETE">DELETE</option>
             <option value="PATCH">PATCH</option>
           </select>
-        </Field>
-
-        <Field label="URL">
           <input
             type="text"
             value={config.url}
             onChange={(e) => onChange({ url: e.target.value })}
-            className="input-field font-mono text-sm"
-            placeholder="https://api.example.com/endpoint"
+            className="flex-1 h-9 px-3 bg-bg-primary border border-border-default rounded-lg font-mono text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-hover transition-colors"
+            placeholder="https://api.example.com/v1/..."
           />
-        </Field>
-      </div>
+        </div>
+      </FieldGroup>
 
-      <Field label="Request Body" optional>
-        <textarea
-          value={config.body ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ body: e.target.value });
-            }
-          }}
-          className="input-field font-mono text-xs h-[100px] resize-none"
-          placeholder='{"key": "value"}'
-        />
-      </Field>
+      {/* Body */}
+      {(config.method === 'POST' || config.method === 'PUT' || config.method === 'PATCH') && (
+        <FieldGroup>
+          <FieldLabel optional>Request Body</FieldLabel>
+          <CodeEditor
+            value={config.body ?? ''}
+            onChange={(v) => onChange({ ...(v && { body: v }) })}
+            accentColor={nodeColor}
+            language="json"
+            placeholder='{ "key": "value" }'
+          />
+        </FieldGroup>
+      )}
 
-      <Divider />
-
-      <Field label="Timeout (ms)" optional>
-        <input
-          type="number"
-          value={config.timeout ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ timeout: parseInt(e.target.value) });
-            }
-          }}
-          className="input-field"
-          placeholder="Default: 30000"
-          min={1000}
-        />
-      </Field>
+      {/* Advanced Section */}
+      <CollapsibleSection
+        title="Advanced"
+        isOpen={showAdvanced}
+        onToggle={() => setShowAdvanced(!showAdvanced)}
+      >
+        <div>
+          <FieldLabel size="sm">Timeout</FieldLabel>
+          <div className="flex items-center gap-2">
+            <NumberInput
+              value={config.timeout ?? null}
+              onChange={(v) => onChange({ ...(v != null && { timeout: v }) })}
+              placeholder="30000"
+              min={1000}
+              className="flex-1"
+            />
+            <span className="text-xs text-text-muted">ms</span>
+          </div>
+        </div>
+      </CollapsibleSection>
     </div>
   );
 }
@@ -574,75 +574,73 @@ function HttpConfigForm({
 
 function LlmConfigForm({
   config,
+  nodeColor,
   onChange,
 }: {
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   if (config.type !== 'llm') return null;
 
-  const promptLength = config.prompt.length;
-
   return (
-    <div className="space-y-4">
-      <Field
-        label="Prompt"
-        hint={`${promptLength} characters`}
-        {...(promptLength > 2000 && { hintColor: 'text-accent-warning' })}
-      >
-        <textarea
+    <div className="divide-y divide-border-subtle">
+      {/* Prompt */}
+      <FieldGroup>
+        <FieldLabel hint={`${config.prompt.length} chars`}>
+          Prompt
+        </FieldLabel>
+        <PromptTextarea
           value={config.prompt}
-          onChange={(e) => onChange({ prompt: e.target.value })}
-          className="input-field h-[120px] resize-none font-mono text-sm"
-          placeholder="Enter the prompt for the LLM..."
+          onChange={(v) => onChange({ prompt: v })}
+          placeholder="Enter your prompt..."
+          accentColor={nodeColor}
         />
-      </Field>
+      </FieldGroup>
 
-      <Field label="Model">
-        <select
+      {/* Model */}
+      <FieldGroup>
+        <FieldLabel>Model</FieldLabel>
+        <ModelSelect
           value={config.model}
-          onChange={(e) => onChange({ model: e.target.value as AgentModel })}
-          className="input-field"
-        >
-          <option value={AgentModel.Haiku}>Haiku (fast)</option>
-          <option value={AgentModel.Sonnet}>Sonnet (balanced)</option>
-          <option value={AgentModel.Opus}>Opus (powerful)</option>
-        </select>
-      </Field>
-
-      <Divider />
-
-      <Field label="Temperature" optional>
-        <input
-          type="number"
-          value={config.temperature ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ temperature: parseFloat(e.target.value) });
-            }
-          }}
-          className="input-field"
-          placeholder="0.0 - 1.0"
-          min={0}
-          max={1}
-          step={0.1}
+          onChange={(v) => onChange({ model: v })}
+          accentColor={nodeColor}
         />
-      </Field>
+      </FieldGroup>
 
-      <Field label="Max Tokens" optional>
-        <input
-          type="number"
-          value={config.maxTokens ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ maxTokens: parseInt(e.target.value) });
-            }
-          }}
-          className="input-field"
-          placeholder="Default: 4096"
-          min={1}
-        />
-      </Field>
+      {/* Advanced Section */}
+      <CollapsibleSection
+        title="Advanced"
+        isOpen={showAdvanced}
+        onToggle={() => setShowAdvanced(!showAdvanced)}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel size="sm">Temperature</FieldLabel>
+              <SliderInput
+                value={config.temperature ?? 1}
+                onChange={(v) => onChange({ temperature: v })}
+                min={0}
+                max={1}
+                step={0.1}
+                accentColor={nodeColor}
+              />
+            </div>
+            <div>
+              <FieldLabel size="sm">Max Tokens</FieldLabel>
+              <NumberInput
+                value={config.maxTokens ?? null}
+                onChange={(v) => onChange({ ...(v != null && { maxTokens: v }) })}
+                placeholder="4096"
+                min={1}
+              />
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
     </div>
   );
 }
@@ -653,63 +651,67 @@ function LlmConfigForm({
 
 function DynamicAgentConfigForm({
   config,
+  nodeColor,
   onChange,
 }: {
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
   if (config.type !== 'dynamic-agent') return null;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-accent-primary/5 border border-accent-primary/20">
-        <InformationCircleIcon className="w-4 h-4 text-accent-primary flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-text-secondary leading-relaxed">
-          Dynamic Agent allows runtime configuration via expressions that
-          reference the workflow context.
-        </p>
+    <div className="divide-y divide-border-subtle">
+      {/* Info */}
+      <div className="p-4">
+        <div
+          className="flex items-start gap-2 p-3 rounded-lg text-xs leading-relaxed"
+          style={{
+            background: `${nodeColor}08`,
+            borderLeft: `2px solid ${nodeColor}`,
+          }}
+        >
+          <BoltIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: nodeColor }} />
+          <span className="text-text-secondary">
+            Configure via expressions that reference <code className="px-1 py-0.5 rounded bg-bg-tertiary">state.context</code>
+          </span>
+        </div>
       </div>
 
-      <Field label="Model Expression">
-        <input
-          type="text"
+      {/* Model Expression */}
+      <FieldGroup>
+        <FieldLabel>Model Expression</FieldLabel>
+        <ExpressionInput
           value={config.modelExpression}
-          onChange={(e) => onChange({ modelExpression: e.target.value })}
-          className="input-field font-mono text-sm"
+          onChange={(v) => onChange({ modelExpression: v })}
           placeholder="state.context.model"
+          accentColor={nodeColor}
         />
-        <p className="text-xs text-text-tertiary mt-1">
-          Expression that resolves to a model name (haiku, sonnet, opus)
-        </p>
-      </Field>
+      </FieldGroup>
 
-      <Field label="Prompt Expression">
-        <textarea
+      {/* Prompt Expression */}
+      <FieldGroup>
+        <FieldLabel>Prompt Expression</FieldLabel>
+        <ExpressionInput
           value={config.promptExpression}
-          onChange={(e) => onChange({ promptExpression: e.target.value })}
-          className="input-field font-mono text-sm h-[80px] resize-none"
+          onChange={(v) => onChange({ promptExpression: v })}
           placeholder="state.context.prompt"
+          accentColor={nodeColor}
+          multiline
         />
-        <p className="text-xs text-text-tertiary mt-1">
-          Expression that resolves to the prompt string
-        </p>
-      </Field>
+      </FieldGroup>
 
-      <Field label="System Expression" optional>
-        <textarea
+      {/* System Expression */}
+      <FieldGroup>
+        <FieldLabel optional>System Expression</FieldLabel>
+        <ExpressionInput
           value={config.systemExpression ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ systemExpression: e.target.value });
-            }
-          }}
-          className="input-field font-mono text-sm h-[80px] resize-none"
+          onChange={(v) => onChange({ ...(v && { systemExpression: v }) })}
           placeholder="state.context.system"
+          accentColor={nodeColor}
+          multiline
         />
-        <p className="text-xs text-text-tertiary mt-1">
-          Optional expression for system prompt
-        </p>
-      </Field>
+      </FieldGroup>
     </div>
   );
 }
@@ -720,51 +722,55 @@ function DynamicAgentConfigForm({
 
 function DynamicCommandConfigForm({
   config,
+  nodeColor,
   onChange,
 }: {
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
   if (config.type !== 'dynamic-command') return null;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-accent-primary/5 border border-accent-primary/20">
-        <InformationCircleIcon className="w-4 h-4 text-accent-primary flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-text-secondary leading-relaxed">
-          Dynamic Command allows runtime configuration via expressions that
-          reference the workflow context.
-        </p>
+    <div className="divide-y divide-border-subtle">
+      {/* Info */}
+      <div className="p-4">
+        <div
+          className="flex items-start gap-2 p-3 rounded-lg text-xs leading-relaxed"
+          style={{
+            background: `${nodeColor}08`,
+            borderLeft: `2px solid ${nodeColor}`,
+          }}
+        >
+          <BoltIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: nodeColor }} />
+          <span className="text-text-secondary">
+            Configure via expressions that reference <code className="px-1 py-0.5 rounded bg-bg-tertiary">state.context</code>
+          </span>
+        </div>
       </div>
 
-      <Field label="Command Expression">
-        <textarea
+      {/* Command Expression */}
+      <FieldGroup>
+        <FieldLabel>Command Expression</FieldLabel>
+        <ExpressionInput
           value={config.commandExpression}
-          onChange={(e) => onChange({ commandExpression: e.target.value })}
-          className="input-field font-mono text-sm h-[80px] resize-none"
+          onChange={(v) => onChange({ commandExpression: v })}
           placeholder="state.context.command"
+          accentColor={nodeColor}
+          multiline
         />
-        <p className="text-xs text-text-tertiary mt-1">
-          Expression that resolves to the shell command
-        </p>
-      </Field>
+      </FieldGroup>
 
-      <Field label="Working Directory Expression" optional>
-        <input
-          type="text"
+      {/* CWD Expression */}
+      <FieldGroup>
+        <FieldLabel optional>Directory Expression</FieldLabel>
+        <ExpressionInput
           value={config.cwdExpression ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ cwdExpression: e.target.value });
-            }
-          }}
-          className="input-field font-mono text-sm"
+          onChange={(v) => onChange({ ...(v && { cwdExpression: v }) })}
           placeholder="state.context.cwd"
+          accentColor={nodeColor}
         />
-        <p className="text-xs text-text-tertiary mt-1">
-          Optional expression for working directory
-        </p>
-      </Field>
+      </FieldGroup>
     </div>
   );
 }
@@ -775,108 +781,606 @@ function DynamicCommandConfigForm({
 
 function GitHubProjectConfigForm({
   config,
+  nodeColor,
   onChange,
 }: {
   config: NodeConfig;
+  nodeColor: string;
   onChange: (config: Partial<NodeConfig>) => void;
 }) {
-  // GitHub Project uses command config under the hood
   if (config.type !== 'command') return null;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-violet-500/5 border border-violet-500/20">
-        <InformationCircleIcon className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-text-secondary leading-relaxed">
-          GitHub Project node updates project item status via the GitHub CLI.
-          Ensure you have the <code className="px-1 py-0.5 rounded bg-bg-tertiary text-text-secondary">gh</code> CLI installed and authenticated.
-        </p>
+    <div className="divide-y divide-border-subtle">
+      {/* Info */}
+      <div className="p-4">
+        <div
+          className="flex items-start gap-2 p-3 rounded-lg text-xs leading-relaxed"
+          style={{
+            background: `${nodeColor}08`,
+            borderLeft: `2px solid ${nodeColor}`,
+          }}
+        >
+          <GlobeAltIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: nodeColor }} />
+          <span className="text-text-secondary">
+            Uses <code className="px-1 py-0.5 rounded bg-bg-tertiary">gh</code> CLI for GitHub Projects
+          </span>
+        </div>
       </div>
 
-      <Field label="Project Command">
-        <textarea
+      {/* Command */}
+      <FieldGroup>
+        <FieldLabel>Project Command</FieldLabel>
+        <TerminalInput
           value={config.command}
-          onChange={(e) => onChange({ command: e.target.value })}
-          className="input-field font-mono text-sm h-[80px] resize-none"
+          onChange={(v) => onChange({ command: v })}
           placeholder="gh project item-list 123 --owner @me"
+          accentColor={nodeColor}
         />
-      </Field>
+      </FieldGroup>
 
-      <Divider />
-
-      <Field label="Working Directory" optional>
-        <input
-          type="text"
+      {/* Working Directory */}
+      <FieldGroup>
+        <FieldLabel optional>Working Directory</FieldLabel>
+        <TextInput
           value={config.cwd ?? ''}
-          onChange={(e) => {
-            if (e.target.value) {
-              onChange({ cwd: e.target.value });
-            }
-          }}
-          className="input-field font-mono text-sm"
-          placeholder="Default: current directory"
+          onChange={(v) => onChange({ ...(v && { cwd: v }) })}
+          placeholder="./"
+          mono
         />
-      </Field>
+      </FieldGroup>
     </div>
   );
 }
 
 // ============================================================================
-// Helper Components
+// Reusable Input Components
 // ============================================================================
 
-function Section({
+function FieldGroup({ children }: { children: React.ReactNode }) {
+  return <div className="p-4 space-y-2">{children}</div>;
+}
+
+function FieldLabel({
+  children,
+  hint,
+  optional,
+  size = 'md',
+}: {
+  children: React.ReactNode;
+  hint?: string;
+  optional?: boolean;
+  size?: 'sm' | 'md';
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <label className={`font-medium text-text-secondary ${size === 'sm' ? 'text-[11px]' : 'text-xs'}`}>
+        {children}
+        {optional === true && (
+          <span className="ml-1 text-text-muted font-normal">·opt</span>
+        )}
+      </label>
+      {hint !== undefined && (
+        <span className="text-[10px] text-text-muted font-mono">{hint}</span>
+      )}
+    </div>
+  );
+}
+
+function TextInput({
+  value,
+  onChange,
+  placeholder,
+  mono,
+  icon,
+  accentColor,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  mono?: boolean;
+  icon?: React.ReactNode;
+  accentColor?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <div
+      className={`
+        relative flex items-center h-9 bg-bg-primary border rounded-lg overflow-hidden
+        transition-all duration-150
+        ${focused ? 'border-border-hover' : 'border-border-default hover:border-border-hover'}
+      `}
+      style={{
+        boxShadow: focused && accentColor != null && accentColor !== '' ? `0 0 0 1px ${accentColor}30` : undefined,
+      }}
+    >
+      {icon !== undefined && (
+        <div className="pl-3 text-text-muted">{icon}</div>
+      )}
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={placeholder}
+        className={`
+          flex-1 h-full px-3 bg-transparent text-sm text-text-primary
+          placeholder:text-text-muted focus:outline-none
+          ${mono === true ? 'font-mono text-xs' : ''}
+        `}
+      />
+    </div>
+  );
+}
+
+function PromptTextarea({
+  value,
+  onChange,
+  placeholder,
+  accentColor,
+  rows = 5,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  accentColor: string;
+  rows?: number;
+}) {
+  const [focused, setFocused] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  return (
+    <div
+      className={`
+        relative bg-bg-primary border rounded-lg overflow-hidden
+        transition-all duration-150
+        ${focused ? 'border-border-hover' : 'border-border-default hover:border-border-hover'}
+      `}
+      style={{
+        boxShadow: focused ? `0 0 0 1px ${accentColor}30` : undefined,
+      }}
+    >
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={placeholder}
+        rows={rows}
+        className="w-full p-3 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none resize-none leading-relaxed"
+      />
+      {/* Character count bar */}
+      <div className="h-1 bg-bg-tertiary">
+        <div
+          className="h-full transition-all duration-300"
+          style={{
+            width: `${Math.min((value.length / 2000) * 100, 100)}%`,
+            background: value.length > 2000
+              ? 'var(--color-accent-warning)'
+              : accentColor,
+            opacity: 0.5,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TerminalInput({
+  value,
+  onChange,
+  placeholder,
+  accentColor,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  accentColor: string;
+}) {
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <div
+      className={`
+        relative bg-[#0a0a0c] border rounded-lg overflow-hidden
+        transition-all duration-150
+        ${focused ? 'border-border-hover' : 'border-border-default hover:border-border-hover'}
+      `}
+      style={{
+        boxShadow: focused ? `0 0 0 1px ${accentColor}30` : undefined,
+      }}
+    >
+      {/* Terminal header */}
+      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-tertiary/50 border-b border-border-subtle">
+        <div className="w-2 h-2 rounded-full bg-accent-error/60" />
+        <div className="w-2 h-2 rounded-full bg-accent-warning/60" />
+        <div className="w-2 h-2 rounded-full bg-accent-success/60" />
+        <span className="ml-2 text-[10px] text-text-muted font-mono">terminal</span>
+      </div>
+      <div className="flex items-start p-3">
+        <span className="text-accent-success font-mono text-xs mr-2">$</span>
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={placeholder}
+          rows={2}
+          className="flex-1 bg-transparent font-mono text-xs text-text-primary placeholder:text-text-muted focus:outline-none resize-none leading-relaxed"
+        />
+      </div>
+    </div>
+  );
+}
+
+function CodeEditor({
+  value,
+  onChange,
+  accentColor,
+  language = 'javascript',
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  accentColor: string;
+  language?: string;
+  placeholder?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const lines = value.split('\n');
+
+  return (
+    <div
+      className={`
+        relative bg-[#0a0a0c] border rounded-lg overflow-hidden
+        transition-all duration-150
+        ${focused ? 'border-border-hover' : 'border-border-default hover:border-border-hover'}
+      `}
+      style={{
+        boxShadow: focused ? `0 0 0 1px ${accentColor}30` : undefined,
+      }}
+    >
+      {/* Editor header */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-bg-tertiary/50 border-b border-border-subtle">
+        <div className="flex items-center gap-2">
+          <CodeBracketIcon className="w-3 h-3 text-text-muted" />
+          <span className="text-[10px] text-text-muted font-mono">{language}</span>
+        </div>
+        <span className="text-[10px] text-text-muted font-mono">{lines.length} lines</span>
+      </div>
+      <div className="flex">
+        {/* Line numbers */}
+        <div className="py-3 px-2 text-right select-none border-r border-border-subtle bg-bg-tertiary/30">
+          {lines.map((_, i) => (
+            <div key={i} className="text-[10px] font-mono text-text-muted leading-relaxed h-[18px]">
+              {i + 1}
+            </div>
+          ))}
+        </div>
+        {/* Code area */}
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={placeholder}
+          className="flex-1 p-3 bg-transparent font-mono text-xs text-text-primary placeholder:text-text-muted focus:outline-none resize-none leading-relaxed min-h-[120px]"
+          spellCheck={false}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ExpressionInput({
+  value,
+  onChange,
+  placeholder,
+  accentColor,
+  multiline,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  accentColor: string;
+  multiline?: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
+
+  const inputClass = `
+    flex-1 bg-transparent font-mono text-xs text-text-primary
+    placeholder:text-text-muted focus:outline-none
+    ${multiline === true ? 'resize-none leading-relaxed' : ''}
+  `;
+
+  return (
+    <div
+      className={`
+        relative flex items-start bg-bg-primary border rounded-lg overflow-hidden
+        transition-all duration-150
+        ${focused ? 'border-border-hover' : 'border-border-default hover:border-border-hover'}
+      `}
+      style={{
+        boxShadow: focused ? `0 0 0 1px ${accentColor}30` : undefined,
+      }}
+    >
+      <div className="px-2 py-2 border-r border-border-subtle bg-bg-tertiary/50">
+        <span className="text-[10px] font-bold" style={{ color: accentColor }}>ƒx</span>
+      </div>
+      {multiline === true ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={placeholder}
+          rows={2}
+          className={`${inputClass} p-2`}
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={placeholder}
+          className={`${inputClass} h-8 px-2`}
+        />
+      )}
+    </div>
+  );
+}
+
+function ModelSelect({
+  value,
+  onChange,
+  accentColor,
+}: {
+  value: AgentModel;
+  onChange: (value: AgentModel) => void;
+  accentColor: string;
+}) {
+  const models = [
+    { value: AgentModel.Haiku, label: 'Haiku', desc: 'Fast', icon: '⚡' },
+    { value: AgentModel.Sonnet, label: 'Sonnet', desc: 'Balanced', icon: '⚖️' },
+    { value: AgentModel.Opus, label: 'Opus', desc: 'Powerful', icon: '🎯' },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {models.map((model) => (
+        <button
+          key={model.value}
+          onClick={() => onChange(model.value)}
+          className={`
+            relative p-2 rounded-lg border text-left transition-all duration-150
+            ${value === model.value
+              ? 'border-transparent bg-bg-tertiary'
+              : 'border-border-subtle hover:border-border-default bg-bg-primary'
+            }
+          `}
+          style={{
+            boxShadow: value === model.value ? `0 0 0 1px ${accentColor}40` : undefined,
+          }}
+        >
+          <div className="text-sm mb-0.5">{model.icon}</div>
+          <div className="text-xs font-medium text-text-primary">{model.label}</div>
+          <div className="text-[10px] text-text-muted">{model.desc}</div>
+          {value === model.value && (
+            <div
+              className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
+              style={{ background: accentColor }}
+            >
+              <CheckIcon className="w-2.5 h-2.5 text-white" />
+            </div>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ToolGrid({
+  tools,
+  selected,
+  onChange,
+  accentColor,
+}: {
+  tools: StdlibTool[];
+  selected: StdlibTool[];
+  onChange: (value: StdlibTool[]) => void;
+  accentColor: string;
+}) {
+  const toggleTool = (tool: StdlibTool) => {
+    if (selected.includes(tool)) {
+      onChange(selected.filter((t) => t !== tool));
+    } else {
+      onChange([...selected, tool]);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {tools.map((tool) => {
+        const isSelected = selected.includes(tool);
+        return (
+          <button
+            key={tool}
+            onClick={() => toggleTool(tool)}
+            className={`
+              px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-150
+              ${isSelected
+                ? 'text-white'
+                : 'bg-bg-tertiary text-text-secondary hover:text-text-primary border border-border-subtle hover:border-border-default'
+              }
+            `}
+            style={{
+              background: isSelected ? accentColor : undefined,
+              boxShadow: isSelected ? `0 2px 8px ${accentColor}40` : undefined,
+            }}
+          >
+            {tool}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function NumberInput({
+  value,
+  onChange,
+  placeholder,
+  min,
+  max,
+  className,
+}: {
+  value: number | null;
+  onChange: (value: number | null) => void;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  className?: string;
+}) {
+  return (
+    <input
+      type="number"
+      value={value ?? ''}
+      onChange={(e) => {
+        const v = e.target.value;
+        onChange(v !== '' ? parseInt(v) : null);
+      }}
+      placeholder={placeholder}
+      min={min}
+      max={max}
+      className={`
+        h-8 px-2 bg-bg-primary border border-border-default rounded-lg
+        text-xs text-text-primary placeholder:text-text-muted
+        focus:outline-none focus:border-border-hover transition-colors
+        ${className ?? ''}
+      `}
+    />
+  );
+}
+
+function SliderInput({
+  value,
+  onChange,
+  min,
+  max,
+  step,
+  accentColor,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+  step: number;
+  accentColor: string;
+}) {
+  const percentage = ((value - min) / (max - min)) * 100;
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 relative h-8 flex items-center">
+        <div className="absolute inset-x-0 h-1 bg-bg-tertiary rounded-full">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${percentage}%`,
+              background: accentColor,
+            }}
+          />
+        </div>
+        <input
+          type="range"
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          min={min}
+          max={max}
+          step={step}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        />
+        <div
+          className="absolute w-3 h-3 rounded-full border-2 border-white shadow-md pointer-events-none transition-all"
+          style={{
+            left: `calc(${percentage}% - 6px)`,
+            background: accentColor,
+          }}
+        />
+      </div>
+      <span className="text-xs font-mono text-text-secondary w-8 text-right">
+        {value.toFixed(1)}
+      </span>
+    </div>
+  );
+}
+
+function ToggleSwitch({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between cursor-pointer group">
+      <span className="text-xs text-text-secondary group-hover:text-text-primary transition-colors">
+        {label}
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`
+          relative w-8 h-5 rounded-full transition-colors duration-150
+          ${checked ? 'bg-accent-primary' : 'bg-bg-tertiary'}
+        `}
+      >
+        <span
+          className={`
+            absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm
+            transition-transform duration-150
+            ${checked ? 'translate-x-3.5' : 'translate-x-0.5'}
+          `}
+        />
+      </button>
+    </label>
+  );
+}
+
+function CollapsibleSection({
   title,
+  isOpen,
+  onToggle,
   children,
 }: {
   title: string;
+  isOpen: boolean;
+  onToggle: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <div className="p-4 border-b border-border-subtle">
-      <h4 className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-3">
-        {title}
-      </h4>
-      {children}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  children,
-  optional,
-  hint,
-  hintColor,
-}: {
-  label: string;
-  children: React.ReactNode;
-  optional?: boolean;
-  hint?: string;
-  hintColor?: string;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <label className="text-sm font-medium text-text-secondary">
-          {label}
-          {optional === true && (
-            <span className="ml-1 text-xs text-text-tertiary font-normal">
-              (optional)
-            </span>
-          )}
-        </label>
-        {hint !== undefined && hint !== null && hint !== '' && (
-          <span className={`text-xs ${hintColor ?? 'text-text-tertiary'}`}>
-            {hint}
-          </span>
+    <div className="border-t border-border-subtle">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-4 py-3 text-xs font-medium text-text-tertiary hover:text-text-secondary transition-colors"
+      >
+        <span>{title}</span>
+        {isOpen ? (
+          <ChevronDownIcon className="w-3.5 h-3.5" />
+        ) : (
+          <ChevronRightIcon className="w-3.5 h-3.5" />
         )}
-      </div>
-      {children}
+      </button>
+      {isOpen && <div className="px-4 pb-4">{children}</div>}
     </div>
   );
-}
-
-function Divider() {
-  return <div className="border-t border-border-subtle my-4" />;
 }
