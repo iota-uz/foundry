@@ -8,9 +8,10 @@
   },
   "scripts": {
     "dev": "bun --bun next dev",
+    "dev:turbo": "bun --bun next dev --turbopack",
     "build": "bun --bun next build",
     "start": "bun --bun next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "bun test",
@@ -59,7 +60,8 @@
     "zustand": "^4.4.0"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.30.0",
+    "@eslint/eslintrc": "^3.3.3",
+    "@eslint/js": "^9.39.2",
     "@happy-dom/global-registrator": "^17.0.0",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/react": "^16.0.0",
@@ -68,10 +70,11 @@
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@typescript-eslint/eslint-plugin": "^6.17.0",
-    "@typescript-eslint/parser": "^6.17.0",
-    "eslint": "^8.56.0",
-    "eslint-config-next": "^15.0.0",
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8",
+    "drizzle-kit": "^0.30.0",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.9",
     "prettier": "^3.1.0",
     "typescript": "^5.3.0"
   }
