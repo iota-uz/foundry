@@ -25,7 +25,6 @@ import { useWorkflowBuilderStore, useWorkflowExecutionStore } from '@/store';
 import {
   WorkflowCanvas,
   WorkflowToolbar,
-  NodeLibrarySidebar,
   NodeConfigPanel,
   ExecutionPanel,
   ExecutionHistory,
@@ -177,10 +176,7 @@ export default function WorkflowEditorPage({ params }: PageProps) {
 
         {/* Main content area */}
         <div className="flex-1 flex overflow-hidden relative">
-          {/* Left: Node library */}
-          <NodeLibrarySidebar />
-
-          {/* Center: Canvas */}
+          {/* Canvas */}
           <WorkflowCanvas />
 
           {/* Right: Sliding Drawer */}

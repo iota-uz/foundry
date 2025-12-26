@@ -11,6 +11,14 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   transpilePackages: ['@dagrejs/dagre', '@dagrejs/graphlib'],
+  turbopack: {
+    resolveAlias: {
+      // Exclude Node.js-only modules from browser bundles
+      // (equivalent to webpack resolve.fallback: { module: false })
+      chokidar: { browser: './src/lib/empty-module.js' },
+      fsevents: { browser: './src/lib/empty-module.js' },
+    },
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals.push('chokidar');

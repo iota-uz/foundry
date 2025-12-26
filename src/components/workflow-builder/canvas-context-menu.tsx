@@ -28,11 +28,15 @@ import {
 import { NodeType } from '@/lib/graph/enums';
 import { NODE_COLORS } from '@/lib/design-system';
 import { useWorkflowBuilderStore } from '@/store';
-import { sections } from './node-library-sidebar';
 
 // ============================================================================
 // Types
 // ============================================================================
+
+interface NodeSection {
+  title: string;
+  types: NodeType[];
+}
 
 interface ContextMenuPosition {
   x: number;
@@ -45,6 +49,25 @@ interface CanvasContextMenuProps {
   position: ContextMenuPosition;
   onClose: () => void;
 }
+
+// ============================================================================
+// Node Sections
+// ============================================================================
+
+const sections: NodeSection[] = [
+  {
+    title: 'AI Nodes',
+    types: [NodeType.Agent, NodeType.Llm, NodeType.DynamicAgent],
+  },
+  {
+    title: 'Utility Nodes',
+    types: [NodeType.Command, NodeType.SlashCommand, NodeType.Eval, NodeType.DynamicCommand],
+  },
+  {
+    title: 'Integration Nodes',
+    types: [NodeType.Http, NodeType.GitHubProject],
+  },
+];
 
 // ============================================================================
 // Section Icons

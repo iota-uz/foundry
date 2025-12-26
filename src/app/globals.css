@@ -657,22 +657,27 @@ button:disabled,
 
 /* Controls styling */
 .react-flow__controls {
-  @apply bg-bg-secondary border border-border-default rounded-lg overflow-hidden;
+  background-color: var(--color-bg-secondary) !important;
+  border: 1px solid var(--color-border-default) !important;
+  border-radius: 0.5rem;
+  overflow: hidden;
   box-shadow: var(--shadow-md);
 }
 
 .react-flow__controls-button {
-  @apply bg-bg-secondary border-none text-text-secondary;
-  @apply transition-all;
-  transition-duration: var(--duration-fast);
+  background-color: var(--color-bg-secondary) !important;
+  border: none !important;
+  color: var(--color-text-secondary);
+  transition: all var(--duration-fast) ease-out;
 }
 
 .react-flow__controls-button:hover {
-  @apply bg-bg-hover text-text-primary;
+  background-color: var(--color-bg-hover) !important;
+  color: var(--color-text-primary);
 }
 
 .react-flow__controls-button svg {
-  @apply fill-current;
+  fill: currentColor;
 }
 
 /* MiniMap styling */
