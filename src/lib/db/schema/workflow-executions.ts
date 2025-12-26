@@ -59,6 +59,12 @@ export const workflowExecutions = pgTable(
     /** Number of retry attempts */
     retryCount: integer('retry_count').default(0).notNull(),
 
+    /** Railway service ID (for container-based execution) */
+    railwayServiceId: text('railway_service_id'),
+
+    /** Railway deployment ID (for container-based execution) */
+    railwayDeploymentId: text('railway_deployment_id'),
+
     /** When execution started */
     startedAt: timestamp('started_at').defaultNow().notNull(),
 

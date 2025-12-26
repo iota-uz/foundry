@@ -53,6 +53,9 @@ export const workflows = pgTable('workflows', {
   /** Initial context passed to workflow execution */
   initialContext: jsonb('initial_context').$type<Record<string, unknown>>(),
 
+  /** Docker image for container-based execution (optional) */
+  dockerImage: text('docker_image'),
+
   /** Creation timestamp */
   createdAt: timestamp('created_at').defaultNow().notNull(),
 

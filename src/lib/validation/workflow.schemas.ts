@@ -35,6 +35,12 @@ export const workflowEdgeSchema = z.object({
 });
 
 /**
+ * Docker image validation regex
+ * Matches: registry/image:tag, image:tag, image@sha256:...
+ */
+const dockerImageRegex = /^[a-z0-9]([a-z0-9._/-]*[a-z0-9])?(:[\w][\w.-]*)?(@sha256:[a-f0-9]{64})?$/i;
+
+/**
  * Create workflow request schema
  */
 export const createWorkflowSchema = z.object({
@@ -43,6 +49,7 @@ export const createWorkflowSchema = z.object({
   nodes: z.array(workflowNodeSchema).default([]),
   edges: z.array(workflowEdgeSchema).default([]),
   initialContext: z.record(z.unknown()).optional(),
+  dockerImage: z.string().regex(dockerImageRegex, 'Invalid Docker image format').max(500).optional(),
 });
 
 /**
@@ -54,6 +61,7 @@ export const updateWorkflowSchema = z.object({
   nodes: z.array(workflowNodeSchema).optional(),
   edges: z.array(workflowEdgeSchema).optional(),
   initialContext: z.record(z.unknown()).nullable().optional(),
+  dockerImage: z.string().regex(dockerImageRegex, 'Invalid Docker image format').max(500).nullable().optional(),
 });
 
 /**
