@@ -8,7 +8,6 @@
  * - Shows issue metadata (number, repo, labels)
  * - Hover effects with circuit-board aesthetic
  * - Click to open detail panel (without interfering with drag)
- * - Plan button for issue planning navigation
  */
 
 'use client';
@@ -17,7 +16,6 @@ import React, { useRef, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { KanbanIssue } from '@/store/kanban.store';
-import { PlanButton } from './plan-button';
 
 // ============================================================================
 // Types
@@ -34,7 +32,7 @@ interface IssueCardProps {
 // Component
 // ============================================================================
 
-export function IssueCard({ issue, projectId, isDragOverlay = false, onClick }: IssueCardProps) {
+export function IssueCard({ issue, projectId: _projectId, isDragOverlay = false, onClick }: IssueCardProps) {
   const {
     attributes,
     listeners,
@@ -150,15 +148,6 @@ export function IssueCard({ issue, projectId, isDragOverlay = false, onClick }: 
             )}
           </div>
         )}
-
-        {/* Plan button - shown for all open issues */}
-        <div className="flex items-center pt-1">
-          <PlanButton
-            projectId={projectId}
-            issueId={issue.id}
-            planStatus={issue.planStatus}
-          />
-        </div>
 
         {/* Assignees */}
         {issue.assignees.length > 0 && (

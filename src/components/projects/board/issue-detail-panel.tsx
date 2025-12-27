@@ -24,6 +24,7 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { ExecutionTimeline, type ExecutionEntry } from './execution-timeline';
+import { PlanButton } from './plan-button';
 import { formatDate, formatRelativeTime } from '@/lib/utils/date';
 import { getKanbanStatusColor } from '@/lib/design-system';
 import { Markdown } from '@/components/shared';
@@ -390,29 +391,32 @@ export function IssueDetailPanel({
                 </div>
               )}
 
-              {/* Manual triggers */}
-              {manualAutomations.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <BoltIcon className="w-4 h-4 text-text-muted" />
-                    <span className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider">
-                      Quick Actions
-                    </span>
-                    <div className="flex-1 h-px bg-border-subtle" />
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {manualAutomations.map((automation) => (
-                      <ManualTriggerButton
-                        key={automation.id}
-                        automation={automation}
-                        projectId={projectId}
-                        issueId={issue.id}
-                        onTrigger={fetchExecutions}
-                      />
-                    ))}
-                  </div>
+              {/* Quick Actions */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <BoltIcon className="w-4 h-4 text-text-muted" />
+                  <span className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider">
+                    Quick Actions
+                  </span>
+                  <div className="flex-1 h-px bg-border-subtle" />
                 </div>
-              )}
+                <div className="flex flex-wrap gap-2">
+                  <PlanButton
+                    projectId={projectId}
+                    issueId={issue.id}
+                    planStatus={issue.planStatus}
+                  />
+                  {manualAutomations.map((automation) => (
+                    <ManualTriggerButton
+                      key={automation.id}
+                      automation={automation}
+                      projectId={projectId}
+                      issueId={issue.id}
+                      onTrigger={fetchExecutions}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="p-5">
