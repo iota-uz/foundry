@@ -1,11 +1,8 @@
 {
   "name": "foundry",
   "version": "0.0.1",
-  "description": "CLI-based technical specification constructor with AI-driven Q&A and visual artifacts",
+  "description": "Visual workflow builder for AI-powered software development pipelines",
   "type": "module",
-  "bin": {
-    "foundry": "./bin/foundry.mjs"
-  },
   "scripts": {
     "dev": "bun --bun next dev",
     "dev:turbo": "bun --bun next dev --turbopack",
@@ -15,9 +12,6 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "bun test",
-    "graph": "bun src/lib/graph/cli/run.ts",
-    "dispatch": "bun src/lib/graph/cli/run.ts dispatch.config.ts",
-    "issue-processor": "bun src/lib/graph/cli/run.ts issue-processor.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

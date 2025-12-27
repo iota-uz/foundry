@@ -1,21 +1,20 @@
 # Foundry
 
-CLI-based technical specification constructor that launches a local web interface for iteratively building and refining software requirements through AI-driven Q&A.
+Visual workflow builder for AI-powered software development pipelines. Build, visualize, and execute multi-step AI workflows with a drag-and-drop interface.
 
 **[Documentation](https://iota-uz.github.io/foundry/)** · **[Getting Started](#getting-started)** · **[Architecture](#architecture)**
 
 ## Overview
 
-Foundry transforms vague product ideas into detailed technical specifications including database schemas, API definitions, UI mockups, and component galleries. It uses a workflow-based three-phase process (CPO → Clarify → CTO) to guide users through comprehensive specification building with AI assistance.
+Foundry provides a visual canvas for building AI-driven automation workflows. Powered by React Flow for the UI and a finite state machine (FSM) execution engine, it enables developers to create sophisticated multi-step AI pipelines without writing orchestration code.
 
 ## Key Features
 
-- **Workflow-based Q&A**: Three-phase process with AI-generated conversational questions
-- **Visual Artifacts**: Interactive diagrams, data flow visualizations, and component galleries
-- **Auto-Generation**: Automatic schema, API, and component generation from answers
-- **Reverse Engineering**: Analyze existing codebases to extract specifications
-- **Git Integration**: Branch, commit, and push specifications directly from the UI
-- **State Persistence**: Full checkpoint/resume capability across sessions
+- **Visual Workflow Builder**: React Flow-based drag-and-drop canvas for node construction
+- **Graph Engine**: FSM-based workflow execution with checkpoint/resume
+- **Node Library**: Pre-built nodes (Agent, Command, HTTP, LLM, Eval, etc.)
+- **Real-Time Execution**: SSE-based live progress monitoring
+- **GitHub Integration**: Dispatch workflows via Actions, update GitHub Projects
 
 ## Getting Started
 
@@ -23,6 +22,7 @@ Foundry transforms vague product ideas into detailed technical specifications in
 
 - [Bun](https://bun.sh/) >= 1.0.0
 - [Anthropic API key](https://console.anthropic.com/)
+- [PostgreSQL](https://www.postgresql.org/) (or use Docker)
 
 ### Installation
 
@@ -44,6 +44,16 @@ Edit `.env.local` and add your Anthropic API key:
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
+### Database Setup
+
+```bash
+# Start PostgreSQL with Docker
+docker compose up -d postgres
+
+# Push schema to database
+bun db:push
+```
+
 ### Quick Start
 
 ```bash
@@ -51,7 +61,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to start building specifications.
+Open [http://localhost:3000](http://localhost:3000) to start building workflows.
 
 ### Development
 
@@ -86,10 +96,10 @@ Foundry is built with:
 - **Frontend**: Next.js 14+ (App Router), React, TypeScript
 - **Styling**: Tailwind CSS v4, Headless UI
 - **State Management**: Zustand
-- **AI Integration**: Anthropic SDK, Claude Agent SDK
-- **Visualizations**: React Flow, Scalar API Reference
-- **Database**: SQLite (for state and history)
-- **Storage**: YAML files (for specifications, Git-friendly)
+- **AI Integration**: Claude Agent SDK
+- **Visualizations**: React Flow
+- **Database**: PostgreSQL + Drizzle ORM
+- **Real-Time**: Server-Sent Events (SSE)
 
 For detailed architecture documentation, see [CLAUDE.md](./CLAUDE.md).
 
@@ -97,10 +107,12 @@ For detailed architecture documentation, see [CLAUDE.md](./CLAUDE.md).
 
 ```
 foundry/
-├── .claude/              # AI context and specifications
+├── docs/                 # Public documentation (GitHub Pages)
 ├── src/
-│   └── app/             # Next.js App Router
-├── public/              # Static assets
+│   ├── app/             # Next.js App Router
+│   ├── components/      # React components
+│   ├── lib/             # Core libraries (graph, workflow-builder, db)
+│   └── store/           # Zustand stores
 ├── package.json         # Dependencies
 └── tsconfig.json        # TypeScript configuration
 ```
@@ -111,6 +123,7 @@ See `.env.example` for available configuration options.
 
 **Required:**
 - `ANTHROPIC_API_KEY` - Your Anthropic API key
+- `DATABASE_URL` - PostgreSQL connection string
 
 **Optional:**
 - `NODE_ENV` - Set to 'development' or 'production'
@@ -118,10 +131,10 @@ See `.env.example` for available configuration options.
 
 ## Documentation
 
-- **Full Documentation**: Visit [https://iota-uz.github.io/foundry](https://iota-uz.github.io/foundry) (GitHub Pages)
-- **Specifications**: See `docs/specification/` for full technical specifications
-- **AI Context**: See `CLAUDE.md` for project context and AI instructions
-- **Architecture**: See `docs/specification/technical.md` for detailed architecture
+- **Full Documentation**: Visit [https://iota-uz.github.io/foundry](https://iota-uz.github.io/foundry)
+- **Graph Engine**: See `docs/graph/` for FSM execution engine docs
+- **Workflow Builder**: See `docs/workflow-builder/` for visual builder docs
+- **AI Context**: See `CLAUDE.md` for project context
 
 ## Development Commands
 
@@ -134,6 +147,8 @@ See `.env.example` for available configuration options.
 | `bun lint` | Run ESLint |
 | `bun format` | Format code with Prettier |
 | `bun test` | Run tests |
+| `bun db:push` | Push schema to database |
+| `bun db:studio` | Open Drizzle Studio |
 
 ## License
 

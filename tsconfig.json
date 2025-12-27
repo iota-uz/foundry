@@ -51,7 +51,6 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "_retired"
+    "node_modules"
   ]
 }

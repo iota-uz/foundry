@@ -401,6 +401,59 @@ export interface DynamicCommandNodeDef<
 }
 
 // ============================================================================
+// Git Checkout Node
+// ============================================================================
+
+/**
+ * Configuration for a GitCheckout node.
+ */
+export interface GitCheckoutNodeConfig<
+  TNodeNames extends string,
+  TContext extends Record<string, unknown>
+> {
+  /**
+   * Use repository info from issue context (issueMetadataId in context).
+   * When true, owner/repo are resolved from the issue that triggered the workflow.
+   * Default: true
+   */
+  useIssueContext?: boolean;
+
+  /** Manual repository owner override */
+  owner?: string;
+
+  /** Manual repository name override */
+  repo?: string;
+
+  /** Git ref to checkout (branch, tag, or commit SHA). Default: 'main' */
+  ref?: string;
+
+  /** Clone depth (1 for shallow, 0 for full). Default: 1 */
+  depth?: number;
+
+  /** Skip checkout if directory already exists. Default: true */
+  skipIfExists?: boolean;
+
+  /** Transition to next node */
+  then: Transition<TNodeNames, TContext>;
+}
+
+/**
+ * GitCheckout node definition.
+ */
+export interface GitCheckoutNodeDef<
+  TNodeNames extends string,
+  TContext extends Record<string, unknown>
+> extends BaseNodeDef<TNodeNames, TContext> {
+  type: NodeType.GitCheckout;
+  useIssueContext?: boolean;
+  owner?: string;
+  repo?: string;
+  ref?: string;
+  depth?: number;
+  skipIfExists?: boolean;
+}
+
+// ============================================================================
 // Union of All Node Definitions
 // ============================================================================
 
@@ -416,7 +469,8 @@ export type NodeDef<
   | SlashCommandNodeDef<TNodeNames, TContext>
   | EvalNodeDef<TNodeNames, TContext>
   | DynamicAgentNodeDef<TNodeNames, TContext>
-  | DynamicCommandNodeDef<TNodeNames, TContext>;
+  | DynamicCommandNodeDef<TNodeNames, TContext>
+  | GitCheckoutNodeDef<TNodeNames, TContext>;
 
 // ============================================================================
 // Node Schema (Factory)
@@ -537,6 +591,23 @@ export interface NodeSchema<
     name: N,
     config: DynamicCommandNodeConfig<TNodeNames, TContext>
   ): DynamicCommandNodeDef<TNodeNames, TContext>;
+
+  /**
+   * Create a GitCheckout node.
+   *
+   * @example
+   * ```typescript
+   * schema.gitCheckout('CHECKOUT', {
+   *   useIssueContext: true,
+   *   ref: 'main',
+   *   then: 'BUILD'
+   * })
+   * ```
+   */
+  gitCheckout<N extends TNodeNames>(
+    name: N,
+    config: GitCheckoutNodeConfig<TNodeNames, TContext>
+  ): GitCheckoutNodeDef<TNodeNames, TContext>;
 }
 
 // ============================================================================
@@ -695,6 +766,24 @@ export function defineNodes<
         if (config.cwd !== undefined) result.cwd = config.cwd;
         if (config.env !== undefined) result.env = config.env;
         if (config.timeout !== undefined) result.timeout = config.timeout;
+        return result;
+      },
+
+      gitCheckout<N extends Names>(
+        name: N,
+        config: GitCheckoutNodeConfig<Names, TContext>
+      ): GitCheckoutNodeDef<Names, TContext> {
+        const result: GitCheckoutNodeDef<Names, TContext> = {
+          type: NodeType.GitCheckout,
+          name,
+          then: config.then,
+        };
+        if (config.useIssueContext !== undefined) result.useIssueContext = config.useIssueContext;
+        if (config.owner !== undefined) result.owner = config.owner;
+        if (config.repo !== undefined) result.repo = config.repo;
+        if (config.ref !== undefined) result.ref = config.ref;
+        if (config.depth !== undefined) result.depth = config.depth;
+        if (config.skipIfExists !== undefined) result.skipIfExists = config.skipIfExists;
         return result;
       },
     };

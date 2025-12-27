@@ -55,7 +55,7 @@ export function KanbanColumn({ column, issues, projectId, isOver, onIssueClick }
       className={`
         flex flex-col
         min-w-[320px] max-w-[380px] w-[320px]
-        h-full
+        h-full min-h-0
         bg-bg-primary/50
         border rounded-xl
         transition-all duration-200 ease-out

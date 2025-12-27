@@ -1,12 +1,12 @@
 /**
- * CLI Utilities for sys/graph
+ * Runtime Builders for sys/graph
  *
  * Provides helper functions for creating runtime nodes from workflow definitions.
  */
 
-import type { BaseState, GraphNode, GraphContext, WorkflowState } from '../types';
-import type { WorkflowConfig, NodeDef, Transition as SchemaTransition } from '../schema';
-import { NodeType } from '../enums';
+import type { BaseState, GraphNode, GraphContext, WorkflowState } from './types';
+import type { WorkflowConfig, NodeDef, Transition as SchemaTransition } from './schema';
+import { NodeType } from './enums';
 import {
   AgentNodeRuntime,
   CommandNodeRuntime,
@@ -17,7 +17,7 @@ import {
   type BaseNode,
   type NodeExecutionResult,
   type BaseNodeConfig,
-} from '../nodes';
+} from './nodes';
 import type {
   AgentNodeConfig as AgentRuntimeConfig,
   CommandNodeConfig as CommandRuntimeConfig,
@@ -25,7 +25,7 @@ import type {
   EvalNodeConfig as EvalRuntimeConfig,
   DynamicAgentNodeConfig as DynamicAgentRuntimeConfig,
   DynamicCommandNodeConfig as DynamicCommandRuntimeConfig,
-} from '../nodes';
+} from './nodes';
 
 /**
  * Adapter that wraps a BaseNode to conform to the GraphNode interface.

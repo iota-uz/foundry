@@ -60,6 +60,9 @@ export interface IssuePlanningContext extends Record<string, unknown> {
   // Input (provided at workflow start)
   // ─────────────────────────────────────────────────────────────────────────
 
+  /** Issue metadata ID from database (used for git credential resolution) */
+  issueMetadataId: string;
+
   /** Issue metadata ID from database */
   issueId: string;
 
@@ -71,6 +74,9 @@ export interface IssuePlanningContext extends Record<string, unknown> {
 
   /** User preferences for planning */
   preferences: PlanningPreferences;
+
+  /** Working directory for git checkout (set by GIT_CHECKOUT node) */
+  workDir?: string;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Workflow state
@@ -123,6 +129,9 @@ export interface IssuePlanningContext extends Record<string, unknown> {
 // ============================================================================
 
 const schema = defineNodes<IssuePlanningContext>()([
+  // Git checkout (first node)
+  'GIT_CHECKOUT',
+
   // Phase nodes
   'START_REQUIREMENTS',
   'GENERATE_REQ_QUESTIONS',
@@ -158,6 +167,7 @@ export const issuePlanningWorkflow = defineWorkflow({
   id: 'issue-planning',
   schema,
   initialContext: {
+    issueMetadataId: '',
     issueId: '',
     issueTitle: '',
     issueBody: '',
@@ -177,6 +187,18 @@ export const issuePlanningWorkflow = defineWorkflow({
     },
   },
   nodes: [
+    // =========================================================================
+    // GIT CHECKOUT (Entry Point)
+    // =========================================================================
+
+    schema.gitCheckout('GIT_CHECKOUT', {
+      useIssueContext: true,
+      ref: 'main',
+      depth: 1,
+      skipIfExists: true,
+      then: () => 'START_REQUIREMENTS',
+    }),
+
     // =========================================================================
     // REQUIREMENTS PHASE
     // =========================================================================

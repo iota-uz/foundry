@@ -70,8 +70,7 @@ foundry/
 │   ├── graph/                      # Graph engine documentation
 │   ├── workflow-builder/           # Visual builder documentation
 │   ├── dispatch.md                 # GitHub dispatch integration
-│   ├── github-projects.md          # GitHub Projects integration
-│   └── _retired/                   # Retired spec-building docs
+│   └── github-projects.md          # GitHub Projects integration
 ├── src/
 │   ├── app/                        # Next.js pages and API routes
 │   │   ├── api/workflows/          # Workflow CRUD + execution APIs
@@ -89,7 +88,6 @@ foundry/
 │   └── store/                      # Zustand stores
 │       ├── workflow-builder.store.ts
 │       └── workflow-execution.store.ts
-└── _retired/                       # Retired spec-building source code
 ```
 
 **See:** `docs/graph/index.md` for Graph Engine docs, `docs/workflow-builder/index.md` for builder UI docs.

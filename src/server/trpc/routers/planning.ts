@@ -188,6 +188,7 @@ export const planningRouter = router({
 
       // Start workflow execution in background
       const initialState = createPlanningInitialState({
+        issueMetadataId: input.issueId,
         issueId: input.issueId,
         issueTitle: input.issueTitle || `Issue #${issue.issueNumber}`,
         issueBody: input.issueBody || '',

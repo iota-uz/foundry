@@ -70,6 +70,10 @@ export function broadcastExecutionEvent(
       message: string;
       metadata?: Record<string, unknown>;
     };
+    /** Error message for planning_failed events */
+    error?: string;
+    /** Artifacts summary for planning_completed events */
+    summary?: unknown;
   }
 ): void {
   // Emit to tRPC subscriptions

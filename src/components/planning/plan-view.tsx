@@ -26,7 +26,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { usePlanningStore } from '@/store/planning.store';
 import { Button } from '@/components/shared/button';
-import { PhaseStepper } from './phase-stepper';
 import { PlanArtifactsPanel } from './plan-artifacts-panel';
 import { QAPanel } from './qa';
 import type { SubmitAnswersRequest } from '@/lib/planning/types';
@@ -212,11 +211,6 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
             </h1>
             <span className="text-xs text-text-tertiary">Planning Session</span>
           </div>
-        </div>
-
-        {/* Center - Phase Stepper */}
-        <div className="absolute left-1/2 -translate-x-1/2">
-          <PhaseStepper />
         </div>
 
         {/* Right side - Status and Controls */}

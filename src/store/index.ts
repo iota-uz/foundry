@@ -16,7 +16,3 @@ export {
   type NodeExecutionState,
   type LogEntry,
 } from './workflow-execution.store';
-
-// Retired exports (moved to _retired/):
-// export { useProjectStore } from './project.store';
-// export { useWorkflowStore } from './workflow.store';

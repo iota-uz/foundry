@@ -9,7 +9,7 @@ import {
   type Task,
   type AnalysisResult,
 } from '../workflows/issue-processor.workflow';
-import { createNodeRuntimes, NodeAdapter } from '../cli/utils';
+import { createNodeRuntimes, NodeAdapter } from '../runtime-builders';
 import { NodeType, WorkflowStatus } from '../enums';
 import type { WorkflowState } from '../schema';
 

@@ -12,7 +12,7 @@ import type { StoredMessage } from '@/lib/graph/types';
 import { toWorkflowConfig } from './schema-converter';
 import { broadcastExecutionEvent } from './execution-events';
 import { updateExecution, addLog, getExecution, getWorkflow } from '@/lib/db/repositories/workflow.repository';
-import { createNodeRuntimes } from '@/lib/graph/cli/utils';
+import { createNodeRuntimes } from '@/lib/graph/runtime-builders';
 import { createInitialWorkflowState, WorkflowStatus, SpecialNode } from '@/lib/graph';
 import type { BaseState, GraphContext, GraphNode } from '@/lib/graph/types';
 import { AgentWrapper } from '@/lib/graph/agent/wrapper';

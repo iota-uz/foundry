@@ -93,6 +93,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Start workflow execution in background (don't await - it runs async)
     const initialState = createPlanningInitialState({
+      issueMetadataId: validIssueId,
       issueId: validIssueId,
       issueTitle: body.issueTitle || `Issue #${issue.issueNumber}`,
       issueBody: body.issueBody || '',

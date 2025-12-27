@@ -143,7 +143,7 @@ export function KanbanBoard() {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative flex-1 min-h-0 overflow-hidden">
         {/* Scan-line overlay for industrial aesthetic */}
         <div
           className="absolute inset-0 pointer-events-none z-10 opacity-[0.015]"

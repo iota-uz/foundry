@@ -8,7 +8,7 @@
  */
 
 import { GraphEngine } from '@/lib/graph/engine';
-import { createNodeRuntimes } from '@/lib/graph/cli/utils';
+import { createNodeRuntimes } from '@/lib/graph/runtime-builders';
 import { createInitialWorkflowState } from '@/lib/graph/schema';
 import { WorkflowStatus, SpecialNode } from '@/lib/graph/enums';
 import { issuePlanningWorkflow, type IssuePlanningContext } from '@/lib/graph/workflows/issue-planning.workflow';
@@ -31,6 +31,8 @@ type PlanningState = BaseState & { context: IssuePlanningContext };
  * Options for starting a planning session
  */
 export interface StartPlanningOptions {
+  /** Issue metadata ID (used for git credential resolution) */
+  issueMetadataId: string;
   issueId: string;
   issueTitle: string;
   issueBody: string;
@@ -71,6 +73,27 @@ export async function runPlanningStep(
   initialState?: PlanningState
 ): Promise<PlanningExecutionResult> {
   const stateDir = process.env.GRAPH_STATE_DIR || '/tmp/foundry-graph-state';
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  // Check for required API key
+  if (!apiKey) {
+    const error = 'ANTHROPIC_API_KEY is not set. Please configure it in your environment variables.';
+    console.error('[Planning] ' + error);
+
+    // Broadcast failure immediately (use planning_failed for SSE compatibility)
+    broadcastExecutionEvent(executionId, {
+      type: 'planning_failed',
+      error,
+    });
+
+    return {
+      status: 'failed',
+      currentPhase: initialState?.context?.currentPhase ?? 'requirements',
+      waitingForInput: false,
+      artifacts: initialState?.context?.artifacts ?? { diagrams: [], tasks: [], uiMockups: [], apiSpecs: [] },
+      error,
+    };
+  }
 
   // Create runtime nodes from workflow
   const nodes = createNodeRuntimes(issuePlanningWorkflow);
@@ -78,7 +101,7 @@ export async function runPlanningStep(
   // Create engine
   const engine = new GraphEngine<PlanningState>({
     stateDir,
-    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    apiKey,
     model: 'claude-sonnet-4-5-20250514',
     nodes: nodes as Record<string, import('@/lib/graph/types').GraphNode<PlanningState>>,
   });
@@ -117,16 +140,12 @@ export async function runPlanningStep(
     return result;
   } catch (error) {
     const err = error as Error;
+    console.error('[Planning] Workflow execution failed:', err.message);
 
-    // Broadcast failure
+    // Broadcast failure (use planning_failed for SSE compatibility)
     broadcastExecutionEvent(executionId, {
-      type: 'workflow_failed',
-      status: WorkflowStatus.Failed,
-      log: {
-        timestamp: new Date().toISOString(),
-        level: 'error',
-        message: err.message,
-      },
+      type: 'planning_failed',
+      error: err.message,
     });
 
     return {
@@ -219,11 +238,18 @@ async function runWithPauseDetection(
   // Workflow completed
   const finalStatus = state.currentNode === SpecialNode.Error ? 'failed' : 'completed';
 
-  broadcastExecutionEvent(executionId, {
-    type: finalStatus === 'completed' ? 'workflow_completed' : 'workflow_failed',
-    status: finalStatus === 'completed' ? WorkflowStatus.Completed : WorkflowStatus.Failed,
-    context: state.context as Record<string, unknown>,
-  });
+  // Use planning-specific events for SSE compatibility
+  if (finalStatus === 'completed') {
+    broadcastExecutionEvent(executionId, {
+      type: 'planning_completed',
+      summary: state.context.artifacts,
+    });
+  } else {
+    broadcastExecutionEvent(executionId, {
+      type: 'planning_failed',
+      error: 'Planning workflow failed',
+    });
+  }
 
   // Persist final state
   await persistPlanningState(issueId, state);
@@ -246,6 +272,7 @@ export function createPlanningInitialState(options: StartPlanningOptions): Plann
     ...baseState,
     context: {
       ...baseState.context,
+      issueMetadataId: options.issueMetadataId,
       issueId: options.issueId,
       issueTitle: options.issueTitle,
       issueBody: options.issueBody,
@@ -277,6 +304,7 @@ export async function resumePlanningWithAnswers(
     updatedAt: new Date().toISOString(),
     conversationHistory: [],
     context: {
+      issueMetadataId: issueId,
       issueId,
       issueTitle: '', // Will be loaded from existing state
       issueBody: '',
