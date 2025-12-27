@@ -144,6 +144,8 @@ export type PlanningSSEEvent =
 
 // API request/response types
 export interface StartPlanRequest {
+  issueTitle?: string;
+  issueBody?: string;
   preferences?: {
     diagramTypes?: MermaidDiagram['type'][];
     taskGranularity?: 'coarse' | 'medium' | 'fine';

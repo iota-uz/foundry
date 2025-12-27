@@ -11,6 +11,10 @@ import {
 } from '@/lib/db/repositories';
 import { validateUuid } from '@/lib/validation';
 import type { StartPlanRequest, StartPlanResponse, PlanContent } from '@/lib/planning/types';
+import {
+  runPlanningStep,
+  createPlanningInitialState,
+} from '@/lib/planning/execution';
 import { randomUUID } from 'crypto';
 
 interface RouteParams {
@@ -47,10 +51,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Parse request body
-    // TODO: Use preferences in workflow execution
-    await request.json() as StartPlanRequest;
-    // const body = await request.json() as StartPlanRequest;
-    // const preferences = body.preferences || {};
+    const body = await request.json() as StartPlanRequest;
+    const preferences = body.preferences || {};
 
     // Generate session ID
     const sessionId = randomUUID();
@@ -76,11 +78,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     };
 
     // Update issue metadata with initial plan content
-    await IssueMetadataRepository.updatePlanContent(validIssueId, planContent as Record<string, unknown>);
-
-    // TODO: Start workflow execution
-    // For now, we'll create a placeholder execution record
-    // In the future, this should actually start the GraphEngine workflow
+    await IssueMetadataRepository.updatePlanContent(validIssueId, planContent as unknown as Record<string, unknown>);
 
     // Create execution record
     const execution = await IssueMetadataRepository.createExecution({
@@ -92,6 +90,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Build stream URL
     const streamUrl = `/api/projects/${id}/issues/${issueId}/plan/stream`;
+
+    // Start workflow execution in background (don't await - it runs async)
+    const initialState = createPlanningInitialState({
+      issueId: validIssueId,
+      issueTitle: body.issueTitle || `Issue #${issue.issueNumber}`,
+      issueBody: body.issueBody || '',
+      preferences,
+    });
+
+    // Run the first step of the workflow asynchronously
+    void runPlanningStep(execution.id, validIssueId, initialState).catch((error) => {
+      console.error('Planning workflow failed:', error);
+    });
 
     const response: StartPlanResponse = {
       sessionId,

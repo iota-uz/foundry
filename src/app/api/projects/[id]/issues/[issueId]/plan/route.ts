@@ -11,7 +11,7 @@ import {
   WorkflowRepository,
 } from '@/lib/db/repositories';
 import { validateUuid } from '@/lib/validation';
-import type { GetPlanResponse } from '@/lib/planning/types';
+import type { GetPlanResponse, PlanContent } from '@/lib/planning/types';
 
 interface RouteParams {
   params: Promise<{ id: string; issueId: string }>;
@@ -48,12 +48,12 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     // Return plan content from issue metadata
     const response: GetPlanResponse = {
-      planContent: (issue.planContent as PlanContent | null) ?? null,
+      planContent: (issue.planContent as unknown as PlanContent | null) ?? null,
     };
 
     // If there's a planning session, try to get workflow status
     if (issue.planContent && typeof issue.planContent === 'object' && 'sessionId' in issue.planContent) {
-      const sessionId = (issue.planContent as PlanContent).sessionId;
+      const sessionId = (issue.planContent as unknown as PlanContent).sessionId;
       
       // Try to get the latest execution for this issue
       const latestExecution = await IssueMetadataRepository.getLatestExecution(validIssueId);

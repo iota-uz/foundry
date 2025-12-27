@@ -11,6 +11,10 @@ import {
 } from '@/lib/db/repositories';
 import { validateUuid } from '@/lib/validation';
 import type { PlanningSSEEvent, PlanContent } from '@/lib/planning/types';
+import {
+  subscribeToExecution,
+  unsubscribeFromExecution,
+} from '@/lib/workflow-builder/execution-events';
 
 interface RouteParams {
   params: Promise<{ id: string; issueId: string }>;
@@ -55,6 +59,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
     });
   }
 
+  // Get the latest execution for this issue
+  const execution = await IssueMetadataRepository.getLatestExecution(validIssueId);
+  const executionId = execution?.id;
+
   // Create SSE stream
   const encoder = new TextEncoder();
 
@@ -62,14 +70,14 @@ export async function GET(_request: Request, { params }: RouteParams) {
     start(controller) {
       // Send initial state
       const planContent = issue.planContent as unknown as PlanContent | null;
-      
+
       const initialEvent: PlanningSSEEvent = {
         type: 'connected',
         data: {
           sessionId: planContent?.sessionId || '',
         },
       };
-      
+
       const initialData = 'data: ' + JSON.stringify(initialEvent) + '\n\n';
       controller.enqueue(encoder.encode(initialData));
 
@@ -100,10 +108,10 @@ export async function GET(_request: Request, { params }: RouteParams) {
         return;
       }
 
-      // TODO: Subscribe to workflow execution events
-      // For now, just keep connection open
-      // In the future, this should subscribe to GraphEngine workflow events
-      // and emit PlanningSSEEvent types as the workflow progresses
+      // Subscribe to workflow execution events
+      if (executionId) {
+        subscribeToExecution(executionId, controller);
+      }
 
       // Keep connection alive with periodic heartbeat
       const heartbeatInterval = setInterval(() => {
@@ -114,10 +122,20 @@ export async function GET(_request: Request, { params }: RouteParams) {
         }
       }, 30000); // 30 seconds
 
-      // Cleanup on connection close
+      // Cleanup on connection close - return cleanup function
       return () => {
         clearInterval(heartbeatInterval);
+        if (executionId) {
+          unsubscribeFromExecution(executionId, controller);
+        }
       };
+    },
+    cancel() {
+      // Handle stream cancellation
+      if (executionId) {
+        // Note: controller is not accessible here, but the subscription
+        // will be cleaned up when the controller is closed
+      }
     },
   });
 

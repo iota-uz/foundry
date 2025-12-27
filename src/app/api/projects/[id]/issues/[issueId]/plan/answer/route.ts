@@ -16,6 +16,7 @@ import type {
   PlanContent,
   Answer,
 } from '@/lib/planning/types';
+import { resumePlanningWithAnswers } from '@/lib/planning/execution';
 
 interface RouteParams {
   params: Promise<{ id: string; issueId: string }>;
@@ -128,25 +129,29 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       lastActivityAt: now,
     };
 
-    // Save to database
-    await IssueMetadataRepository.updatePlanContent(validIssueId, updatedPlanContent as Record<string, unknown>);
+    // Save answers to database first
+    await IssueMetadataRepository.updatePlanContent(validIssueId, updatedPlanContent as unknown as Record<string, unknown>);
 
-    // TODO: Resume workflow execution
-    // For now, we'll just return success
-    // In the future, this should resume the GraphEngine workflow
+    // Get the latest execution for this issue
+    const execution = await IssueMetadataRepository.getLatestExecution(validIssueId);
+    if (!execution) {
+      return NextResponse.json(
+        { error: 'No active workflow execution found' },
+        { status: 400 }
+      );
+    }
 
-    // Determine next batch (if any)
-    const nextBatchIndex = planContent.currentBatchIndex + 1;
-    const nextBatch = planContent.questionBatches[nextBatchIndex];
+    // Resume workflow execution with the submitted answers
+    void resumePlanningWithAnswers(execution.id, validIssueId, updatedAnswers).catch((error) => {
+      console.error('Planning workflow resume failed:', error);
+    });
 
+    // Return success - workflow will continue asynchronously
+    // SSE stream will provide real-time updates including next batch
     const response: SubmitAnswersResponse = {
       accepted: true,
-      completed: !nextBatch && planContent.status === 'completed',
+      completed: false, // Will be updated via SSE when workflow completes
     };
-
-    if (nextBatch) {
-      response.nextBatch = nextBatch;
-    }
 
     return NextResponse.json(response);
   } catch (error) {
