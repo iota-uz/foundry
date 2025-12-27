@@ -1,42 +1,43 @@
 /**
  * NextAuth.js v5 configuration
  *
- * Configures Google OAuth authentication with Drizzle adapter.
+ * Full configuration with database adapter.
+ * Uses JWT session strategy for Edge middleware compatibility.
  */
 
 import NextAuth from 'next-auth';
-import Google from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { getDatabase } from '@/lib/db/client';
 import * as schema from '@/lib/db/schema/users';
+import { authConfig } from './auth.config';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: DrizzleAdapter(getDatabase(), {
     usersTable: schema.users,
     accountsTable: schema.accounts,
     sessionsTable: schema.sessions,
     verificationTokensTable: schema.verificationTokens,
   }),
-  providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
-  },
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      // Add user ID to JWT token on sign in
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Add user ID from JWT token to session
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
       }
       return session;
     },
   },
   session: {
-    strategy: 'database',
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 });

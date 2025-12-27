@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ChartBarIcon,
+  Cog6ToothIcon,
   RectangleStackIcon,
 } from '@heroicons/react/24/outline';
 import { useUIStore } from '@/store';
@@ -47,6 +48,12 @@ const navItems: NavItem[] = [
     href: '/visualizations',
     icon: ChartBarIcon,
     shortcut: 'V',
+  },
+  {
+    name: 'Settings',
+    href: '/settings/github-credentials',
+    icon: Cog6ToothIcon,
+    shortcut: 'S',
   },
 ];
 

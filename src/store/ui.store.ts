@@ -29,7 +29,7 @@ export const useUIStore = create<UIStore>()(
     persist(
       (set) => ({
         // Initial state
-        sidebarCollapsed: false,
+        sidebarCollapsed: true,
         activeView: 'dashboard',
         commandPaletteOpen: false,
         modals: {},

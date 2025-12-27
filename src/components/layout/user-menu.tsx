@@ -8,11 +8,13 @@
 'use client';
 
 import { Fragment } from 'react';
+import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { Menu, Transition } from '@headlessui/react';
 import {
-  UserCircleIcon,
   ArrowRightOnRectangleIcon,
+  Cog6ToothIcon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline';
 
 function UserAvatar({
@@ -133,6 +135,22 @@ export function UserMenu() {
 
           {/* Menu items */}
           <div className="py-1">
+            <Menu.Item>
+              {({ active }: { active: boolean }) => (
+                <Link
+                  href="/settings/github-credentials"
+                  className={`
+                    flex w-full items-center gap-3 px-4 py-2.5
+                    text-sm text-text-secondary
+                    transition-colors duration-100
+                    ${active ? 'bg-bg-hover text-text-primary' : ''}
+                  `}
+                >
+                  <Cog6ToothIcon className="h-4 w-4" />
+                  Settings
+                </Link>
+              )}
+            </Menu.Item>
             <Menu.Item>
               {({ active }: { active: boolean }) => (
                 <button
