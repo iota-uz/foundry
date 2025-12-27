@@ -12,8 +12,10 @@ import {
   ClipboardDocumentListIcon,
   SwatchIcon,
   BoltIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { usePlanningStore, useArtifactCounts } from '@/store/planning.store';
+import { Markdown } from '@/components/shared/markdown';
 import {
   MermaidDiagramViewer,
   TaskListViewer,
@@ -25,7 +27,7 @@ import {
 // Types
 // ============================================================================
 
-type ArtifactTab = 'diagrams' | 'tasks' | 'ui' | 'api';
+type ArtifactTab = 'issue' | 'diagrams' | 'tasks' | 'ui' | 'api';
 
 interface PlanArtifactsPanelProps {
   className?: string;
@@ -36,6 +38,7 @@ interface PlanArtifactsPanelProps {
 // ============================================================================
 
 const tabConfig: Record<ArtifactTab, { label: string; Icon: React.ComponentType<React.SVGProps<SVGSVGElement>> }> = {
+  issue: { label: 'Issue', Icon: DocumentTextIcon },
   diagrams: { label: 'Diagrams', Icon: ChartBarIcon },
   tasks: { label: 'Tasks', Icon: ClipboardDocumentListIcon },
   ui: { label: 'UI Specs', Icon: SwatchIcon },
@@ -47,14 +50,17 @@ const tabConfig: Record<ArtifactTab, { label: string; Icon: React.ComponentType<
 // ============================================================================
 
 export function PlanArtifactsPanel({ className = '' }: PlanArtifactsPanelProps) {
-  const [activeTab, setActiveTab] = useState<ArtifactTab>('diagrams');
+  const [activeTab, setActiveTab] = useState<ArtifactTab>('issue');
   const artifacts = usePlanningStore((s) => s.artifacts);
+  const issueTitle = usePlanningStore((s) => s.issueTitle);
+  const issueBody = usePlanningStore((s) => s.issueBody);
   const counts = useArtifactCounts();
 
-  const tabs: ArtifactTab[] = ['diagrams', 'tasks', 'ui', 'api'];
+  const tabs: ArtifactTab[] = ['issue', 'diagrams', 'tasks', 'ui', 'api'];
 
-  const getCount = (tab: ArtifactTab): number => {
+  const getCount = (tab: ArtifactTab): number | null => {
     switch (tab) {
+      case 'issue': return null; // No count for issue tab
       case 'diagrams': return counts.diagrams;
       case 'tasks': return counts.tasks;
       case 'ui': return counts.uiMockups;
@@ -87,7 +93,7 @@ export function PlanArtifactsPanel({ className = '' }: PlanArtifactsPanelProps) 
             >
               <config.Icon className="w-4 h-4" />
               <span>{config.label}</span>
-              {count > 0 && (
+              {count !== null && count > 0 && (
                 <span
                   className={`
                     min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold
@@ -108,6 +114,22 @@ export function PlanArtifactsPanel({ className = '' }: PlanArtifactsPanelProps) 
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-4 bg-bg-primary">
+        {activeTab === 'issue' && (
+          <div className="space-y-4">
+            <div>
+              <h1 className="text-xl font-bold text-text-primary mb-4 pb-2 border-b border-border-default">
+                {issueTitle || 'Untitled Issue'}
+              </h1>
+              {issueBody ? (
+                <Markdown>{issueBody}</Markdown>
+              ) : (
+                <p className="text-sm text-text-tertiary italic">
+                  No issue description provided.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
         {activeTab === 'diagrams' && (
           <MermaidDiagramViewer diagrams={artifacts.diagrams} />
         )}

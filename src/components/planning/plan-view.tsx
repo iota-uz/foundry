@@ -124,7 +124,7 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
   useEffect(() => {
     const init = async () => {
       // First try to load existing plan
-      await loadExistingPlan(projectId, issueId);
+      await loadExistingPlan(projectId, issueId, issueTitle, issueBody);
       setIsInitialized(true);
     };
     void init();
@@ -133,7 +133,7 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
     return () => {
       reset();
     };
-  }, [projectId, issueId, loadExistingPlan, reset]);
+  }, [projectId, issueId, issueTitle, issueBody, loadExistingPlan, reset]);
 
   // Start planning if no existing plan
   const handleStartPlanning = useCallback(async () => {
@@ -182,7 +182,7 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
 
   if (!isInitialized || isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-bg-primary">
+      <div className="flex items-center justify-center h-full bg-bg-primary">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-accent-primary/30 border-t-accent-primary rounded-full animate-spin" />
           <p className="text-sm text-text-secondary">Loading planning session...</p>
@@ -192,7 +192,7 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
   }
 
   return (
-    <div className="flex flex-col h-screen bg-bg-primary">
+    <div className="flex flex-col h-full bg-bg-primary">
       {/* Header */}
       <header className="flex items-center justify-between h-14 px-4 border-b border-border-default bg-bg-secondary">
         {/* Left side */}

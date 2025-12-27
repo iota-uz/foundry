@@ -72,7 +72,7 @@ interface PlanningState {
   pausePlanning: () => Promise<void>;
   resumePlanning: () => Promise<void>;
   cancelPlanning: () => Promise<void>;
-  loadExistingPlan: (projectId: string, issueId: string) => Promise<void>;
+  loadExistingPlan: (projectId: string, issueId: string, issueTitle: string, issueBody: string) => Promise<void>;
   connectSSE: () => void;
   disconnectSSE: () => void;
   setPreviewMode: (mode: 'summary' | 'diff' | 'full') => void;
@@ -336,8 +336,8 @@ export const usePlanningStore = create<PlanningState>()(
       },
 
       // Load existing plan
-      loadExistingPlan: async (projectId: string, issueId: string) => {
-        set({ isLoading: true, error: null, projectId, issueId });
+      loadExistingPlan: async (projectId: string, issueId: string, issueTitle: string, issueBody: string) => {
+        set({ isLoading: true, error: null, projectId, issueId, issueTitle, issueBody });
 
         try {
           const response = await fetch(
