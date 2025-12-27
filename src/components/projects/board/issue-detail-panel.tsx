@@ -26,6 +26,7 @@ import {
 import { ExecutionTimeline, type ExecutionEntry } from './execution-timeline';
 import { formatDate, formatRelativeTime } from '@/lib/utils/date';
 import { getKanbanStatusColor } from '@/lib/design-system';
+import { Markdown } from '@/components/shared';
 import type { KanbanIssue } from '@/store/kanban.store';
 
 // ============================================================================
@@ -45,74 +46,6 @@ interface Automation {
   triggerType: 'status_enter' | 'manual';
   buttonLabel: string | null;
   enabled: boolean;
-}
-
-// Simple markdown-ish rendering (basic formatting)
-function renderBody(body: string | null): React.ReactNode {
-  if (body === null || body === '') return null;
-
-  // Basic markdown-like processing
-  const lines = body.split('\n');
-  return lines.map((line, i) => {
-    // Headers
-    if (line.startsWith('### ')) {
-      return (
-        <h4 key={i} className="text-sm font-semibold text-text-primary mt-4 mb-2">
-          {line.slice(4)}
-        </h4>
-      );
-    }
-    if (line.startsWith('## ')) {
-      return (
-        <h3 key={i} className="text-base font-semibold text-text-primary mt-4 mb-2">
-          {line.slice(3)}
-        </h3>
-      );
-    }
-    if (line.startsWith('# ')) {
-      return (
-        <h2 key={i} className="text-lg font-semibold text-text-primary mt-4 mb-2">
-          {line.slice(2)}
-        </h2>
-      );
-    }
-
-    // Code blocks (inline)
-    let processedLine: React.ReactNode = line;
-    if (line.includes('`')) {
-      const parts = line.split(/`([^`]+)`/);
-      processedLine = parts.map((part, j) =>
-        j % 2 === 1 ? (
-          <code key={j} className="px-1.5 py-0.5 rounded bg-bg-tertiary font-mono text-xs text-emerald-400">
-            {part}
-          </code>
-        ) : (
-          part
-        )
-      );
-    }
-
-    // Empty lines
-    if (!line.trim()) {
-      return <br key={i} />;
-    }
-
-    // List items
-    if (line.match(/^[-*]\s/)) {
-      return (
-        <li key={i} className="text-sm text-text-secondary ml-4 list-disc">
-          {processedLine.toString().slice(2)}
-        </li>
-      );
-    }
-
-    // Regular paragraph
-    return (
-      <p key={i} className="text-sm text-text-secondary">
-        {processedLine}
-      </p>
-    );
-  });
 }
 
 // ============================================================================
@@ -451,8 +384,8 @@ export function IssueDetailPanel({
                     </span>
                     <div className="flex-1 h-px bg-border-subtle" />
                   </div>
-                  <div className="p-4 rounded-lg bg-bg-secondary/30 border border-border-subtle prose prose-sm prose-invert max-w-none">
-                    {renderBody(issue.body)}
+                  <div className="p-4 rounded-lg bg-bg-secondary/30 border border-border-subtle">
+                    <Markdown>{issue.body}</Markdown>
                   </div>
                 </div>
               )}

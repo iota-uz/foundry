@@ -10,3 +10,4 @@ export { Toast } from './toast';
 export { ToastProvider, useToast } from './toast-provider';
 export { Skeleton, SkeletonText, SkeletonCard } from './skeleton';
 export { EmptyState } from './empty-state';
+export { Markdown } from './markdown';
