@@ -345,7 +345,7 @@ export default function ProjectPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-bg-primary">
+    <div className="flex flex-col h-full bg-bg-primary">
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
