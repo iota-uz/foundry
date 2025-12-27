@@ -144,14 +144,15 @@ export function AutomationCard({
               className={`
                 relative w-10 h-5 rounded-full
                 transition-colors duration-200
-                ${automation.enabled ? 'bg-emerald-500' : 'bg-bg-tertiary'}
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary
+                ${automation.enabled ? 'bg-emerald-500' : 'bg-bg-tertiary border border-border-default'}
               `}
             >
               <div
                 className={`
-                  absolute top-0.5 w-4 h-4 rounded-full bg-white
-                  transition-transform duration-200
-                  ${automation.enabled ? 'left-5' : 'left-0.5'}
+                  absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm
+                  transition-all duration-200
+                  ${automation.enabled ? 'left-auto right-0.5' : 'left-0.5 right-auto'}
                 `}
               />
             </button>

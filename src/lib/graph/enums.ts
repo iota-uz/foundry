@@ -10,6 +10,9 @@
  * Every node definition must specify one of these types.
  */
 export enum NodeType {
+  /** Trigger node - workflow entry point with initial context */
+  Trigger = 'trigger',
+
   /** AI agent node with Claude SDK */
   Agent = 'agent',
 

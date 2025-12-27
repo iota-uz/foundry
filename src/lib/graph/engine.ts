@@ -5,11 +5,86 @@
  * Manages workflow execution, state transitions, and error handling.
  */
 
-import type { BaseState, GraphNode, GraphContext, GraphEngineConfig } from './types';
+import type { BaseState, GraphNode, GraphContext, GraphEngineConfig, PortInputs } from './types';
 import { WorkflowStatus, SpecialNode } from './enums';
 import { StateManager } from './state-manager';
 import { AgentWrapper } from './agent/wrapper';
 import { createLogger } from './utils/logger';
+
+// ============================================================================
+// Port Data Flow Helpers
+// ============================================================================
+
+/**
+ * Port mapping stored in context.__portMappings
+ */
+interface PortMapping {
+  sourceNodeId: string;
+  sourcePortId: string;
+}
+
+type PortMappings = Record<string, Record<string, PortMapping>>;
+type PortData = Record<string, Record<string, unknown>>;
+
+/**
+ * Resolve port inputs for a node based on port mappings.
+ *
+ * @param nodeId - The node to resolve inputs for
+ * @param context - The workflow context containing __portData and __portMappings
+ * @returns Resolved port inputs (input port id -> value)
+ */
+function resolvePortInputs(
+  nodeId: string,
+  stateContext: Record<string, unknown>
+): PortInputs {
+  const portInputs: PortInputs = {};
+
+  const portData = stateContext.__portData as PortData | undefined;
+  const portMappings = stateContext.__portMappings as PortMappings | undefined;
+
+  if (!portData || !portMappings) {
+    return portInputs;
+  }
+
+  const nodeMappings = portMappings[nodeId];
+  if (!nodeMappings) {
+    return portInputs;
+  }
+
+  // For each input port mapping, resolve the value from source node's output
+  for (const [inputPortId, mapping] of Object.entries(nodeMappings)) {
+    const sourceNodeData = portData[mapping.sourceNodeId];
+    if (sourceNodeData) {
+      const value = sourceNodeData[mapping.sourcePortId];
+      if (value !== undefined) {
+        portInputs[inputPortId] = value;
+      }
+    }
+  }
+
+  return portInputs;
+}
+
+/**
+ * Store port outputs for a node after execution.
+ *
+ * @param nodeId - The node that produced outputs
+ * @param outputs - The port outputs to store
+ * @param stateContext - The workflow context to update
+ */
+function storePortOutputs(
+  nodeId: string,
+  outputs: Record<string, unknown>,
+  stateContext: Record<string, unknown>
+): void {
+  // Initialize port data if not present
+  if (!stateContext.__portData) {
+    stateContext.__portData = {};
+  }
+
+  const portData = stateContext.__portData as PortData;
+  portData[nodeId] = outputs;
+}
 
 /**
  * Check if a node name is a terminal state (SpecialNode.End or SpecialNode.Error).
@@ -111,20 +186,37 @@ export class GraphEngine<TState extends BaseState> {
         state.updatedAt = new Date().toISOString();
         await this.stateManager.save(id, state);
 
+        // Resolve port inputs for this node
+        const stateContext = (state.context ?? {}) as Record<string, unknown>;
+        const portInputs = resolvePortInputs(node.name, stateContext);
+
         // EXECUTE
         const context: GraphContext = {
           agent: agentWrapper,
           logger: nodeLogger as Console,
+          portInputs,
         };
 
         const updates = await node.execute(state, context);
 
+        // Extract and store port outputs if present
+        const { __portOutputs, ...restUpdates } = updates as Partial<TState> & {
+          __portOutputs?: Record<string, unknown>;
+        };
+        if (__portOutputs) {
+          storePortOutputs(node.name, __portOutputs, stateContext);
+          // Update state.context with new port data
+          if ('context' in state) {
+            (state as unknown as { context: Record<string, unknown> }).context = stateContext;
+          }
+        }
+
         // MERGE & TRANSITION
         state = {
           ...state,
-          ...updates,
+          ...restUpdates,
           updatedAt: new Date().toISOString(),
-        };
+        } as TState;
 
         // Determine next node
         const nextNode = node.next(state);

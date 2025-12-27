@@ -117,7 +117,20 @@ export interface BaseState {
    * Using unknown[] for flexibility - actual SDK types are handled at runtime.
    */
   conversationHistory: unknown[];
+
+  /**
+   * Workflow context data.
+   * Stores runtime variables including port data for typed data flow.
+   * Contains __portData and __portMappings for port-based execution.
+   */
+  context?: Record<string, unknown>;
 }
+
+/**
+ * Port data structure for typed data flow between nodes.
+ * Key: port id, Value: port data
+ */
+export type PortInputs = Record<string, unknown>;
 
 /**
  * Context provided to node execution functions.
@@ -129,6 +142,13 @@ export interface GraphContext {
 
   /** Structured logger for debugging and observability */
   logger: Console;
+
+  /**
+   * Resolved port inputs for this node.
+   * Values are pulled from connected output ports of upstream nodes.
+   * Key: input port id, Value: data from connected output port
+   */
+  portInputs?: PortInputs;
 }
 
 /**

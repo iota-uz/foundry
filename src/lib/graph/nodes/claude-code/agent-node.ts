@@ -224,7 +224,7 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
     selections.forEach((selection, i) => {
       const { config, serverName } = selection.type === 'preset'
         ? {
-            config: resolvePresetConfig(selection.presetId, selection.env) as SdkMcpServerConfig,
+            config: resolvePresetConfig(selection) as SdkMcpServerConfig,
             serverName: selection.presetId,
           }
         : {

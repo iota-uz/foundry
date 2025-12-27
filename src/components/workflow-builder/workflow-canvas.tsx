@@ -25,6 +25,8 @@ import {
   type Node,
   type NodeTypes,
   type EdgeTypes,
+  type Connection,
+  type Edge,
   applyNodeChanges,
   applyEdgeChanges,
 } from '@xyflow/react';
@@ -33,6 +35,8 @@ import '@xyflow/react/dist/style.css';
 import { useWorkflowBuilderStore } from '@/store';
 import type { WorkflowNodeData } from '@/store/workflow-builder.store';
 import { NodeType } from '@/lib/graph/enums';
+import { getOutputPort, getInputPort } from '@/lib/workflow-builder/port-registry';
+import { arePortsCompatible } from '@/lib/workflow-builder/port-types';
 import { WorkflowNode } from './nodes/base-workflow-node';
 import { WorkflowEdge } from './edges/workflow-edge';
 import { CanvasContextMenu } from './canvas-context-menu';
@@ -174,6 +178,43 @@ export function WorkflowCanvas() {
     setContextMenu(null);
   }, []);
 
+  // Validate connections between typed ports
+  const isValidConnection = useCallback(
+    (connection: Edge | Connection) => {
+      const { source, target, sourceHandle, targetHandle } = connection;
+
+      // Must have source and target
+      if (!source || !target) return false;
+
+      // Cannot connect to self
+      if (source === target) return false;
+
+      // Find source and target nodes
+      const sourceNode = nodes.find((n) => n.id === source);
+      const targetNode = nodes.find((n) => n.id === target);
+
+      if (!sourceNode || !targetNode) return false;
+
+      // Get port schemas
+      const sourceNodeType = sourceNode.data.nodeType;
+      const targetNodeType = targetNode.data.nodeType;
+
+      // If no handles specified, allow (legacy mode)
+      if (!sourceHandle || !targetHandle) return true;
+
+      // Get port definitions
+      const sourcePort = getOutputPort(sourceNodeType, sourceHandle);
+      const targetPort = getInputPort(targetNodeType, targetHandle);
+
+      // If ports not found, allow (graceful fallback)
+      if (!sourcePort || !targetPort) return true;
+
+      // Check type compatibility
+      return arePortsCompatible(sourcePort.type, targetPort.type);
+    },
+    [nodes]
+  );
+
   return (
     <div ref={reactFlowWrapper} className="flex-1 h-full relative overflow-hidden">
       <ReactFlow
@@ -189,6 +230,7 @@ export function WorkflowCanvas() {
         onContextMenu={onContextMenu}
         onDragOver={onDragOver}
         onDrop={onDrop}
+        isValidConnection={isValidConnection}
         fitView
         snapToGrid
         snapGrid={[16, 16]}

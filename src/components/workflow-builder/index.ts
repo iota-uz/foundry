@@ -9,5 +9,6 @@ export { ExecutionPanel } from './execution-panel';
 export { ExecutionHistory } from './execution-history';
 export { WorkflowNode } from './nodes/base-workflow-node';
 export { WorkflowEdge } from './edges/workflow-edge';
-export { EnvironmentConfig } from './environment-config';
 export { DockerImageConfig } from './docker-image-config';
+export { EnvEditor } from './env-editor';
+export type { EnvEditorProps } from './env-editor';

@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PlusIcon, XMarkIcon, ServerIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon, ServerIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import {
   McpPresetId,
   MCP_PRESETS,
@@ -18,9 +18,22 @@ import {
   type McpHttpConfig,
   type McpSseConfig,
   type PresetMcpServer,
+  type PlaywrightPresetConfig,
+  type FigmaPresetConfig,
+  type SequentialThinkingPresetConfig,
+  type PresetConfig,
 } from '@/lib/graph/mcp-presets';
 import { Button } from '@/components/shared/button';
 import { Modal, ModalBody, ModalFooter } from '@/components/shared/modal';
+import {
+  ToggleField,
+  NumberField,
+  TextField,
+  KeyValueEditor,
+  CollapsibleSection,
+  ViewportInput,
+} from './config-fields';
+import { EnvEditor } from './env-editor';
 
 interface McpServerSelectorProps {
   selected: McpServerSelection[];
@@ -34,6 +47,7 @@ export function McpServerSelector({
   accentColor,
 }: McpServerSelectorProps) {
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const handleAddPreset = (presetId: McpPresetId) => {
     const newServer: McpServerSelection = {
@@ -44,12 +58,30 @@ export function McpServerSelector({
   };
 
   const handleRemove = (index: number) => {
+    if (expandedIndex === index) {
+      setExpandedIndex(null);
+    } else if (expandedIndex !== null && expandedIndex > index) {
+      setExpandedIndex(expandedIndex - 1);
+    }
     onChange(selected.filter((_, i) => i !== index));
   };
 
   const handleAddCustom = (server: McpServerSelection) => {
     onChange([...selected, server]);
     setShowCustomModal(false);
+  };
+
+  const handleConfigChange = (index: number, config: PresetConfig) => {
+    const updated = [...selected];
+    const server = updated[index];
+
+    if (server && server.type === 'preset') {
+      updated[index] = {
+        ...server,
+        presetConfig: config,
+      };
+      onChange(updated);
+    }
   };
 
   const selectedPresetIds = selected
@@ -108,7 +140,10 @@ export function McpServerSelector({
               key={index}
               server={server}
               accentColor={accentColor}
+              isExpanded={expandedIndex === index}
+              onToggleExpand={() => setExpandedIndex(expandedIndex === index ? null : index)}
               onRemove={() => handleRemove(index)}
+              onConfigChange={(config) => handleConfigChange(index, config)}
             />
           ))}
         </div>
@@ -131,42 +166,279 @@ export function McpServerSelector({
 interface McpServerCardProps {
   server: McpServerSelection;
   accentColor: string;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
   onRemove: () => void;
+  onConfigChange: (config: PresetConfig) => void;
 }
 
-function McpServerCard({ server, accentColor, onRemove }: McpServerCardProps) {
+function McpServerCard({
+  server,
+  accentColor,
+  isExpanded,
+  onToggleExpand,
+  onRemove,
+  onConfigChange,
+}: McpServerCardProps) {
   const preset = server.type === 'preset' ? MCP_PRESETS[server.presetId] : null;
   const serverName = preset ? preset.name : (server.type === 'custom' ? server.name : '');
   const description = preset ? preset.description : 'Custom server';
   const icon = preset ? preset.icon : <ServerIcon className="w-4 h-4" style={{ color: accentColor }} />;
+  const isPreset = server.type === 'preset';
 
   return (
-    <div
-      className="flex items-start gap-2 p-2 rounded-lg border border-border-subtle bg-bg-primary group hover:border-border-default transition-colors"
-    >
-      <div
-        className="w-8 h-8 rounded flex items-center justify-center text-lg flex-shrink-0"
-        style={{ background: `${accentColor}15` }}
-      >
-        {icon}
+    <div className="rounded-lg border border-border-subtle bg-bg-primary overflow-hidden">
+      {/* Card Header */}
+      <div className="flex items-start gap-2 p-2 group hover:bg-bg-secondary/50 transition-colors">
+        <div
+          className="w-8 h-8 rounded flex items-center justify-center text-lg flex-shrink-0"
+          style={{ background: `${accentColor}15` }}
+        >
+          {icon}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium text-text-primary truncate">
+            {serverName}
+          </div>
+          <div className="text-[10px] text-text-muted truncate">
+            {description}
+          </div>
+        </div>
+
+        {/* Expand button (only for presets) */}
+        {isPreset && (
+          <button
+            onClick={onToggleExpand}
+            className="w-6 h-6 rounded flex items-center justify-center hover:bg-bg-tertiary text-text-muted hover:text-text-secondary transition-all"
+            title={isExpanded ? 'Collapse config' : 'Configure'}
+          >
+            {isExpanded ? (
+              <ChevronDownIcon className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronRightIcon className="w-3.5 h-3.5" />
+            )}
+          </button>
+        )}
+
+        <button
+          onClick={onRemove}
+          className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded flex items-center justify-center hover:bg-accent-error/10 text-text-muted hover:text-accent-error transition-all"
+          title="Remove server"
+        >
+          <XMarkIcon className="w-3.5 h-3.5" />
+        </button>
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="text-xs font-medium text-text-primary truncate">
-          {serverName}
+      {/* Inline Configuration Panel */}
+      {isExpanded && isPreset && (
+        <div className="border-t border-border-subtle bg-bg-secondary/30">
+          <PresetConfigPanel
+            server={server}
+            accentColor={accentColor}
+            onConfigChange={onConfigChange}
+          />
         </div>
-        <div className="text-[10px] text-text-muted truncate">
-          {description}
-        </div>
-      </div>
+      )}
+    </div>
+  );
+}
 
-      <button
-        onClick={onRemove}
-        className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded flex items-center justify-center hover:bg-accent-error/10 text-text-muted hover:text-accent-error transition-all"
-        title="Remove server"
-      >
-        <XMarkIcon className="w-3.5 h-3.5" />
-      </button>
+// ============================================================================
+// Preset Configuration Panel Router
+// ============================================================================
+
+interface PresetConfigPanelProps {
+  server: PresetMcpServer;
+  accentColor: string;
+  onConfigChange: (config: PresetConfig) => void;
+}
+
+function PresetConfigPanel({ server, accentColor, onConfigChange }: PresetConfigPanelProps) {
+  switch (server.presetId) {
+    case McpPresetId.Playwright:
+      return (
+        <PlaywrightConfigPanel
+          config={(server.presetConfig as PlaywrightPresetConfig) ?? {}}
+          accentColor={accentColor}
+          onChange={onConfigChange}
+        />
+      );
+    case McpPresetId.Figma:
+      return (
+        <FigmaConfigPanel
+          config={(server.presetConfig as FigmaPresetConfig) ?? {}}
+          accentColor={accentColor}
+          onChange={onConfigChange}
+        />
+      );
+    case McpPresetId.SequentialThinking:
+      return (
+        <SequentialThinkingConfigPanel
+          config={(server.presetConfig as SequentialThinkingPresetConfig) ?? {}}
+          accentColor={accentColor}
+          onChange={onConfigChange}
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+// ============================================================================
+// Playwright Configuration Panel
+// ============================================================================
+
+interface PlaywrightConfigPanelProps {
+  config: PlaywrightPresetConfig;
+  accentColor: string;
+  onChange: (config: PlaywrightPresetConfig) => void;
+}
+
+function PlaywrightConfigPanel({ config, accentColor, onChange }: PlaywrightConfigPanelProps) {
+  const buildConfig = (
+    headless?: boolean,
+    viewportWidth?: number,
+    viewportHeight?: number,
+    timeout?: number,
+    env?: Record<string, string>
+  ): PlaywrightPresetConfig => {
+    const newConfig: PlaywrightPresetConfig = {};
+    if (headless !== undefined) newConfig.headless = headless;
+    if (viewportWidth !== undefined) newConfig.viewportWidth = viewportWidth;
+    if (viewportHeight !== undefined) newConfig.viewportHeight = viewportHeight;
+    if (timeout !== undefined) newConfig.timeout = timeout;
+    if (env && Object.keys(env).length > 0) newConfig.env = env;
+    return newConfig;
+  };
+
+  return (
+    <div className="p-3 space-y-3">
+      <ToggleField
+        label="Headless Mode"
+        description="Run browser without visible window"
+        value={config.headless !== false}
+        onChange={(v) => onChange(buildConfig(v, config.viewportWidth, config.viewportHeight, config.timeout, config.env))}
+        accentColor={accentColor}
+      />
+
+      <ViewportInput
+        label="Viewport Size"
+        width={config.viewportWidth}
+        height={config.viewportHeight}
+        onChange={(w, h) => onChange(buildConfig(config.headless, w, h, config.timeout, config.env))}
+        accentColor={accentColor}
+      />
+
+      <NumberField
+        label="Navigation Timeout"
+        description="Max time to wait for page navigation"
+        value={config.timeout}
+        onChange={(v) => onChange(buildConfig(config.headless, config.viewportWidth, config.viewportHeight, v, config.env))}
+        placeholder="30000"
+        min={1000}
+        max={300000}
+        suffix="ms"
+        accentColor={accentColor}
+      />
+
+      <CollapsibleSection title="Advanced">
+        <EnvEditor
+          mode="local"
+          title="Environment Variables"
+          value={config.env ?? {}}
+          onChange={(v) => {
+            const env = Object.keys(v).length > 0 ? v : undefined;
+            onChange(buildConfig(config.headless, config.viewportWidth, config.viewportHeight, config.timeout, env));
+          }}
+          accentColor={accentColor}
+        />
+      </CollapsibleSection>
+    </div>
+  );
+}
+
+// ============================================================================
+// Figma Configuration Panel
+// ============================================================================
+
+interface FigmaConfigPanelProps {
+  config: FigmaPresetConfig;
+  accentColor: string;
+  onChange: (config: FigmaPresetConfig) => void;
+}
+
+function FigmaConfigPanel({ config, accentColor, onChange }: FigmaConfigPanelProps) {
+  const buildConfig = (
+    apiToken?: string,
+    headers?: Record<string, string>
+  ): FigmaPresetConfig => {
+    const newConfig: FigmaPresetConfig = {};
+    if (apiToken) newConfig.apiToken = apiToken;
+    if (headers && Object.keys(headers).length > 0) newConfig.headers = headers;
+    return newConfig;
+  };
+
+  return (
+    <div className="p-3 space-y-3">
+      <TextField
+        label="API Token"
+        description="Personal access token from Figma settings"
+        value={config.apiToken ?? ''}
+        onChange={(v) => onChange(buildConfig(v || undefined, config.headers))}
+        placeholder="figd_..."
+        type="password"
+        mono
+        accentColor={accentColor}
+      />
+
+      <CollapsibleSection title="Advanced">
+        <KeyValueEditor
+          label="Custom Headers"
+          description="Additional HTTP headers for requests"
+          value={config.headers ?? {}}
+          onChange={(v) => {
+            const headers = Object.keys(v).length > 0 ? v : undefined;
+            onChange(buildConfig(config.apiToken, headers));
+          }}
+          keyPlaceholder="Header"
+          valuePlaceholder="value"
+          accentColor={accentColor}
+        />
+      </CollapsibleSection>
+    </div>
+  );
+}
+
+// ============================================================================
+// Sequential Thinking Configuration Panel
+// ============================================================================
+
+interface SequentialThinkingConfigPanelProps {
+  config: SequentialThinkingPresetConfig;
+  accentColor: string;
+  onChange: (config: SequentialThinkingPresetConfig) => void;
+}
+
+function SequentialThinkingConfigPanel({ config, accentColor, onChange }: SequentialThinkingConfigPanelProps) {
+  const buildConfig = (env?: Record<string, string>): SequentialThinkingPresetConfig => {
+    const newConfig: SequentialThinkingPresetConfig = {};
+    if (env && Object.keys(env).length > 0) newConfig.env = env;
+    return newConfig;
+  };
+
+  return (
+    <div className="p-3 space-y-3">
+      <EnvEditor
+        mode="local"
+        title="Environment Variables"
+        value={config.env ?? {}}
+        onChange={(v) => {
+          const env = Object.keys(v).length > 0 ? v : undefined;
+          onChange(buildConfig(env));
+        }}
+        accentColor={accentColor}
+      />
     </div>
   );
 }

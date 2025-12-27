@@ -57,6 +57,16 @@ function extractActionError(result: {
 // ============================================================================
 
 /**
+ * Port connection mapping for typed data flow
+ */
+export interface PortConnections {
+  /** Map of input port IDs to their source (nodeId:portId) */
+  inputs: Record<string, string>;
+  /** Map of output port IDs to their targets (nodeId:portId[]) */
+  outputs: Record<string, string[]>;
+}
+
+/**
  * Node data stored in React Flow nodes
  */
 export interface WorkflowNodeData extends Record<string, unknown> {
@@ -69,7 +79,10 @@ export interface WorkflowNodeData extends Record<string, unknown> {
   /** Node-specific configuration */
   config: NodeConfig;
 
-  /** Connected output node IDs (for visual reference) */
+  /** Port connection mappings for typed data flow */
+  portConnections?: PortConnections;
+
+  /** @deprecated Use portConnections instead */
   outputs?: string[];
 }
 
@@ -77,6 +90,7 @@ export interface WorkflowNodeData extends Record<string, unknown> {
  * Union of all node configurations
  */
 export type NodeConfig =
+  | TriggerNodeConfig
   | AgentNodeConfig
   | CommandNodeConfig
   | SlashCommandNodeConfig
@@ -87,6 +101,26 @@ export type NodeConfig =
   | DynamicCommandNodeConfig
   | GitHubProjectNodeConfig
   | GitCheckoutNodeConfig;
+
+/**
+ * Trigger node configuration - workflow entry point
+ */
+export interface TriggerNodeConfig {
+  type: 'trigger';
+  /** Custom input fields defined by user */
+  customFields?: TriggerCustomField[];
+}
+
+/**
+ * Custom field definition for Trigger node
+ */
+export interface TriggerCustomField {
+  id: string;
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  description?: string;
+  defaultValue?: unknown;
+}
 
 export interface AgentNodeConfig {
   type: 'agent';
@@ -308,6 +342,10 @@ interface WorkflowBuilderState {
  * Default node configurations by type
  */
 const defaultConfigs: Record<NodeType, () => NodeConfig> = {
+  [NodeType.Trigger]: () => ({
+    type: 'trigger',
+    customFields: [],
+  }),
   [NodeType.Agent]: () => ({
     type: 'agent',
     role: 'assistant',
@@ -374,6 +412,7 @@ const defaultConfigs: Record<NodeType, () => NodeConfig> = {
  * Node type display labels
  */
 export const nodeTypeLabels: Record<NodeType, string> = {
+  [NodeType.Trigger]: 'Trigger',
   [NodeType.Agent]: 'Agent',
   [NodeType.Command]: 'Command',
   [NodeType.SlashCommand]: 'Slash Command',

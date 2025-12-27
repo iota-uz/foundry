@@ -35,6 +35,7 @@ import type { NodeConfig } from '@/store/workflow-builder.store';
 import { Modal, ModalBody, ModalFooter } from '@/components/shared/modal';
 import { Button } from '@/components/shared/button';
 import { McpServerSelector } from './mcp-server-selector';
+import { ToggleSwitch } from './config-fields';
 
 // ============================================================================
 // Main Component
@@ -1933,42 +1934,6 @@ function SliderInput({
         {value.toFixed(1)}
       </span>
     </div>
-  );
-}
-
-function ToggleSwitch({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center justify-between cursor-pointer group">
-      <span className="text-xs text-text-secondary group-hover:text-text-primary transition-colors">
-        {label}
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`
-          relative w-8 h-5 rounded-full transition-colors duration-150
-          ${checked ? 'bg-accent-primary' : 'bg-bg-tertiary'}
-        `}
-      >
-        <span
-          className={`
-            absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm
-            transition-transform duration-150
-            ${checked ? 'translate-x-3.5' : 'translate-x-0.5'}
-          `}
-        />
-      </button>
-    </label>
   );
 }
 

@@ -51,6 +51,8 @@ export type {
   GraphContext,
   IAgentWrapper,
   GraphEngineConfig,
+  // Port data flow
+  PortInputs,
   // Message types
   Message,
   StoredMessage,

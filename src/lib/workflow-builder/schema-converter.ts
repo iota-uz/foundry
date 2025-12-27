@@ -18,8 +18,36 @@ import type {
   DynamicAgentNodeConfig,
   DynamicCommandNodeConfig,
   GitCheckoutNodeConfig,
+  TriggerNodeConfig,
 } from '@/store/workflow-builder.store';
 import type { McpServerSelection } from '@/lib/graph/mcp-presets';
+import { NODE_PORT_SCHEMAS } from './port-registry';
+
+// ============================================================================
+// Port Data Types
+// ============================================================================
+
+/**
+ * Mapping of input port to its data source.
+ * Key: input port id
+ * Value: { nodeId: source node, portId: source output port }
+ */
+export interface PortMapping {
+  sourceNodeId: string;
+  sourcePortId: string;
+}
+
+/**
+ * Port data stored in context for each node's outputs.
+ * Structure: __portData[nodeId][portId] = value
+ */
+export type PortData = Record<string, Record<string, unknown>>;
+
+/**
+ * Port mappings for a workflow.
+ * Structure: __portMappings[targetNodeId][inputPortId] = { sourceNodeId, sourcePortId }
+ */
+export type PortMappings = Record<string, Record<string, PortMapping>>;
 import {
   NodeType,
   SpecialNode,
@@ -75,6 +103,66 @@ function buildAdjacencyMap(edges: Edge[]): Map<string, string[]> {
 }
 
 /**
+ * Build port mappings from edges.
+ * Extracts sourceHandle and targetHandle to create the mapping.
+ */
+function buildPortMappings(edges: Edge[]): PortMappings {
+  const mappings: PortMappings = {};
+
+  for (const edge of edges) {
+    const { source, target, sourceHandle, targetHandle } = edge;
+
+    // Skip edges without handle information
+    if (!sourceHandle || !targetHandle) continue;
+
+    // Initialize target node's mappings if needed
+    if (!mappings[target]) {
+      mappings[target] = {};
+    }
+
+    // Map target's input port to source's output port
+    mappings[target][targetHandle] = {
+      sourceNodeId: source,
+      sourcePortId: sourceHandle,
+    };
+  }
+
+  return mappings;
+}
+
+/**
+ * Initialize port data from trigger node.
+ * The trigger node outputs are populated from initial context.
+ */
+function initializePortData(
+  nodes: Node<WorkflowNodeData>[],
+  initialContext: Record<string, unknown>
+): PortData {
+  const portData: PortData = {};
+
+  // Find the trigger node
+  const triggerNode = nodes.find((n) => n.data.nodeType === NodeType.Trigger);
+  if (!triggerNode) return portData;
+
+  // Get trigger's port schema
+  const triggerSchema = NODE_PORT_SCHEMAS[NodeType.Trigger];
+  if (!triggerSchema) return portData;
+
+  // Initialize trigger's output ports from initial context
+  const triggerOutputs: Record<string, unknown> = {};
+  for (const output of triggerSchema.outputs) {
+    // Map port id to context key (e.g., 'title' -> context.title)
+    const value = initialContext[output.id];
+    if (value !== undefined) {
+      triggerOutputs[output.id] = value;
+    }
+  }
+  portData[triggerNode.id] = triggerOutputs;
+
+  return portData;
+}
+
+/**
  * Get the target node for a given source node
  * Returns SpecialNode.End if no outgoing edges
  */
@@ -103,6 +191,13 @@ function convertNode<TNames extends string>(
   const transitionFn = () => nextNodeId as TNames;
 
   switch (data.nodeType) {
+    case NodeType.Trigger: {
+      // Trigger node is a special entry point - it doesn't execute,
+      // it just provides initial data. We skip it in the node list
+      // and handle its outputs via __portData initialization.
+      return null;
+    }
+
     case NodeType.Agent: {
       const config = data.config as AgentNodeConfig;
       return schema.agent(node.id as TNames, {
@@ -275,8 +370,20 @@ export function toWorkflowConfig(
     };
   }
 
-  // Get all node IDs for schema
-  const nodeNames = nodes.map((n) => n.id) as readonly string[];
+  // Separate trigger node from executable nodes
+  const triggerNode = nodes.find((n) => n.data.nodeType === NodeType.Trigger);
+  const executableNodes = nodes.filter((n) => n.data.nodeType !== NodeType.Trigger);
+
+  // Must have at least one executable node
+  if (executableNodes.length === 0) {
+    return {
+      success: false,
+      errors: [{ nodeId: '', message: 'Workflow must have at least one executable node' }],
+    };
+  }
+
+  // Get all node IDs for schema (excluding trigger)
+  const nodeNames = executableNodes.map((n) => n.id) as readonly string[];
 
   // Create schema with all node names
   const schema = defineNodes<Record<string, unknown>>()(nodeNames);
@@ -284,10 +391,17 @@ export function toWorkflowConfig(
   // Build adjacency map for transitions
   const adjacency = buildAdjacencyMap(edges);
 
-  // Convert all nodes
+  // Build port mappings from edges
+  const portMappings = buildPortMappings(edges);
+
+  // Initialize port data from trigger node
+  const baseContext = metadata.initialContext ?? {};
+  const portData = initializePortData(nodes, baseContext);
+
+  // Convert all executable nodes
   const nodeDefs: NodeDef<string, Record<string, unknown>>[] = [];
 
-  for (const node of nodes) {
+  for (const node of executableNodes) {
     const nodeDef = convertNode(node, adjacency, schema);
     if (nodeDef) {
       nodeDefs.push(nodeDef);
@@ -303,12 +417,21 @@ export function toWorkflowConfig(
     return { success: false, errors };
   }
 
+  // Build initial context with port data and mappings
+  const initialContext: Record<string, unknown> = {
+    ...baseContext,
+    __portData: portData,
+    __portMappings: portMappings,
+    // Include trigger node ID if present for reference
+    ...(triggerNode && { __triggerNodeId: triggerNode.id }),
+  };
+
   try {
     const config = defineWorkflow({
       id: metadata.id,
       schema,
       nodes: nodeDefs,
-      ...(metadata.initialContext !== undefined && { initialContext: metadata.initialContext }),
+      initialContext,
     });
 
     return {
@@ -474,6 +597,15 @@ function nodeDefToReactFlow(
         commandExpression: (def.commandExpression as string) ?? '',
         ...(def.cwdExpression !== undefined && { cwdExpression: def.cwdExpression as string }),
       };
+      break;
+
+    case NodeType.Trigger:
+      // Trigger nodes aren't stored in GraphEngine configs,
+      // but handle case for completeness
+      label = 'Trigger';
+      config = {
+        type: 'trigger',
+      } as TriggerNodeConfig;
       break;
 
     default:

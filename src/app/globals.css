@@ -67,6 +67,18 @@
   --color-node-dynamic-agent: #f97316;
   --color-node-dynamic-command: #ef4444;
   --color-node-github-project: #8b5cf6;
+  --color-node-trigger: #10b981;
+  --color-node-git-checkout: #6366f1;
+
+  /* =========================================================================
+     PORT TYPE COLORS - Data type color coding
+     ========================================================================= */
+  --color-port-string: #3b82f6;   /* blue-500 */
+  --color-port-number: #10b981;   /* emerald-500 */
+  --color-port-boolean: #f59e0b;  /* amber-500 */
+  --color-port-object: #8b5cf6;   /* violet-500 */
+  --color-port-array: #14b8a6;    /* teal-500 */
+  --color-port-any: #71717a;      /* zinc-500 */
 
   /* =========================================================================
      TYPOGRAPHY SCALE
@@ -206,6 +218,16 @@
   --node-dynamic-agent: var(--color-node-dynamic-agent);
   --node-dynamic-command: var(--color-node-dynamic-command);
   --node-github-project: var(--color-node-github-project);
+  --node-trigger: var(--color-node-trigger);
+  --node-git-checkout: var(--color-node-git-checkout);
+
+  /* Port colors */
+  --port-string: var(--color-port-string);
+  --port-number: var(--color-port-number);
+  --port-boolean: var(--color-port-boolean);
+  --port-object: var(--color-port-object);
+  --port-array: var(--color-port-array);
+  --port-any: var(--color-port-any);
 }
 
 /* =============================================================================

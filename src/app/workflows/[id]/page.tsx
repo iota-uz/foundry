@@ -29,7 +29,7 @@ import {
   NodeConfigPanel,
   ExecutionPanel,
   ExecutionHistory,
-  EnvironmentConfig,
+  EnvEditor,
   DockerImageConfig,
 } from '@/components/workflow-builder';
 import { WorkflowStatus } from '@/lib/graph/enums';
@@ -268,7 +268,7 @@ export default function WorkflowEditorPage({ params }: PageProps) {
                 {rightDrawerView === 'settings' && (
                   <div className="h-full overflow-y-auto">
                     <DockerImageConfig workflowId={id} />
-                    <EnvironmentConfig workflowId={id} />
+                    <EnvEditor mode="encrypted" workflowId={id} />
                   </div>
                 )}
               </div>

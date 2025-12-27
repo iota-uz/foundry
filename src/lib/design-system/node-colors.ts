@@ -49,6 +49,16 @@ export interface NodeColorConfig {
 // =============================================================================
 
 export const NODE_COLORS: Record<NodeType, NodeColorConfig> = {
+  [NodeType.Trigger]: {
+    label: 'Trigger',
+    description: 'Workflow entry point with inputs',
+    icon: PlayCircleIcon,
+    hex: '#10b981',
+    textColor: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/10',
+    borderColor: 'border-emerald-500/30',
+    accentBorder: 'border-l-emerald-500',
+  },
   [NodeType.Agent]: {
     label: 'Agent',
     description: 'AI agent with tools and conversation',
