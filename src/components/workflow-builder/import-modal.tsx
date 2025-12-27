@@ -11,7 +11,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   DocumentArrowUpIcon,
   ExclamationTriangleIcon,
@@ -21,8 +21,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { Modal, ModalBody, ModalFooter } from '@/components/shared/modal';
 import { Button } from '@/components/shared/button';
-import { parseDSL, dslToReactFlow, validateDSL } from '@/lib/workflow-dsl';
-import type { ValidationError } from '@/lib/workflow-dsl';
+import type { ValidationError, DSLWorkflow } from '@/lib/workflow-dsl/client';
+import type { Node, Edge } from '@xyflow/react';
+import type { WorkflowNodeData, WorkflowMetadata } from '@/store/workflow-builder.store';
 import { useWorkflowBuilderStore } from '@/store';
 
 // ============================================================================
@@ -43,6 +44,15 @@ interface ParseResult {
   workflowName: string;
 }
 
+interface ParseAPIResponse {
+  workflow: DSLWorkflow;
+  nodes: Node<WorkflowNodeData>[];
+  edges: Edge[];
+  metadata: WorkflowMetadata;
+  validation: { valid: boolean; errors: ValidationError[] };
+  warnings: string[];
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -51,48 +61,80 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
   const [code, setCode] = useState('');
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
+  const [parsedData, setParsedData] = useState<ParseAPIResponse | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { setNodes, setEdges, updateMetadata, metadata } = useWorkflowBuilderStore();
 
-  // Validate code on change
+  // Validate code on change (with debounce via useEffect)
   const handleCodeChange = useCallback((newCode: string) => {
     setCode(newCode);
     setParseError(null);
     setParseResult(null);
+    setParsedData(null);
 
-    if (!newCode.trim()) return;
-
-    try {
-      // Parse the DSL
-      const { workflow, warnings } = parseDSL(newCode);
-
-      // Validate the workflow
-      const validation = validateDSL(workflow);
-
-      // Combine parse warnings with validation errors
-      const allErrors: ValidationError[] = [
-        ...warnings.map((w) => ({
-          code: 'PARSE_WARNING',
-          message: w,
-          severity: 'warning' as const,
-        })),
-        ...validation.errors,
-      ];
-
-      setParseResult({
-        valid: validation.valid && allErrors.filter((e) => e.severity === 'error').length === 0,
-        errors: allErrors,
-        nodeCount: Object.keys(workflow.nodes).length,
-        workflowName: workflow.name ?? workflow.id,
-      });
-    } catch (error) {
-      setParseError(error instanceof Error ? error.message : 'Failed to parse DSL');
-      setParseResult(null);
+    if (!newCode.trim()) {
+      setIsValidating(false);
+      return;
     }
+
+    setIsValidating(true);
   }, []);
+
+  // Debounced validation via API
+  useEffect(() => {
+    if (!code.trim() || !isValidating) return;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/workflows/parse-dsl', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dsl: code, projectId: metadata.projectId }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json() as { error?: string; details?: string };
+          setParseError(errorData.details ?? errorData.error ?? 'Failed to parse DSL');
+          setParseResult(null);
+          setParsedData(null);
+          return;
+        }
+
+        const data = await response.json() as ParseAPIResponse;
+        setParsedData(data);
+
+        // Combine parse warnings with validation errors
+        const allErrors: ValidationError[] = [
+          ...data.warnings.map((w) => ({
+            code: 'PARSE_WARNING',
+            message: w,
+            severity: 'warning' as const,
+          })),
+          ...data.validation.errors,
+        ];
+
+        setParseResult({
+          valid: data.validation.valid && allErrors.filter((e) => e.severity === 'error').length === 0,
+          errors: allErrors,
+          nodeCount: Object.keys(data.workflow.nodes).length,
+          workflowName: data.workflow.name ?? data.workflow.id,
+        });
+        setParseError(null);
+      } catch (error) {
+        setParseError(error instanceof Error ? error.message : 'Failed to parse DSL');
+        setParseResult(null);
+        setParsedData(null);
+      } finally {
+        setIsValidating(false);
+      }
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [code, isValidating, metadata.projectId]);
 
   // Handle file upload
   const handleFileUpload = useCallback(
@@ -144,16 +186,13 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
 
   // Import the workflow
   const handleImport = useCallback(async () => {
-    if (!parseResult?.valid || !code.trim()) return;
+    if (!parseResult?.valid || !parsedData) return;
 
     setIsImporting(true);
 
     try {
-      const { workflow } = parseDSL(code);
-      const { nodes, edges, metadata: newMetadata } = dslToReactFlow(
-        workflow,
-        metadata.projectId // Preserve current project ID
-      );
+      // Use the already-parsed data from API
+      const { nodes, edges, metadata: newMetadata } = parsedData;
 
       // Update the store
       setNodes(nodes);
@@ -170,19 +209,22 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
       // Reset state
       setCode('');
       setParseResult(null);
+      setParsedData(null);
       setParseError(null);
     } catch (error) {
       setParseError(error instanceof Error ? error.message : 'Failed to import workflow');
     } finally {
       setIsImporting(false);
     }
-  }, [code, parseResult, metadata.projectId, setNodes, setEdges, updateMetadata, onClose, onImportSuccess]);
+  }, [parseResult, parsedData, metadata.projectId, setNodes, setEdges, updateMetadata, onClose, onImportSuccess]);
 
   // Reset on close
   const handleClose = useCallback(() => {
     setCode('');
     setParseResult(null);
+    setParsedData(null);
     setParseError(null);
+    setIsValidating(false);
     onClose();
   }, [onClose]);
 

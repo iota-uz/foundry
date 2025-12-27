@@ -20,7 +20,7 @@ import {
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import { useWorkflowBuilderStore } from '@/store';
-import { generateDSL } from '@/lib/workflow-dsl';
+import { generateDSL } from '@/lib/workflow-dsl/client';
 import { Button } from '@/components/shared/button';
 
 // ============================================================================
