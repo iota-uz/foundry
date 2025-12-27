@@ -21,23 +21,24 @@ The dispatch controller is the heart of a distributed, autonomous software facto
 
 ## Architecture
 
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  GitHub Issues  │────▶│   DAG Builder    │────▶│  Matrix Output  │
-│   (with deps)   │     │                  │     │                 │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-        │                       │                        │
-        │                       ▼                        │
-        │              ┌──────────────────┐              │
-        │              │  Cycle Detection │              │
-        │              │    (Tarjan's)    │              │
-        │              └──────────────────┘              │
-        │                       │                        │
-        ▼                       ▼                        ▼
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Dependency    │     │ Status Resolution│     │  GitHub Actions │
-│     Parser      │     │ READY/BLOCKED    │     │    Workflow     │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
+```mermaid
+flowchart TB
+    GI["GitHub Issues<br/>(with deps)"]
+    DB["DAG Builder"]
+    MO["Matrix Output"]
+
+    DP["Dependency<br/>Parser"]
+    CD["Cycle Detection<br/>(Tarjan's)"]
+    SR["Status Resolution<br/>READY/BLOCKED"]
+    GA["GitHub Actions<br/>Workflow"]
+
+    GI --> DB
+    GI --> DP
+    DB --> CD
+    DB --> MO
+    DB --> SR
+    CD --> SR
+    MO --> GA
 ```
 
 ## Installation

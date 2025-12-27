@@ -33,36 +33,25 @@ The visual builder consists of several key components:
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│                  Workflow Editor                     │
-│ ┌──────────┐  ┌───────────────────┐  ┌───────────┐ │
-│ │  Node    │  │   React Flow      │  │  Config/  │ │
-│ │ Library  │  │   Canvas          │  │ Execution │ │
-│ │ Sidebar  │  │                   │  │  Panel    │ │
-│ └──────────┘  └───────────────────┘  └───────────┘ │
-└─────────────────────┬───────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│            Zustand Stores                            │
-│  ┌──────────────────┐  ┌──────────────────────────┐ │
-│  │ workflow-builder │  │ workflow-execution       │ │
-│  │ (nodes, edges)   │  │ (status, logs)           │ │
-│  └──────────────────┘  └──────────────────────────┘ │
-└─────────────────────┬───────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│              Schema Converter                        │
-│  React Flow → GraphEngine WorkflowConfig            │
-└─────────────────────┬───────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│              GraphEngine (FSM)                       │
-│  Executes workflow with checkpoint/resume           │
-└─────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph WE["Workflow Editor"]
+        NLS["Node<br/>Library<br/>Sidebar"]
+        RFC["React Flow<br/>Canvas"]
+        CEP["Config/<br/>Execution<br/>Panel"]
+    end
+
+    subgraph ZS["Zustand Stores"]
+        WB["workflow-builder<br/>(nodes, edges)"]
+        WEX["workflow-execution<br/>(status, logs)"]
+    end
+
+    SC["Schema Converter<br/>React Flow → GraphEngine WorkflowConfig"]
+    GE["GraphEngine (FSM)<br/>Executes workflow with checkpoint/resume"]
+
+    WE --> ZS
+    ZS --> SC
+    SC --> GE
 ```
 
 ## Quick Start
@@ -103,6 +92,34 @@ The builder supports all Graph Engine node types:
 | Dynamic Agent | 🔄 | Runtime AI configuration | ✅ |
 | Dynamic Command | 🔧 | Runtime command configuration | ❌ |
 | GitHub Project | 📊 | Project status updates | ❌ |
+| Git Checkout | 📦 | Clone GitHub repository | ❌ |
+
+## New Features
+
+### MCP Servers
+
+Agent nodes can connect to Model Context Protocol servers for extended capabilities. See [MCP Servers](mcp-servers) for configuration.
+
+**Presets available:**
+- Playwright (browser automation)
+- Figma (design integration)
+- Sequential Thinking (reasoning)
+
+### Docker Execution
+
+Workflows can run in isolated Docker containers for improved security and reproducibility. See [Docker Execution](docker-execution) for setup.
+
+### Encrypted Environment Variables
+
+Store sensitive configuration securely:
+
+1. Open workflow settings
+2. Navigate to "Environment Variables"
+3. Add key-value pairs
+4. Values are encrypted with AES-256-GCM
+5. Secrets are injected at runtime
+
+Secrets are never exposed in API responses or logs.
 
 ## State Management
 
@@ -264,6 +281,7 @@ CREATE TABLE workflows (
   nodes JSONB NOT NULL,           -- React Flow nodes
   edges JSONB NOT NULL,           -- React Flow edges
   initial_context JSONB,
+  docker_image TEXT,              -- Custom Docker image for execution
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -278,8 +296,22 @@ CREATE TABLE workflow_executions (
   node_states JSONB DEFAULT '{}',
   conversation_history JSONB DEFAULT '[]',
   last_error TEXT,
+  railway_service_id TEXT,        -- Container orchestration
+  railway_deployment_id TEXT,     -- Deployment tracking
+  retry_count INTEGER DEFAULT 0,  -- Retry attempts
   started_at TIMESTAMP DEFAULT NOW(),
   completed_at TIMESTAMP,
   updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Workflow secrets table (encrypted environment variables)
+CREATE TABLE workflow_secrets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workflow_id UUID REFERENCES workflows(id) ON DELETE CASCADE NOT NULL,
+  key TEXT NOT NULL,              -- Variable name (uppercase)
+  encrypted_value TEXT NOT NULL,  -- AES-256-GCM encrypted
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(workflow_id, key)
 );
 ```

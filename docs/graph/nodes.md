@@ -758,3 +758,191 @@ defineWorkflow<{ issueNumber: number }>({
   ],
 });
 ```
+
+---
+
+## GitCheckoutNode
+
+Clones a GitHub repository for workflow execution. Credentials are resolved from the automation context.
+
+### Configuration
+
+```typescript
+import { GitCheckoutNodeRuntime } from '@sys/graph/nodes';
+
+new GitCheckoutNodeRuntime({
+  useIssueContext: true,          // Resolve repo from issue (default: true)
+  owner: 'my-org',                // Manual owner override
+  repo: 'my-repo',                // Manual repo override
+  ref: 'main',                    // Branch/tag/SHA (default: 'main')
+  depth: 1,                       // Clone depth (default: 1, shallow)
+  skipIfExists: true,             // Skip if directory exists (default: true)
+  baseDir: '/workspace',          // Base directory for checkouts
+  resultKey: 'checkout',          // Context key for result (default: 'checkout')
+  then: () => 'BUILD',            // Transition function
+});
+```
+
+### Features
+
+- Automatic credential resolution from issue metadata
+- Shallow and full clone support
+- Sets `workDir` in context for subsequent nodes
+- Handles existing directories gracefully
+
+### Result Storage
+
+Stores result in `state.context.checkout` (or custom `resultKey`):
+
+```typescript
+interface GitCheckoutResult {
+  workDir: string;    // Cloned directory path
+  owner: string;      // Repository owner
+  repo: string;       // Repository name
+  ref: string;        // Git ref that was checked out
+  sha: string;        // Commit SHA
+}
+```
+
+### Example
+
+```typescript
+// From issue context (most common)
+new GitCheckoutNodeRuntime({
+  useIssueContext: true,
+  ref: 'main',
+  then: () => 'IMPLEMENT',
+});
+
+// Manual override
+new GitCheckoutNodeRuntime({
+  useIssueContext: false,
+  owner: 'myorg',
+  repo: 'myrepo',
+  ref: 'feature-branch',
+  then: () => 'BUILD',
+});
+```
+
+---
+
+## Dispatch Nodes
+
+Specialized nodes for GitHub issue DAG workflows. These power the dispatch system for managing issue queues.
+
+### FetchIssuesNode
+
+Fetches issues from GitHub by label or project.
+
+```typescript
+import { createFetchIssuesNode } from '@sys/graph/nodes';
+
+createFetchIssuesNode({
+  source: 'label',               // 'label' or 'project'
+  label: 'queue',                // Label to filter (for label source)
+  projectNumber: 14,             // Project number (for project source)
+  readyStatus: 'Ready',          // Status filter (for project source)
+  then: () => 'BUILD_DAG',
+});
+```
+
+**Result Storage:** `state.context.fetchedIssues`
+
+### BuildDagNode
+
+Builds a dependency DAG from fetched issues.
+
+```typescript
+import { createBuildDagNode } from '@sys/graph/nodes';
+
+createBuildDagNode({
+  maxConcurrent: 5,              // Max issues to dispatch
+  then: () => 'SET_STATUS',
+});
+```
+
+**Features:**
+- Parses dependency syntax from issue bodies
+- Detects circular dependencies (Tarjan's algorithm)
+- Resolves READY/BLOCKED status
+- Priority sorting
+
+**Result Storage:** `state.context.dagResult`
+
+### SetStatusNode
+
+Batch updates issue status in GitHub Projects.
+
+```typescript
+import { createSetStatusNode } from '@sys/graph/nodes';
+
+createSetStatusNode({
+  projectNumber: 14,
+  status: 'In Progress',         // New status value
+  statusField: 'Status',         // Project field name
+  then: () => 'DISPATCH',
+});
+```
+
+**Result Storage:** `state.context.statusUpdateResult`
+
+---
+
+## Multi-Provider LLM Support
+
+The LLMNode supports multiple AI providers beyond Anthropic.
+
+### LLMProvider Enum
+
+```typescript
+import { LLMProvider } from '@sys/graph';
+
+LLMProvider.Anthropic  // Claude models
+LLMProvider.OpenAI     // GPT models
+LLMProvider.Gemini     // Google Gemini models
+```
+
+### Supported Models
+
+| Provider | Models |
+|----------|--------|
+| **Anthropic** | `claude-opus-4-5`, `claude-sonnet-4-5`, `claude-haiku-4-5` |
+| **OpenAI** | `gpt-5.2`, `gpt-5-pro`, `gpt-5-mini`, `gpt-5-nano` |
+| **Gemini** | `gemini-3-pro`, `gemini-3-flash-preview` |
+
+### Model Metadata
+
+Each model includes metadata about its capabilities:
+
+```typescript
+interface LLMModelMetadata {
+  id: LLMModelId;
+  provider: LLMProvider;
+  displayName: string;
+  supportsReasoning: boolean;    // Extended thinking
+  supportsWebSearch: boolean;    // Web search tool
+  maxOutputTokens: number;
+}
+```
+
+### Example: Multi-Provider Workflow
+
+```typescript
+import { LLMNodeRuntime } from '@sys/graph/nodes';
+
+// Use OpenAI for code generation
+new LLMNodeRuntime({
+  model: 'gpt-5-pro',
+  system: 'You are a code generator.',
+  prompt: (state) => `Generate code for: ${state.context.task}`,
+  then: () => 'REVIEW',
+});
+
+// Use Claude for review
+new LLMNodeRuntime({
+  model: 'claude-sonnet-4-5',
+  system: 'You are a code reviewer.',
+  prompt: (state) => `Review this code: ${state.context.code}`,
+  then: () => 'COMMIT',
+});
+```

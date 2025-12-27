@@ -42,10 +42,19 @@ Pre-built nodes for common operations:
 - **LLM** - Direct Claude API calls with structured output
 - **Eval** - JavaScript context transformation
 - **GitHub Project** - GitHub Projects V2 status updates
+- **Git Checkout** - Clone GitHub repositories for workflow execution
 
 ### 🔗 GitHub Integration
 
 Dispatch workflows via GitHub Actions, update GitHub Projects, and automate your development pipeline.
+
+### 🔌 MCP Server Support
+
+Connect Agent nodes to Model Context Protocol servers for extended capabilities. Pre-built presets for Playwright (browser automation), Figma (design integration), and Sequential Thinking (reasoning).
+
+### 🐳 Docker Execution
+
+Execute workflows in isolated Docker containers via Railway for improved security, reproducibility, and scalability. Configure custom images per workflow with encrypted environment variables.
 
 ---
 
@@ -93,30 +102,24 @@ bun dev
 
 ## Architecture Overview
 
-```
-┌─────────────────────────────────────┐
-│     Visual Workflow Builder         │
-│  ┌──────────────┐  ┌─────────────┐ │
-│  │ React Flow   │  │ Node Config │ │
-│  │ Canvas       │  │ Panel       │ │
-│  └──────────────┘  └─────────────┘ │
-└────────────────┬────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────┐
-│        Graph Engine (FSM)           │
-│  ┌──────────────┐  ┌─────────────┐ │
-│  │ State        │  │ Node        │ │
-│  │ Manager      │  │ Executors   │ │
-│  └──────────────┘  └─────────────┘ │
-└────────────────┬────────────────────┘
-                 │
-        ┌────────┴────────┐
-        ▼                 ▼
-┌───────────────┐  ┌───────────────┐
-│  PostgreSQL   │  │  Claude API   │
-│  (Drizzle)    │  │  (Agent SDK)  │
-└───────────────┘  └───────────────┘
+```mermaid
+flowchart TB
+    subgraph VWB["Visual Workflow Builder"]
+        RFC["React Flow<br/>Canvas"]
+        NCP["Node Config<br/>Panel"]
+    end
+
+    subgraph GE["Graph Engine (FSM)"]
+        SM["State<br/>Manager"]
+        NE["Node<br/>Executors"]
+    end
+
+    PG["PostgreSQL<br/>(Drizzle)"]
+    CA["Claude API<br/>(Agent SDK)"]
+
+    VWB --> GE
+    GE --> PG
+    GE --> CA
 ```
 
 ---
@@ -147,6 +150,12 @@ bun dev
 - [Primitives](./graph/primitives) - Low-level building blocks
 - [State Management](./graph/state) - Checkpoint and resume
 - [Transitions](./graph/transitions) - Routing between nodes
+
+### Visual Builder
+
+- [Workflow Builder](./workflow-builder/) - Visual workflow construction
+- [MCP Servers](./workflow-builder/mcp-servers) - Model Context Protocol integration
+- [Docker Execution](./workflow-builder/docker-execution) - Container-based execution
 
 ### Integration
 
@@ -192,6 +201,7 @@ Define multi-step feature implementation workflows: plan → implement → test 
 | LLM | Direct Claude API calls | ✅ |
 | Eval | JavaScript transformation | ❌ |
 | GitHubProject | Project status updates | ❌ |
+| GitCheckout | Clone GitHub repository | ❌ |
 | DynamicAgent | Runtime AI configuration | ✅ |
 | DynamicCommand | Runtime command configuration | ❌ |
 

@@ -12,33 +12,34 @@ The Graph Engine is a finite state machine (FSM) executor designed for AI workfl
 
 ## System Overview
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     defineWorkflow() DSL                         │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       Graph Engine                               │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
-│  │ State       │    │ Node        │    │ Transition  │         │
-│  │ Manager     │◀──▶│ Executor    │◀──▶│ Resolver    │         │
-│  └─────────────┘    └─────────────┘    └─────────────┘         │
-│         │                  │                                     │
-│         ▼                  ▼                                     │
-│  ┌─────────────┐    ┌─────────────────────────────────┐         │
-│  │ Persistence │    │         Node Types              │         │
-│  │ (.json)     │    │  ┌────────┐ ┌────────┐ ┌──────┐│         │
-│  └─────────────┘    │  │ Agent  │ │Command │ │Slash ││         │
-│                     │  │  Node  │ │  Node  │ │ Cmd  ││         │
-│                     │  └────────┘ └────────┘ └──────┘│         │
-│                     └─────────────────────────────────┘         │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Claude Agent SDK                              │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    DSL["defineWorkflow() DSL"]
+
+    subgraph GE["Graph Engine"]
+        SM["State<br/>Manager"]
+        NE["Node<br/>Executor"]
+        TR["Transition<br/>Resolver"]
+
+        SM <--> NE
+        NE <--> TR
+
+        PS["Persistence<br/>(.json)"]
+
+        subgraph NT["Node Types"]
+            AN["Agent<br/>Node"]
+            CN["Command<br/>Node"]
+            SC["Slash<br/>Cmd"]
+        end
+
+        SM --> PS
+        NE --> NT
+    end
+
+    SDK["Claude Agent SDK"]
+
+    DSL --> GE
+    GE --> SDK
 ```
 
 ## Core Components
@@ -81,31 +82,16 @@ Enables checkpoint/resume:
 
 ## Execution Flow
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   START     │────▶│  EXECUTE    │────▶│  PERSIST    │
-│ Load State  │     │    Node     │     │   State     │
-└─────────────┘     └─────────────┘     └─────────────┘
-                           │                    │
-                           │                    ▼
-                           │            ┌─────────────┐
-                           │            │  RESOLVE    │
-                           │            │ Transition  │
-                           │            └─────────────┘
-                           │                    │
-                           ▼                    ▼
-                    ┌─────────────┐     ┌─────────────┐
-                    │   ERROR     │     │   NEXT      │
-                    │  Handler    │     │   Node?     │
-                    └─────────────┘     └─────────────┘
-                                               │
-                                    ┌──────────┴──────────┐
-                                    │                     │
-                                    ▼                     ▼
-                             ┌─────────────┐       ┌─────────────┐
-                             │   LOOP      │       │    END      │
-                             │  (next node)│       │  Complete   │
-                             └─────────────┘       └─────────────┘
+```mermaid
+flowchart TB
+    START["START<br/>Load State"] --> EXECUTE["EXECUTE<br/>Node"]
+    EXECUTE --> PERSIST["PERSIST<br/>State"]
+    EXECUTE --> ERROR["ERROR<br/>Handler"]
+    PERSIST --> RESOLVE["RESOLVE<br/>Transition"]
+    RESOLVE --> NEXT["NEXT<br/>Node?"]
+    NEXT -->|Continue| LOOP["LOOP<br/>(next node)"]
+    NEXT -->|Done| END["END<br/>Complete"]
+    LOOP --> EXECUTE
 ```
 
 1. **Start**: Load existing state or initialize new workflow

@@ -37,45 +37,23 @@ enum WorkflowStatus {
 
 State flows through nodes as a single object:
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         WorkflowState                                │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │ context: {                                                   │    │
-│  │   // User-defined fields (persist across all nodes)         │    │
-│  │   plan: { tasks: [...] },                                   │    │
-│  │   allTasksDone: false,                                      │    │
-│  │                                                              │    │
-│  │   // Auto-populated by node types                           │    │
-│  │   lastCommandResult: { exitCode, stdout, stderr },          │    │
-│  │   lastSlashCommandResult: { success, output, error },       │    │
-│  │   lastProjectResult: { success, updatedFields, ... },       │    │
-│  │   lastEvalResult: { success, updatedKeys, duration },       │    │
-│  │   lastDynamicAgentResult: { response, usage, ... },         │    │
-│  │   lastDynamicCommandResult: { exitCode, command, ... },     │    │
-│  │   lastHttpResult: { status, data, ... },                    │    │
-│  │   lastLLMResult: { output, rawOutput, usage, ... },         │    │
-│  │ }                                                            │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
-                    │
-                    ▼
-    ┌───────────────────────────────────────┐
-    │           Node Execution               │
-    │                                        │
-    │  1. Receives current state             │
-    │  2. Performs work (AI/command)         │
-    │  3. Returns partial state update       │
-    │  4. Engine merges into state           │
-    └───────────────────────────────────────┘
-                    │
-                    ▼
-    ┌───────────────────────────────────────┐
-    │         Transition (then)              │
-    │                                        │
-    │  Receives updated state, returns       │
-    │  next node name or 'END'               │
-    └───────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph WS["WorkflowState"]
+        subgraph CTX["context: { }"]
+            direction TB
+            UDF["User-defined fields:<br/>plan: { tasks: [...] },<br/>allTasksDone: false"]
+            AUTO["Auto-populated by node types:<br/>lastCommandResult: { exitCode, stdout, stderr },<br/>lastSlashCommandResult: { success, output, error },<br/>lastProjectResult: { success, updatedFields, ... },<br/>lastEvalResult: { success, updatedKeys, duration },<br/>lastDynamicAgentResult: { response, usage, ... },<br/>lastDynamicCommandResult: { exitCode, command, ... },<br/>lastHttpResult: { status, data, ... },<br/>lastLLMResult: { output, rawOutput, usage, ... }"]
+            UDF ~~~ AUTO
+        end
+    end
+
+    NE["Node Execution<br/><br/>1. Receives current state<br/>2. Performs work (AI/command)<br/>3. Returns partial state update<br/>4. Engine merges into state"]
+
+    TR["Transition (then)<br/><br/>Receives updated state, returns<br/>next node name or 'END'"]
+
+    WS --> NE
+    NE --> TR
 ```
 
 ## Reading State
@@ -115,6 +93,10 @@ Each node type automatically stores its result:
 | `DynamicCommandNode` | `lastDynamicCommandResult` | `exitCode`, `stdout`, `stderr`, `success`, `command`, `duration` |
 | `HttpNode` | `lastHttpResult` | `success`, `status`, `statusText`, `headers`, `data`, `duration` |
 | `LLMNode` | `lastLLMResult` | `success`, `output`, `rawOutput`, `model`, `usage`, `duration` |
+| `GitCheckoutNode` | `checkout` | `workDir`, `owner`, `repo`, `ref`, `sha` |
+| `FetchIssuesNode` | `fetchedIssues` | Array of fetched GitHub issues |
+| `BuildDagNode` | `dagResult` | `readyIssues`, `blockedIssues`, `matrix` |
+| `SetStatusNode` | `statusUpdateResult` | `success`, `updatedIssues`, `errors` |
 
 ### Via Custom Tools
 

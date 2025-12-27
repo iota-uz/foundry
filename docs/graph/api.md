@@ -164,6 +164,7 @@ NodeType.DynamicAgent   // 'dynamic-agent'
 NodeType.DynamicCommand // 'dynamic-command'
 NodeType.Http           // 'http'
 NodeType.Llm            // 'llm'
+NodeType.GitCheckout    // 'git-checkout'
 ```
 
 ### StdlibTool
@@ -212,6 +213,20 @@ AgentModel.Haiku   // Fast, cost-effective
 AgentModel.Sonnet  // Balanced (default)
 AgentModel.Opus    // Most capable
 ```
+
+### LLMProvider
+
+Provider selection for multi-provider LLM nodes:
+
+```typescript
+import { LLMProvider } from '@sys/graph';
+
+LLMProvider.Anthropic  // Claude models (claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5)
+LLMProvider.OpenAI     // GPT models (gpt-5.2, gpt-5-pro, gpt-5-mini, gpt-5-nano)
+LLMProvider.Gemini     // Gemini models (gemini-3-pro, gemini-3-flash-preview)
+```
+
+See [Multi-Provider LLM Support](nodes#multi-provider-llm-support) for available models and metadata.
 
 ### WorkflowStatus
 
