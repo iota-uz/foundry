@@ -57,6 +57,16 @@ function extractActionError(result: {
 // ============================================================================
 
 /**
+ * Structured transition definition for DSL round-tripping.
+ * Supports simple, conditional, switch patterns, and function escape hatch.
+ */
+export type TransitionDef =
+  | { type: 'simple'; target: string }
+  | { type: 'conditional'; condition: string; thenTarget: string; elseTarget: string }
+  | { type: 'switch'; expression: string; cases: Record<string, string>; defaultTarget: string }
+  | { type: 'function'; source: string };
+
+/**
  * Port connection mapping for typed data flow
  */
 export interface PortConnections {
@@ -82,6 +92,13 @@ export interface WorkflowNodeData extends Record<string, unknown> {
   /** Port connection mappings for typed data flow */
   portConnections?: PortConnections;
 
+  /**
+   * Structured transition definition.
+   * When set, used for DSL generation instead of edges.
+   * Enables conditional/switch transitions.
+   */
+  transition?: TransitionDef;
+
   /** @deprecated Use portConnections instead */
   outputs?: string[];
 }
@@ -100,7 +117,8 @@ export type NodeConfig =
   | DynamicAgentNodeConfig
   | DynamicCommandNodeConfig
   | GitHubProjectNodeConfig
-  | GitCheckoutNodeConfig;
+  | GitCheckoutNodeConfig
+  | EndNodeConfig;
 
 /**
  * Trigger node configuration - workflow entry point
@@ -280,11 +298,21 @@ export interface GitCheckoutNodeConfig {
   skipIfExists?: boolean;
 }
 
+export interface EndNodeConfig {
+  type: 'end';
+  /** Target status to transition to (optional - if empty, stay in current status) */
+  targetStatus?: string;
+  /** Display label for the End node */
+  label?: string;
+}
+
 /**
  * Workflow metadata
  */
 export interface WorkflowMetadata {
   id: string | null;
+  /** Project ID (required for all workflows) */
+  projectId: string;
   name: string;
   description: string;
   initialContext: Record<string, unknown>;
@@ -330,7 +358,7 @@ interface WorkflowBuilderState {
 
   // Persistence actions
   saveWorkflow: () => Promise<void>;
-  loadWorkflow: (id: string) => Promise<void>;
+  loadWorkflow: (id: string, projectId: string) => Promise<void>;
   newWorkflow: () => void;
 
   // Utilities
@@ -406,6 +434,10 @@ const defaultConfigs: Record<NodeType, () => NodeConfig> = {
     ref: 'main',
     depth: 1,
   }),
+  [NodeType.End]: () => ({
+    type: 'end',
+    label: 'End',
+  }),
 };
 
 /**
@@ -423,6 +455,7 @@ export const nodeTypeLabels: Record<NodeType, string> = {
   [NodeType.DynamicCommand]: 'Dynamic Command',
   [NodeType.GitHubProject]: 'GitHub Project',
   [NodeType.GitCheckout]: 'Git Checkout',
+  [NodeType.End]: 'End',
 };
 
 // ============================================================================
@@ -438,6 +471,7 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
       selectedNodeId: null,
       metadata: {
         id: null,
+        projectId: '',
         name: 'Untitled Workflow',
         description: '',
         initialContext: {},
@@ -557,9 +591,17 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
       // Persistence actions
       saveWorkflow: async () => {
         const { nodes, edges, metadata } = get();
+
+        // Validate projectId is set
+        if (!metadata.projectId) {
+          set({ error: 'Project ID is required to save workflow', isLoading: false });
+          return;
+        }
+
         set({ isLoading: true, error: null });
 
         const workflowData = {
+          projectId: metadata.projectId,
           name: metadata.name,
           description: metadata.description || undefined,
           nodes: nodes.map((n) => ({
@@ -602,17 +644,18 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
         }));
       },
 
-      loadWorkflow: async (id: string) => {
+      loadWorkflow: async (id: string, projectId: string) => {
         set({ isLoading: true, error: null });
 
         try {
-          const response = await fetch(`/api/workflows/${id}`);
+          const response = await fetch(`/api/projects/${projectId}/workflows/${id}`);
           if (!response.ok) {
             throw new Error('Failed to load workflow');
           }
 
           const workflow = await response.json() as {
             id: string;
+            projectId: string;
             name: string;
             description: string;
             nodes: Node<WorkflowNodeData>[];
@@ -628,6 +671,7 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
             edges: workflow.edges,
             metadata: {
               id: workflow.id,
+              projectId: workflow.projectId,
               name: workflow.name,
               description: workflow.description ?? '',
               initialContext: workflow.initialContext ?? {},
@@ -654,6 +698,7 @@ export const useWorkflowBuilderStore = create<WorkflowBuilderState>()(
           selectedNodeId: null,
           metadata: {
             id: null,
+            projectId: '',
             name: 'Untitled Workflow',
             description: '',
             initialContext: {},

@@ -26,6 +26,8 @@ import {
   PencilIcon,
   XMarkIcon,
   Cog6ToothIcon,
+  CodeBracketIcon,
+  ArrowDownOnSquareIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { useWorkflowBuilderStore, useWorkflowExecutionStore } from '@/store';
@@ -39,13 +41,18 @@ import { Button } from '@/components/shared/button';
 // ============================================================================
 
 interface WorkflowToolbarProps {
+  /** Project ID for navigation context */
+  projectId?: string;
   onExecutionClick?: () => void;
   onHistoryClick?: () => void;
   onSettingsClick?: () => void;
+  onCodeClick?: () => void;
+  onImportClick?: () => void;
   isExecuting?: boolean;
   executionActive?: boolean;
   historyActive?: boolean;
   settingsActive?: boolean;
+  codeActive?: boolean;
 }
 
 // ============================================================================
@@ -119,14 +126,20 @@ function Tooltip({
 // ============================================================================
 
 export function WorkflowToolbar({
+  projectId,
   onExecutionClick,
   onHistoryClick,
   onSettingsClick,
+  onCodeClick,
+  onImportClick,
   isExecuting: isExecutingProp,
   executionActive = false,
   historyActive = false,
   settingsActive = false,
+  codeActive = false,
 }: WorkflowToolbarProps) {
+  // Suppress unused variable warning for now - projectId can be used for back navigation if needed
+  void projectId;
   const {
     nodes,
     edges,
@@ -434,6 +447,62 @@ export function WorkflowToolbar({
           RIGHT: Toggles, Save, Error
           ================================================================ */}
       <div className="flex items-center gap-3">
+        {/* DSL Buttons - Code & Import */}
+        {(onCodeClick !== undefined || onImportClick !== undefined) && (
+          <div
+            className="
+              flex items-center
+              p-0.5 rounded-lg
+              bg-bg-primary/60 backdrop-blur-sm
+              border border-border-subtle
+            "
+          >
+            {onCodeClick !== undefined && (
+              <Tooltip content="View TypeScript DSL">
+                <button
+                  onClick={onCodeClick}
+                  className={`
+                    flex items-center gap-1.5 px-2.5 h-7 rounded-md
+                    text-xs font-medium
+                    transition-all duration-150
+                    cursor-pointer
+                    ${
+                      codeActive
+                        ? 'bg-bg-tertiary text-text-primary shadow-sm'
+                        : 'text-text-tertiary hover:text-text-secondary hover:bg-bg-hover/50'
+                    }
+                  `}
+                >
+                  <CodeBracketIcon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Code</span>
+                </button>
+              </Tooltip>
+            )}
+
+            {onCodeClick !== undefined && onImportClick !== undefined && (
+              <div className="w-px h-4 bg-border-subtle" />
+            )}
+
+            {onImportClick !== undefined && (
+              <Tooltip content="Import DSL">
+                <button
+                  onClick={onImportClick}
+                  className="
+                    flex items-center gap-1.5 px-2.5 h-7 rounded-md
+                    text-xs font-medium
+                    text-text-tertiary hover:text-text-secondary hover:bg-bg-hover/50
+                    transition-all duration-150
+                    cursor-pointer
+                  "
+                >
+                  <ArrowDownOnSquareIcon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Import</span>
+                </button>
+              </Tooltip>
+            )}
+          </div>
+        )}
+
         {/* Panel Toggle Buttons */}
         {(onExecutionClick !== undefined || onHistoryClick !== undefined || onSettingsClick !== undefined) && (
           <div

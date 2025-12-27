@@ -12,3 +12,5 @@ export { WorkflowEdge } from './edges/workflow-edge';
 export { DockerImageConfig } from './docker-image-config';
 export { EnvEditor } from './env-editor';
 export type { EnvEditorProps } from './env-editor';
+export { DSLDrawer } from './dsl-drawer';
+export { ImportModal } from './import-modal';

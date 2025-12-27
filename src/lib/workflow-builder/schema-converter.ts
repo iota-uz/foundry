@@ -19,6 +19,8 @@ import type {
   DynamicCommandNodeConfig,
   GitCheckoutNodeConfig,
   TriggerNodeConfig,
+  EndNodeConfig,
+  TransitionDef,
 } from '@/store/workflow-builder.store';
 import type { McpServerSelection } from '@/lib/graph/mcp-presets';
 import { NODE_PORT_SCHEMAS } from './port-registry';
@@ -48,6 +50,19 @@ export type PortData = Record<string, Record<string, unknown>>;
  * Structure: __portMappings[targetNodeId][inputPortId] = { sourceNodeId, sourcePortId }
  */
 export type PortMappings = Record<string, Record<string, PortMapping>>;
+
+/**
+ * End node mappings stored in context.
+ * Maps End node ID to its target status (or undefined for no status change).
+ */
+export type EndNodeMappings = Record<string, string | undefined>;
+
+/**
+ * End node targets stored in context.
+ * Maps source node ID to the End node ID it transitions to.
+ * Used to determine which End node was reached when workflow completes.
+ */
+export type EndNodeTargets = Record<string, string>;
 import {
   NodeType,
   SpecialNode,
@@ -164,16 +179,136 @@ function initializePortData(
 
 /**
  * Get the target node for a given source node
- * Returns SpecialNode.End if no outgoing edges
+ * Returns SpecialNode.End if no outgoing edges or if target is an End node
  */
-function getNextNode(nodeId: string, adjacency: Map<string, string[]>): string {
+function getNextNode(
+  nodeId: string,
+  adjacency: Map<string, string[]>,
+  endNodeIds: Set<string>
+): string {
   const targets = adjacency.get(nodeId);
   if (!targets || targets.length === 0) {
     return SpecialNode.End;
   }
   // For now, just use the first target (single output)
   // TODO: Support conditional routing via edge labels
-  return targets[0]!;
+  const target = targets[0]!;
+
+  // If the target is an End node, return SpecialNode.End instead
+  // The End node itself doesn't execute - it's a visual marker
+  if (endNodeIds.has(target)) {
+    return SpecialNode.End;
+  }
+
+  return target;
+}
+
+/**
+ * Build a transition function from a TransitionDef or fallback to adjacency-based transition.
+ * Handles all transition types: simple, conditional, switch, and function.
+ */
+function buildTransitionFn<TNames extends string>(
+  transition: TransitionDef | undefined,
+  nodeId: string,
+  adjacency: Map<string, string[]>,
+  endNodeIds: Set<string>
+): (state: { context: Record<string, unknown> }) => TNames {
+  // If no transition is defined, use adjacency-based transition
+  if (transition === undefined) {
+    const nextNodeId = getNextNode(nodeId, adjacency, endNodeIds);
+    return () => nextNodeId as TNames;
+  }
+
+  switch (transition.type) {
+    case 'simple': {
+      // Simple transition - always go to target
+      const target = endNodeIds.has(transition.target)
+        ? SpecialNode.End
+        : transition.target;
+      return () => target as TNames;
+    }
+
+    case 'conditional': {
+      // Conditional transition - evaluate condition against context
+      const thenTarget = endNodeIds.has(transition.thenTarget)
+        ? SpecialNode.End
+        : transition.thenTarget;
+      const elseTarget = endNodeIds.has(transition.elseTarget)
+        ? SpecialNode.End
+        : transition.elseTarget;
+
+      return (state) => {
+        // Parse the condition as a context property path
+        // e.g., "context.testsPassed" -> state.context.testsPassed
+        const conditionPath = transition.condition.replace(/^context\./, '');
+        const value = getNestedValue(state.context, conditionPath);
+        return (value ? thenTarget : elseTarget) as TNames;
+      };
+    }
+
+    case 'switch': {
+      // Switch transition - match expression against cases
+      return (state) => {
+        const exprPath = transition.expression.replace(/^context\./, '');
+        const value = String(getNestedValue(state.context, exprPath));
+        const caseTarget = transition.cases[value];
+
+        if (caseTarget !== undefined) {
+          return (endNodeIds.has(caseTarget) ? SpecialNode.End : caseTarget) as TNames;
+        }
+
+        const defaultTarget = endNodeIds.has(transition.defaultTarget)
+          ? SpecialNode.End
+          : transition.defaultTarget;
+        return defaultTarget as TNames;
+      };
+    }
+
+    case 'function': {
+      // Function transition - evaluate the function source
+      // WARNING: This uses eval which can be a security risk.
+      // Only use with trusted DSL sources.
+      try {
+        // eslint-disable-next-line no-new-func
+        const fn = new Function('state', `return (${transition.source})(state);`);
+        return (state) => {
+          const result = fn(state);
+          return (typeof result === 'string' && endNodeIds.has(result)
+            ? SpecialNode.End
+            : result) as TNames;
+        };
+      } catch {
+        // If function parsing fails, fall back to END
+        console.warn(`Failed to parse transition function for node ${nodeId}`);
+        return () => SpecialNode.End as TNames;
+      }
+    }
+
+    default:
+      // Unknown transition type, fall back to adjacency
+      return () => getNextNode(nodeId, adjacency, endNodeIds) as TNames;
+  }
+}
+
+/**
+ * Get a nested value from an object using dot notation path.
+ */
+function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+  const parts = path.split('.');
+  let current: unknown = obj;
+
+  for (const part of parts) {
+    if (current === null || current === undefined) {
+      return undefined;
+    }
+    if (typeof current === 'object') {
+      current = (current as Record<string, unknown>)[part];
+    } else {
+      return undefined;
+    }
+  }
+
+  return current;
 }
 
 /**
@@ -182,13 +317,18 @@ function getNextNode(nodeId: string, adjacency: Map<string, string[]>): string {
 function convertNode<TNames extends string>(
   node: Node<WorkflowNodeData>,
   adjacency: Map<string, string[]>,
-  schema: NodeSchema<TNames, Record<string, unknown>>
+  schema: NodeSchema<TNames, Record<string, unknown>>,
+  endNodeIds: Set<string>
 ): NodeDef<TNames, Record<string, unknown>> | null {
   const { data } = node;
-  const nextNodeId = getNextNode(node.id, adjacency);
 
-  // Create transition function that returns the next node
-  const transitionFn = () => nextNodeId as TNames;
+  // Build transition function from TransitionDef or adjacency
+  const transitionFn = buildTransitionFn<TNames>(
+    data.transition,
+    node.id,
+    adjacency,
+    endNodeIds
+  );
 
   switch (data.nodeType) {
     case NodeType.Trigger: {
@@ -348,6 +488,13 @@ function convertNode<TNames extends string>(
       } as unknown as NodeDef<TNames, Record<string, unknown>>;
     }
 
+    case NodeType.End: {
+      // End nodes are virtual terminal points, not actual executable nodes.
+      // They are handled by the adjacency map pointing to SpecialNode.End.
+      // The End node's targetStatus is captured in __endNodeMappings context.
+      return null;
+    }
+
     default:
       return null;
   }
@@ -370,11 +517,14 @@ export function toWorkflowConfig(
     };
   }
 
-  // Separate trigger node from executable nodes
+  // Separate trigger node, end nodes, and executable nodes
   const triggerNode = nodes.find((n) => n.data.nodeType === NodeType.Trigger);
-  const executableNodes = nodes.filter((n) => n.data.nodeType !== NodeType.Trigger);
+  const endNodes = nodes.filter((n) => n.data.nodeType === NodeType.End);
+  const executableNodes = nodes.filter(
+    (n) => n.data.nodeType !== NodeType.Trigger && n.data.nodeType !== NodeType.End
+  );
 
-  // Must have at least one executable node
+  // Must have at least one executable node (End nodes don't count as they don't execute)
   if (executableNodes.length === 0) {
     return {
       success: false,
@@ -382,7 +532,26 @@ export function toWorkflowConfig(
     };
   }
 
-  // Get all node IDs for schema (excluding trigger)
+  // Build set of End node IDs for quick lookup
+  const endNodeIds = new Set(endNodes.map((n) => n.id));
+
+  // Build End node mappings: End node ID -> targetStatus
+  const endNodeMappings: EndNodeMappings = {};
+  for (const endNode of endNodes) {
+    const config = endNode.data.config as EndNodeConfig;
+    endNodeMappings[endNode.id] = config.targetStatus;
+  }
+
+  // Build End node targets: source node ID -> End node ID
+  // This tells us which End node was reached when a workflow completes
+  const endNodeTargets: EndNodeTargets = {};
+  for (const edge of edges) {
+    if (endNodeIds.has(edge.target)) {
+      endNodeTargets[edge.source] = edge.target;
+    }
+  }
+
+  // Get all node IDs for schema (excluding trigger and end nodes)
   const nodeNames = executableNodes.map((n) => n.id) as readonly string[];
 
   // Create schema with all node names
@@ -398,11 +567,11 @@ export function toWorkflowConfig(
   const baseContext = metadata.initialContext ?? {};
   const portData = initializePortData(nodes, baseContext);
 
-  // Convert all executable nodes
+  // Convert all executable nodes (End nodes return null and are skipped)
   const nodeDefs: NodeDef<string, Record<string, unknown>>[] = [];
 
   for (const node of executableNodes) {
-    const nodeDef = convertNode(node, adjacency, schema);
+    const nodeDef = convertNode(node, adjacency, schema, endNodeIds);
     if (nodeDef) {
       nodeDefs.push(nodeDef);
     } else {
@@ -417,11 +586,15 @@ export function toWorkflowConfig(
     return { success: false, errors };
   }
 
-  // Build initial context with port data and mappings
+  // Build initial context with port data, mappings, and end node info
   const initialContext: Record<string, unknown> = {
     ...baseContext,
     __portData: portData,
     __portMappings: portMappings,
+    // End node mappings: End node ID -> targetStatus
+    __endNodeMappings: endNodeMappings,
+    // End node targets: source node ID -> End node ID (to know which End node was reached)
+    __endNodeTargets: endNodeTargets,
     // Include trigger node ID if present for reference
     ...(triggerNode && { __triggerNodeId: triggerNode.id }),
   };
