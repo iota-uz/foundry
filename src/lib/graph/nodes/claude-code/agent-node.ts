@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import type { Options, SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { Options, SDKResultMessage, McpServerConfig as SdkMcpServerConfig } from '@anthropic-ai/claude-agent-sdk';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 
 import {
@@ -24,6 +24,8 @@ import type {
   ToolReference,
   InlineTool,
 } from '../../types';
+import type { McpServerSelection } from '../../mcp-presets';
+import { resolvePresetConfig } from '../../mcp-presets';
 
 /**
  * Configuration for AgentNode.
@@ -53,6 +55,12 @@ export interface AgentNodeConfig<TContext extends Record<string, unknown>>
    * Default: uses the SDK default
    */
   model?: string;
+
+  /**
+   * MCP (Model Context Protocol) servers to enable.
+   * Provides additional tools and capabilities via external servers.
+   */
+  mcpServers?: McpServerSelection[];
 }
 
 /**
@@ -101,7 +109,7 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
     state: WorkflowState<TContext>,
     context: GraphContext
   ): Promise<NodeExecutionResult<TContext>> {
-    const { role, system, tools = [], maxTurns = 10, model } = this.config;
+    const { role, system, tools = [], maxTurns = 10, model, mcpServers = [] } = this.config;
 
     context.logger.info(`[AgentNode] Running agent with role: ${role}`);
 
@@ -118,6 +126,7 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
         tools: preparedTools,
         maxTurns,
         model,
+        mcpServers,
         context,
       });
 
@@ -204,6 +213,33 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
   }
 
   /**
+   * Builds MCP servers configuration for the SDK.
+   * Converts our McpServerSelection format to SDK's Record<string, McpServerConfig> format.
+   */
+  private buildMcpServersConfig(
+    selections: McpServerSelection[]
+  ): Record<string, SdkMcpServerConfig> {
+    const mcpServers: Record<string, SdkMcpServerConfig> = {};
+
+    selections.forEach((selection, i) => {
+      const { config, serverName } = selection.type === 'preset'
+        ? {
+            config: resolvePresetConfig(selection.presetId, selection.env) as SdkMcpServerConfig,
+            serverName: selection.presetId,
+          }
+        : {
+            config: selection.config as SdkMcpServerConfig,
+            serverName: selection.name,
+          };
+
+      const key = mcpServers[serverName] ? `${serverName}-${i}` : serverName;
+      mcpServers[key] = config;
+    });
+
+    return mcpServers;
+  }
+
+  /**
    * Runs the agent query using the Claude Agent SDK.
    */
   private async runAgentQuery(
@@ -212,10 +248,11 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
       tools: PreparedTool[];
       maxTurns: number;
       model?: string | undefined;
+      mcpServers: McpServerSelection[];
       context: GraphContext;
     }
   ): Promise<{ response: string; toolsUsed: string[] }> {
-    const { tools, maxTurns, model } = options;
+    const { tools, maxTurns, model, mcpServers } = options;
 
     // Build SDK options
     const sdkOptions: Options = {
@@ -230,9 +267,22 @@ export class AgentNodeRuntime<TContext extends Record<string, unknown>>
     // Filter out stdlib tools (those are handled by the SDK's built-in tools)
     const stdlibToolNames = tools.filter((t) => t.isStdlib).map((t) => t.name);
 
-    // If we have stdlib tools, add them to allowed tools
-    if (stdlibToolNames.length > 0) {
-      sdkOptions.allowedTools = stdlibToolNames;
+    // Build allowed tools list
+    const allowedTools: string[] = [...stdlibToolNames];
+
+    // Configure MCP servers if provided
+    if (mcpServers.length > 0) {
+      const mcpServersConfig = this.buildMcpServersConfig(mcpServers);
+      sdkOptions.mcpServers = mcpServersConfig;
+
+      // Add wildcard pattern to allow all MCP tools
+      // The SDK will handle tool routing to the appropriate MCP server
+      allowedTools.push('*');
+    }
+
+    // Set allowed tools if we have any
+    if (allowedTools.length > 0) {
+      sdkOptions.allowedTools = allowedTools;
     }
 
     // Execute the query

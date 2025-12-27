@@ -277,3 +277,25 @@ export * as primitives from './nodes/primitives';
 
 // Re-export FieldUpdate type for GitHubProjectNode
 export type { FieldUpdate } from '../github-projects';
+
+// ============================================================================
+// MCP Server Support
+// ============================================================================
+
+export {
+  McpPresetId,
+  MCP_PRESETS,
+  getMcpPreset,
+  resolvePresetConfig,
+} from './mcp-presets';
+
+export type {
+  McpServerConfig,
+  McpStdioConfig,
+  McpHttpConfig,
+  McpSseConfig,
+  McpPresetDefinition,
+  McpServerSelection,
+  PresetMcpServer,
+  CustomMcpServer,
+} from './mcp-presets';

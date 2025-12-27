@@ -18,6 +18,7 @@ import type {
   DynamicAgentNodeConfig,
   DynamicCommandNodeConfig,
 } from '@/store/workflow-builder.store';
+import type { McpServerSelection } from '@/lib/graph/mcp-presets';
 import {
   NodeType,
   SpecialNode,
@@ -110,6 +111,7 @@ function convertNode<TNames extends string>(
         model: config.model,
         ...(config.maxTurns !== undefined && { maxTurns: config.maxTurns }),
         ...(config.temperature !== undefined && { temperature: config.temperature }),
+        ...(config.mcpServers !== undefined && { mcpServers: config.mcpServers }),
         then: transitionFn,
       });
     }
@@ -364,6 +366,7 @@ function nodeDefToReactFlow(
         model: (def.model as AgentModel) ?? AgentModel.Sonnet,
         ...(def.maxTurns !== undefined && { maxTurns: def.maxTurns as number }),
         ...(def.temperature !== undefined && { temperature: def.temperature as number }),
+        mcpServers: (def.mcpServers as McpServerSelection[]) ?? [],
       };
       break;
 

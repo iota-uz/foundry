@@ -34,6 +34,7 @@ import { getNodeColor } from '@/lib/design-system';
 import type { NodeConfig } from '@/store/workflow-builder.store';
 import { Modal, ModalBody, ModalFooter } from '@/components/shared/modal';
 import { Button } from '@/components/shared/button';
+import { McpServerSelector } from './mcp-server-selector';
 
 // ============================================================================
 // Main Component
@@ -278,6 +279,21 @@ function AgentConfigForm({
           onChange={(v) => onChange({ capabilities: v })}
           accentColor={nodeColor}
         />
+      </FieldGroup>
+
+      {/* MCP Servers */}
+      <FieldGroup>
+        <FieldLabel {...(config.mcpServers?.length && { hint: `${config.mcpServers.length} active` })}>
+          MCP Servers
+        </FieldLabel>
+        <McpServerSelector
+          selected={config.mcpServers ?? []}
+          onChange={(v) => onChange({ mcpServers: v })}
+          accentColor={nodeColor}
+        />
+        <p className="text-[10px] text-text-muted mt-1.5">
+          Model Context Protocol servers provide additional tools and capabilities
+        </p>
       </FieldGroup>
 
       {/* Advanced Section */}
