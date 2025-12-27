@@ -231,7 +231,7 @@ export class GitService implements IGitService {
     try {
       const remotes = await this.git.getRemotes();
       return remotes.length > 0;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

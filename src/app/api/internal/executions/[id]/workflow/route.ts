@@ -2,12 +2,17 @@
  * Internal API: Workflow Download
  *
  * Returns workflow definition for container execution.
+ * Enriches context with issue info when triggered by automation.
  * GET /api/internal/executions/:id/workflow
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireValidToken } from '@/lib/railway/auth';
 import { getExecution, getWorkflow } from '@/lib/db/repositories/workflow.repository';
+import {
+  getByWorkflowExecutionId,
+  getIssueMetadata,
+} from '@/lib/db/repositories/issue-metadata.repository';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -39,13 +44,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Start with execution context
+    let enrichedContext: Record<string, unknown> = { ...(execution.context ?? {}) };
+
+    // Check if this execution was triggered by an issue automation
+    const issueExecution = await getByWorkflowExecutionId(id);
+    if (issueExecution) {
+      const issueMeta = await getIssueMetadata(issueExecution.issueMetadataId);
+      if (issueMeta) {
+        // Inject issue info for git-checkout and other nodes
+        enrichedContext = {
+          ...enrichedContext,
+          issueInfo: {
+            owner: issueMeta.owner,
+            repo: issueMeta.repo,
+            issueNumber: issueMeta.issueNumber,
+            projectId: issueMeta.projectId,
+          },
+        };
+      }
+    }
+
     // Return workflow data needed for execution
     return NextResponse.json({
       id: workflow.id,
       name: workflow.name,
       nodes: workflow.nodes,
       edges: workflow.edges,
-      initialContext: execution.context,
+      initialContext: enrichedContext,
     });
   } catch (error) {
     console.error('[internal:workflow] Error:', error);

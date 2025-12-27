@@ -119,7 +119,6 @@ function validateNodeConfig(
         }
         // Try to parse the code
         try {
-          // eslint-disable-next-line @typescript-eslint/no-implied-eval
           new Function('state', config.code);
         } catch (e) {
           errors.push({

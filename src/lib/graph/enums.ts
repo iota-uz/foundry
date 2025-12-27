@@ -36,6 +36,9 @@ export enum NodeType {
 
   /** Direct LLM call node (no agent loop) */
   Llm = 'llm',
+
+  /** Git checkout node - clones a repository */
+  GitCheckout = 'git-checkout',
 }
 
 /**
@@ -108,7 +111,7 @@ export enum StdlibTool {
   BashOutput = 'BashOutput',
 
   /** Kill a running background shell */
-  KillBash = 'KillBash',
+  KillShell = 'KillShell',
 
   // ============================================================================
   // Web & Network
@@ -132,6 +135,9 @@ export enum StdlibTool {
 
   /** Exit planning mode */
   ExitPlanMode = 'ExitPlanMode',
+
+  /** Ask user clarifying questions */
+  AskUserQuestion = 'AskUserQuestion',
 
   // ============================================================================
   // MCP Integration

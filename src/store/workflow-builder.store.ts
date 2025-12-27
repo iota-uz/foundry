@@ -85,7 +85,8 @@ export type NodeConfig =
   | LlmNodeConfig
   | DynamicAgentNodeConfig
   | DynamicCommandNodeConfig
-  | GitHubProjectNodeConfig;
+  | GitHubProjectNodeConfig
+  | GitCheckoutNodeConfig;
 
 export interface AgentNodeConfig {
   type: 'agent';
@@ -229,6 +230,22 @@ export interface GitHubProjectNodeConfig {
   resultKey?: string;
 }
 
+export interface GitCheckoutNodeConfig {
+  type: 'git-checkout';
+  /** Use repository info from issue context (issueMetadataId in context) */
+  useIssueContext: boolean;
+  /** Manual repository owner override */
+  owner?: string;
+  /** Manual repository name override */
+  repo?: string;
+  /** Git ref to checkout (branch, tag, or commit SHA) */
+  ref: string;
+  /** Clone depth (1 for shallow, 0 for full) */
+  depth: number;
+  /** Skip checkout if directory already exists */
+  skipIfExists?: boolean;
+}
+
 /**
  * Workflow metadata
  */
@@ -345,6 +362,12 @@ const defaultConfigs: Record<NodeType, () => NodeConfig> = {
     repo: '',
     updates: [],
   }),
+  [NodeType.GitCheckout]: () => ({
+    type: 'git-checkout',
+    useIssueContext: true,
+    ref: 'main',
+    depth: 1,
+  }),
 };
 
 /**
@@ -360,6 +383,7 @@ export const nodeTypeLabels: Record<NodeType, string> = {
   [NodeType.DynamicAgent]: 'Dynamic Agent',
   [NodeType.DynamicCommand]: 'Dynamic Command',
   [NodeType.GitHubProject]: 'GitHub Project',
+  [NodeType.GitCheckout]: 'Git Checkout',
 };
 
 // ============================================================================

@@ -23,7 +23,7 @@ interface Credentials {
 async function ensureFoundryHome(): Promise<void> {
   try {
     await fs.mkdir(FOUNDRY_HOME, { recursive: true, mode: 0o700 });
-  } catch (error) {
+  } catch {
     // Directory might already exist, that's fine
   }
 }

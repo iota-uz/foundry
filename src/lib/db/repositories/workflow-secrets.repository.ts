@@ -70,7 +70,7 @@ export async function upsert(
       throw new Error('Failed to update workflow secret');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
   const { encryptedValue: _encryptedValue, ...safeSecret } = updated;
     return safeSecret;
   }
@@ -89,7 +89,7 @@ export async function upsert(
     throw new Error('Failed to create workflow secret');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const { encryptedValue: _enc, ...safeSecret } = secret;
   return safeSecret;
 }

@@ -181,6 +181,22 @@ export {
 } from './set-done-status-node';
 
 // ============================================================================
+// Git Nodes
+// ============================================================================
+
+export {
+  GitCheckoutNodeRuntime,
+  type GitCheckoutNodeConfig,
+  type GitCheckoutResult,
+  resolveGitCredentials,
+  type GitCheckoutContext,
+  type ResolveCredentialsOptions,
+} from './git';
+
+// Re-export as module namespace
+export * as git from './git';
+
+// ============================================================================
 // Re-export types from parent module for convenience
 // ============================================================================
 

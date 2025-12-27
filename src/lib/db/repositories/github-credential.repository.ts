@@ -60,7 +60,7 @@ export async function create(
   }
 
   // Return without encrypted token
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const { encryptedToken: _encryptedToken, ...safeCredential } = credential;
   return safeCredential;
 }
@@ -91,7 +91,7 @@ export async function getWithDecryptedToken(
   }
 
   const token = await decrypt(credential.encryptedToken);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const { encryptedToken: _encryptedToken, ...rest } = credential;
 
   return {
@@ -111,7 +111,7 @@ export async function listByUser(userId: string): Promise<SafeGitHubCredential[]
     .where(eq(githubCredentials.userId, userId));
 
   // Remove encrypted tokens from results
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   return credentials.map(({ encryptedToken: _encryptedToken, ...rest }) => rest);
 }
 
@@ -133,7 +133,7 @@ export async function update(
     throw new Error('GitHub credential not found');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const { encryptedToken: _encryptedToken, ...safeCredential } = credential;
   return safeCredential;
 }
@@ -159,7 +159,7 @@ export async function updateToken(
     throw new Error('GitHub credential not found');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const { encryptedToken: _encryptedToken, ...safeCredential } = credential;
   return safeCredential;
 }

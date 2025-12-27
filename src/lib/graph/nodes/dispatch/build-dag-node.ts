@@ -221,7 +221,7 @@ export class BuildDagNodeRuntime<TContext extends Record<string, unknown>>
       await this.populateSubIssues(issues, context);
 
       // Resolve each issue
-      const resolvedIssues = await this.resolveIssues(issues, sourceType, context);
+      const resolvedIssues = await this.resolveIssues(issues);
 
       // Build the DAG
       const dagNodes = this.buildDagNodes(resolvedIssues);
@@ -429,9 +429,7 @@ export class BuildDagNodeRuntime<TContext extends Record<string, unknown>>
    * Resolves issues to their dependency status.
    */
   private async resolveIssues(
-    issues: QueuedIssue[],
-    sourceType: IssueSourceType | undefined,
-    _context: GraphContext
+    issues: QueuedIssue[]
   ): Promise<ResolvedIssue[]> {
     const resolved: ResolvedIssue[] = [];
 
@@ -468,7 +466,7 @@ export class BuildDagNodeRuntime<TContext extends Record<string, unknown>>
       }
 
       // Extract priority
-      const priority = this.extractPriority(issue, sourceType);
+      const priority = this.extractPriority(issue);
       const priorityScore = PRIORITY_SCORES[priority];
 
       // Determine if this is a leaf issue (no sub-issues)
@@ -492,8 +490,7 @@ export class BuildDagNodeRuntime<TContext extends Record<string, unknown>>
    * Extracts priority from issue based on source type.
    */
   private extractPriority(
-    issue: QueuedIssue,
-    _sourceType: IssueSourceType | undefined
+    issue: QueuedIssue
   ): PriorityLevel {
     // Check for project priority (from FetchIssuesNode)
     const projectPriority = (issue as QueuedIssue & { projectPriority?: string }).projectPriority;

@@ -17,6 +17,7 @@ import type {
   HttpNodeConfig,
   DynamicAgentNodeConfig,
   DynamicCommandNodeConfig,
+  GitCheckoutNodeConfig,
 } from '@/store/workflow-builder.store';
 import type { McpServerSelection } from '@/lib/graph/mcp-presets';
 import {
@@ -232,6 +233,22 @@ function convertNode<TNames extends string>(
         type: NodeType.DynamicCommand,
         commandExpression: config.commandExpression,
         ...(config.cwdExpression !== undefined && { cwdExpression: config.cwdExpression }),
+        then: transitionFn,
+      } as unknown as NodeDef<TNames, Record<string, unknown>>;
+    }
+
+    case NodeType.GitCheckout: {
+      const config = data.config as GitCheckoutNodeConfig;
+      // Create GitCheckout node definition
+      return {
+        name: node.id as TNames,
+        type: NodeType.GitCheckout,
+        useIssueContext: config.useIssueContext,
+        ref: config.ref,
+        depth: config.depth,
+        ...(config.owner !== undefined && { owner: config.owner }),
+        ...(config.repo !== undefined && { repo: config.repo }),
+        ...(config.skipIfExists !== undefined && { skipIfExists: config.skipIfExists }),
         then: transitionFn,
       } as unknown as NodeDef<TNames, Record<string, unknown>>;
     }

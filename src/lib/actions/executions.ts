@@ -11,7 +11,7 @@ import {
   updateExecution,
 } from '@/lib/db/repositories/workflow.repository';
 import { WorkflowStatus } from '@/lib/graph/enums';
-import { runWorkflow } from '@/lib/workflow-builder/workflow-runner';
+import { runWorkflow, resumeWorkflow } from '@/lib/workflow-builder/workflow-runner';
 import { getRailwayClient } from '@/lib/railway/client';
 import { generateExecutionToken } from '@/lib/railway/auth';
 import { getEnvVarOptional } from '@/lib/utils/env';
@@ -200,8 +200,10 @@ export const resumeExecutionAction = actionClient
       status: WorkflowStatus.Running,
     });
 
-    // TODO: Actually resume the GraphEngine execution
-    // This would trigger the engine to continue from currentNode
+    // Resume the GraphEngine execution from checkpoint
+    resumeWorkflow({ executionId }).catch((error) => {
+      console.error('Workflow resume error:', error);
+    });
 
     return {
       id: updated.id,

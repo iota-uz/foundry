@@ -333,6 +333,13 @@ export const useWorkflowExecutionStore = create<WorkflowExecutionState>()(
                 set({ status: WorkflowStatus.Paused });
                 break;
 
+              case 'workflow_resumed':
+                set({ status: WorkflowStatus.Running });
+                if (data.currentNodeId !== undefined && data.currentNodeId !== null && data.currentNodeId !== '') {
+                  set({ currentNodeId: data.currentNodeId });
+                }
+                break;
+
               case 'context_updated':
                 set({ context: data.context ?? {} });
                 break;

@@ -75,7 +75,7 @@ export const updateGitHubCredentialAction = actionClient
     }
 
     // Return without token
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { encryptedToken: _encryptedToken, ...safeCredential } = credential;
     return { credential: safeCredential };
   });
@@ -159,7 +159,7 @@ export const getGitHubCredentialAction = actionClient
     }
 
     // Return without token
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { encryptedToken: _encryptedToken, ...safeCredential } = credential;
     return { credential: safeCredential };
   });

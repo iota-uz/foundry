@@ -35,7 +35,7 @@ interface GitPanelProps {
 export function GitPanel({
   isOpen,
   onClose,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   projectPath: _projectPath = '.',
 }: GitPanelProps) {
   const [state, setState] = useState<GitPanelState>({

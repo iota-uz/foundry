@@ -32,6 +32,11 @@ fi
 # Create temp directory for workflow files
 mkdir -p /tmp/workflow
 
+# Setup working directory for agents and commands
+export FOUNDRY_WORKING_DIR="${FOUNDRY_WORKING_DIR:-/tmp/workflow/workspace}"
+mkdir -p "$FOUNDRY_WORKING_DIR"
+echo "[entrypoint] Working directory: $FOUNDRY_WORKING_DIR"
+
 # Notify Foundry that execution has started
 echo "[entrypoint] Notifying Foundry of execution start..."
 curl -sf -X POST \

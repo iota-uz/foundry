@@ -6,6 +6,17 @@
  */
 
 import { readFileSync } from 'fs';
+import { query, type Options } from '@anthropic-ai/claude-agent-sdk';
+
+// ============================================================================
+// Agent Model Mapping
+// ============================================================================
+
+const AGENT_MODEL_MAP: Record<string, string> = {
+  haiku: 'claude-haiku-4-20250514',
+  sonnet: 'claude-sonnet-4-20250514',
+  opus: 'claude-opus-4-20250514',
+};
 
 // ============================================================================
 // Types
@@ -258,6 +269,333 @@ const nodeExecutors: Record<string, NodeExecutor> = {
     const textContent = result.content.find(c => c.type === 'text');
     return {
       response: textContent?.text ?? '',
+    };
+  },
+
+  // Agent node - uses Claude Agent SDK with tools
+  agent: async (node, context) => {
+    const config = node.data.config as {
+      prompt: string;
+      model?: string;
+      maxTurns?: number;
+      capabilities?: string[];
+    };
+
+    await log('info', 'Executing agent node', node.id);
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY is required for agent nodes');
+    }
+
+    // Interpolate variables in prompt
+    let prompt = config.prompt;
+    for (const [key, value] of Object.entries(context)) {
+      prompt = prompt.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
+    }
+
+    // Map model name to full model ID
+    const modelKey = config.model ?? 'sonnet';
+    const model = AGENT_MODEL_MAP[modelKey] ?? AGENT_MODEL_MAP.sonnet;
+
+    // Configure SDK options
+    const sdkOptions: Options = {
+      maxTurns: config.maxTurns ?? 10,
+      systemPrompt: prompt,
+      allowedTools: config.capabilities ?? [],
+    };
+
+    // Only set model if we have one
+    if (model) {
+      sdkOptions.model = model;
+    }
+
+    // Log MCP warning if configured
+    if ((node.data.config as { mcpServers?: unknown[] }).mcpServers?.length) {
+      await log('warn', 'MCP servers not supported in container execution (v2 feature)', node.id);
+    }
+
+    try {
+      // SDK returns an async iterator, collect results
+      const queryResult = query({
+        prompt,
+        options: sdkOptions,
+      });
+
+      const toolsUsed: string[] = [];
+      let response = '';
+
+      for await (const message of queryResult) {
+        if (message.type === 'result') {
+          response = (message as { result?: string }).result ?? '';
+        }
+        if (message.type === 'tool_progress') {
+          const name = (message as { tool?: string }).tool;
+          if (name && !toolsUsed.includes(name)) {
+            toolsUsed.push(name);
+          }
+        }
+      }
+
+      return {
+        response,
+        toolsUsed,
+      };
+    } catch (error) {
+      throw new Error(`Agent execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  },
+
+  // Slash command - Claude Code operations
+  'slash-command': async (node, context) => {
+    const config = node.data.config as {
+      command: string;
+      args?: string;
+      model?: string;
+    };
+
+    await log('info', `Executing slash command: /${config.command}`, node.id);
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY is required for slash command nodes');
+    }
+
+    // Interpolate variables in args
+    let args = config.args ?? '';
+    for (const [key, value] of Object.entries(context)) {
+      args = args.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
+    }
+
+    const fullCommand = `/${config.command} ${args}`.trim();
+
+    // Map model name to full model ID
+    const modelKey = config.model ?? 'sonnet';
+    const model = AGENT_MODEL_MAP[modelKey] ?? AGENT_MODEL_MAP.sonnet;
+
+    const sdkOptions: Options = {
+      maxTurns: 30, // Slash commands may need more turns
+    };
+
+    if (model) {
+      sdkOptions.model = model;
+    }
+
+    try {
+      const queryResult = query({
+        prompt: fullCommand,
+        options: sdkOptions,
+      });
+
+      let response = '';
+      for await (const message of queryResult) {
+        if (message.type === 'result') {
+          response = (message as { result?: string }).result ?? '';
+        }
+      }
+
+      return {
+        response,
+        command: config.command,
+        args: args,
+      };
+    } catch (error) {
+      throw new Error(`Slash command failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  },
+
+  // Dynamic agent - runtime AI configuration (raw API, no tools)
+  'dynamic-agent': async (node, ctx) => {
+    const config = node.data.config as {
+      modelExpression?: string;
+      promptExpression?: string;
+      systemPromptExpression?: string;
+    };
+
+    await log('info', 'Executing dynamic agent node', node.id);
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY is required for dynamic agent nodes');
+    }
+
+    // Evaluate expressions to get runtime values
+    const evalExpression = (expr: string | undefined, fallback: string): string => {
+      if (!expr) return fallback;
+      try {
+        const fn = new Function('context', `return ${expr}`);
+        const result = fn(ctx);
+        return String(result);
+      } catch {
+        return fallback;
+      }
+    };
+
+    const modelKey = evalExpression(config.modelExpression, 'sonnet');
+    const model = AGENT_MODEL_MAP[modelKey] ?? AGENT_MODEL_MAP.sonnet;
+    const prompt = evalExpression(config.promptExpression, '');
+    const systemPrompt = evalExpression(config.systemPromptExpression, 'You are a helpful assistant.');
+
+    if (!prompt) {
+      throw new Error('Dynamic agent requires a prompt expression that evaluates to a non-empty string');
+    }
+
+    // Direct API call (no tools)
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Dynamic agent API error: ${error}`);
+    }
+
+    const result = await response.json() as {
+      content: Array<{ type: string; text: string }>;
+    };
+
+    const textContent = result.content.find(c => c.type === 'text');
+    return {
+      response: textContent?.text ?? '',
+      model,
+      prompt,
+    };
+  },
+
+  // Git checkout - clone a GitHub repository
+  'git-checkout': async (node, context) => {
+    const config = node.data.config as {
+      useIssueContext?: boolean;
+      owner?: string;
+      repo?: string;
+      ref?: string;
+      depth?: number;
+      skipIfExists?: boolean;
+    };
+
+    await log('info', 'Executing git checkout node', node.id);
+
+    // Resolve owner/repo from context or config
+    let owner: string | undefined;
+    let repo: string | undefined;
+
+    if (config.useIssueContext !== false) {
+      // Try to get from issue context (injected by Foundry)
+      const issueInfo = context.issueInfo as { owner?: string; repo?: string } | undefined;
+      owner = issueInfo?.owner;
+      repo = issueInfo?.repo;
+    }
+
+    // Config overrides take precedence
+    if (config.owner) owner = config.owner;
+    if (config.repo) repo = config.repo;
+
+    if (!owner || !repo) {
+      throw new Error(
+        'Git checkout requires owner and repo. Enable useIssueContext with automation trigger, or set owner/repo in config.'
+      );
+    }
+
+    const ref = config.ref ?? 'main';
+    const depth = config.depth ?? 1;
+    const skipIfExists = config.skipIfExists ?? true;
+
+    // Get GitHub token from environment (injected by Foundry from project credentials)
+    const token = process.env.GITHUB_TOKEN;
+    if (!token) {
+      throw new Error('GITHUB_TOKEN is required for git checkout. Configure GitHub credentials in the project settings.');
+    }
+
+    // Target directory
+    const workDir = `/workspace/${owner}-${repo}`;
+
+    await log('info', `Cloning ${owner}/${repo}@${ref} to ${workDir}`, node.id);
+
+    // Check if directory exists
+    const existsProc = Bun.spawn(['test', '-d', workDir], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    const dirExists = (await existsProc.exited) === 0;
+
+    if (dirExists && skipIfExists) {
+      await log('info', `Directory ${workDir} already exists, skipping clone`, node.id);
+
+      // Get current SHA
+      const shaProc = Bun.spawn(['git', 'rev-parse', 'HEAD'], {
+        cwd: workDir,
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+      const sha = (await new Response(shaProc.stdout).text()).trim();
+
+      return {
+        workDir,
+        owner,
+        repo,
+        ref,
+        sha,
+        skipped: true,
+      };
+    }
+
+    // Create parent directory if needed
+    const mkdirProc = Bun.spawn(['mkdir', '-p', '/workspace'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    await mkdirProc.exited;
+
+    // Clone the repository
+    const cloneUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
+    const cloneArgs = ['git', 'clone', '--depth', String(depth), '--branch', ref, cloneUrl, workDir];
+
+    const cloneProc = Bun.spawn(cloneArgs, {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: '0', // Disable interactive prompts
+      },
+    });
+
+    const cloneStderr = await new Response(cloneProc.stderr).text();
+    const cloneExitCode = await cloneProc.exited;
+
+    if (cloneExitCode !== 0) {
+      // Sanitize error message to not leak token
+      const sanitizedError = cloneStderr.replace(token, '***');
+      throw new Error(`Git clone failed: ${sanitizedError}`);
+    }
+
+    // Get the SHA of HEAD
+    const shaProc = Bun.spawn(['git', 'rev-parse', 'HEAD'], {
+      cwd: workDir,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    const sha = (await new Response(shaProc.stdout).text()).trim();
+
+    await log('info', `Cloned ${owner}/${repo}@${ref} (${sha.substring(0, 7)})`, node.id);
+
+    return {
+      workDir,
+      owner,
+      repo,
+      ref,
+      sha,
+      skipped: false,
     };
   },
 };

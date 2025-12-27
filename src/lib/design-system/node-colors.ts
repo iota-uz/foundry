@@ -16,6 +16,7 @@ import {
   ChatBubbleLeftRightIcon,
   CogIcon,
   PlayCircleIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import { ClaudeIcon, GitHubIcon } from '@/components/icons';
 import { NodeType } from '@/lib/graph/enums';
@@ -137,6 +138,16 @@ export const NODE_COLORS: Record<NodeType, NodeColorConfig> = {
     bgColor: 'bg-violet-500/10',
     borderColor: 'border-violet-500/30',
     accentBorder: 'border-l-violet-500',
+  },
+  [NodeType.GitCheckout]: {
+    label: 'Git Checkout',
+    description: 'Clone a GitHub repository',
+    icon: ArrowDownTrayIcon,
+    hex: '#14b8a6',
+    textColor: 'text-teal-400',
+    bgColor: 'bg-teal-500/10',
+    borderColor: 'border-teal-500/30',
+    accentBorder: 'border-l-teal-500',
   },
 };
 

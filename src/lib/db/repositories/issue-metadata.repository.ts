@@ -324,6 +324,22 @@ export async function getLatestExecution(
   return execution;
 }
 
+/**
+ * Get issue execution by workflow execution ID
+ * Used to look up issue context for container execution
+ */
+export async function getByWorkflowExecutionId(
+  workflowExecutionId: string
+): Promise<IssueExecution | undefined> {
+  const db = getDatabase();
+  const [execution] = await db
+    .select()
+    .from(issueExecutions)
+    .where(eq(issueExecutions.workflowExecutionId, workflowExecutionId))
+    .limit(1);
+  return execution;
+}
+
 // ============================================================================
 // Re-export types
 // ============================================================================

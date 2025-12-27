@@ -73,7 +73,7 @@ StdlibTool.NotebookEdit  // Edit Jupyter notebook cells
 // Shell & System
 StdlibTool.Bash          // Execute shell commands
 StdlibTool.BashOutput    // Retrieve background shell output
-StdlibTool.KillBash      // Kill a running shell
+StdlibTool.KillShell     // Kill a running shell
 
 // Web & Network
 StdlibTool.WebFetch      // Fetch and process URL content
@@ -83,6 +83,7 @@ StdlibTool.WebSearch     // Web search
 StdlibTool.Task          // Launch subagents
 StdlibTool.TodoWrite     // Task list management
 StdlibTool.ExitPlanMode  // Exit planning mode
+StdlibTool.AskUserQuestion  // Ask user clarifying questions
 
 // MCP Integration
 StdlibTool.ListMcpResources  // List MCP resources

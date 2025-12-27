@@ -202,6 +202,8 @@ function ConfigForm({ nodeType, config, nodeColor, onChange }: ConfigFormProps) 
       return <DynamicCommandConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.GitHubProject:
       return <GitHubProjectConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
+    case NodeType.GitCheckout:
+      return <GitCheckoutConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     default:
       return (
         <div className="p-4 text-center text-text-muted text-sm">
@@ -1312,6 +1314,135 @@ function GitHubProjectConfigForm({
           />
         </div>
       </FieldGroup>
+    </div>
+  );
+}
+
+// ============================================================================
+// Git Checkout Config Form
+// ============================================================================
+
+function GitCheckoutConfigForm({
+  config,
+  nodeColor,
+  onChange,
+}: {
+  config: NodeConfig;
+  nodeColor: string;
+  onChange: (config: Partial<NodeConfig>) => void;
+}) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  if (config.type !== 'git-checkout') return null;
+
+  return (
+    <div className="divide-y divide-border-subtle">
+      {/* Info */}
+      <div className="p-4">
+        <div
+          className="flex items-start gap-2 p-3 rounded-lg text-xs leading-relaxed"
+          style={{
+            background: `${nodeColor}08`,
+            borderLeft: `2px solid ${nodeColor}`,
+          }}
+        >
+          <SparklesIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: nodeColor }} />
+          <span className="text-text-secondary">
+            Clone a GitHub repository for workflow execution. Credentials are resolved from the automation context.
+          </span>
+        </div>
+      </div>
+
+      {/* Use Issue Context Toggle */}
+      <FieldGroup>
+        <div className="flex items-center justify-between">
+          <div>
+            <FieldLabel>Use Issue Context</FieldLabel>
+            <p className="text-xs text-text-tertiary mt-1">
+              Auto-detect repository from the issue that triggered the workflow
+            </p>
+          </div>
+          <ToggleSwitch
+            label=""
+            checked={config.useIssueContext}
+            onChange={(v) => onChange({ useIssueContext: v })}
+          />
+        </div>
+      </FieldGroup>
+
+      {/* Manual Override (shown when not using issue context) */}
+      {!config.useIssueContext && (
+        <>
+          <FieldGroup>
+            <FieldLabel>Repository Owner</FieldLabel>
+            <TextInput
+              value={config.owner ?? ''}
+              onChange={(v) => {
+                if (v) {
+                  onChange({ owner: v });
+                }
+              }}
+              placeholder="octocat"
+              mono
+            />
+          </FieldGroup>
+
+          <FieldGroup>
+            <FieldLabel>Repository Name</FieldLabel>
+            <TextInput
+              value={config.repo ?? ''}
+              onChange={(v) => {
+                if (v) {
+                  onChange({ repo: v });
+                }
+              }}
+              placeholder="hello-world"
+              mono
+            />
+          </FieldGroup>
+        </>
+      )}
+
+      {/* Git Ref */}
+      <FieldGroup>
+        <FieldLabel>Branch / Tag / Commit</FieldLabel>
+        <TextInput
+          value={config.ref}
+          onChange={(v) => onChange({ ref: v || 'main' })}
+          placeholder="main"
+          mono
+        />
+      </FieldGroup>
+
+      {/* Advanced Section */}
+      <CollapsibleSection
+        title="Advanced"
+        isOpen={showAdvanced}
+        onToggle={() => setShowAdvanced(!showAdvanced)}
+      >
+        <div className="space-y-4">
+          <div>
+            <FieldLabel size="sm">Clone Depth</FieldLabel>
+            <div className="flex items-center gap-2">
+              <NumberInput
+                value={config.depth}
+                onChange={(v) => onChange({ depth: v ?? 1 })}
+                placeholder="1"
+                min={0}
+                className="flex-1"
+              />
+              <span className="text-xs text-text-muted">0 = full clone</span>
+            </div>
+          </div>
+          <div>
+            <ToggleSwitch
+              label="Skip if directory exists"
+              checked={config.skipIfExists ?? true}
+              onChange={(v) => onChange({ skipIfExists: v })}
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
     </div>
   );
 }
