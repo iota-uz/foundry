@@ -7,6 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { IssuesClient } from '@/lib/github-issues';
+import { githubCache, CACHE_TTL, CacheKeys } from '@/lib/cache';
+import type { GitHubLabel } from '@/lib/github-issues/types';
 
 interface FetchLabelsRequest {
   token: string;
@@ -34,12 +36,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create client and fetch labels
-    const client = new IssuesClient({
-      token: body.token,
-    });
+    // Cache repository labels
+    const cacheKey = CacheKeys.repoLabels(body.owner, body.repo);
+    let labels = githubCache.get<GitHubLabel[]>(cacheKey);
 
-    const labels = await client.getRepositoryLabels(body.owner, body.repo);
+    if (!labels) {
+      // Create client and fetch labels
+      const client = new IssuesClient({
+        token: body.token,
+      });
+
+      labels = await client.getRepositoryLabels(body.owner, body.repo);
+
+      // Only cache successful responses
+      if (labels && labels.length >= 0) {
+        githubCache.set(cacheKey, labels, CACHE_TTL.REPO_LABELS);
+      }
+    }
 
     return NextResponse.json({
       labels,

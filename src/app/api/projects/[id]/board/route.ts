@@ -10,7 +10,8 @@ import { listIssueMetadata, getLatestExecution } from '@/lib/db/repositories/iss
 import { validateUuid } from '@/lib/validation';
 import { createProjectsClient } from '@/lib/github-projects/client';
 import { resolveProjectToken } from '@/lib/github';
-import type { ProjectItemWithFields, ProjectsConfig } from '@/lib/github-projects/types';
+import { githubCache, CACHE_TTL, CacheKeys } from '@/lib/cache';
+import type { ProjectItemWithFields, ProjectsConfig, ProjectValidation } from '@/lib/github-projects/types';
 import type { PlanContent } from '@/lib/planning/types';
 import type { IssuePlanStatus } from '@/store/kanban.store';
 
@@ -56,19 +57,47 @@ export async function GET(
       };
 
       const client = createProjectsClient(config);
-      const validation = await client.validate();
+
+      // Cache project validation
+      const validationCacheKey = CacheKeys.projectValidation(
+        project.githubProjectOwner,
+        project.githubProjectNumber
+      );
+      let validation = githubCache.get<ProjectValidation>(validationCacheKey);
+
+      if (!validation) {
+        validation = await client.validate();
+        if (validation.valid) {
+          githubCache.set(validationCacheKey, validation, CACHE_TTL.PROJECT_VALIDATION);
+        }
+      }
 
       if (!validation.valid) {
         console.warn('GitHub project validation failed:', validation.errors);
       }
 
       // Get statuses from validation
-      statuses = validation.statusOptions?.map((opt) => opt.name) ?? [];
+      statuses = validation.statusOptions?.map((opt: { name: string }) => opt.name) ?? [];
 
-      // Fetch all items from all statuses
+      // Fetch all items from all statuses with caching
       for (const status of statuses) {
-        const items = await client.fetchItemsByStatus({ status });
-        for (const item of items) {
+        const itemsCacheKey = CacheKeys.projectItems(
+          project.githubProjectOwner,
+          project.githubProjectNumber,
+          status
+        );
+
+        let items = githubCache.get<ProjectItemWithFields[]>(itemsCacheKey);
+
+        if (!items) {
+          items = await client.fetchItemsByStatus({ status });
+          // Only cache successful responses
+          if (items) {
+            githubCache.set(itemsCacheKey, items, CACHE_TTL.PROJECT_ITEMS);
+          }
+        }
+
+        for (const item of items ?? []) {
           if (item.content) {
             // Key by owner/repo/number for lookup
             const key = `${item.content.repository.owner.login}/${item.content.repository.name}#${item.content.number}`;

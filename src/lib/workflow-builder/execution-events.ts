@@ -3,9 +3,13 @@
  *
  * Manages SSE subscriptions for real-time execution updates.
  * In production, this would be replaced with a pub/sub system (Redis, etc.)
+ *
+ * NOTE: This module bridges the legacy SSE system with the new tRPC subscriptions.
+ * Both systems are supported during the migration period.
  */
 
 import type { WorkflowStatus } from '@/lib/graph/enums';
+import { emitExecutionEvent, type ExecutionEvent } from '@/server/trpc/events';
 
 // Global map of active execution streams
 const executionStreams = new Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>();
@@ -41,6 +45,10 @@ export function unsubscribeFromExecution(
 
 /**
  * Broadcast an event to all subscribers of an execution
+ *
+ * This function sends events to both:
+ * 1. Legacy SSE subscribers (ReadableStreamDefaultController)
+ * 2. tRPC subscription subscribers (via event emitter)
  */
 export function broadcastExecutionEvent(
   executionId: string,
@@ -64,6 +72,10 @@ export function broadcastExecutionEvent(
     };
   }
 ): void {
+  // Emit to tRPC subscriptions
+  emitExecutionEvent(executionId, event as ExecutionEvent);
+
+  // Emit to legacy SSE subscribers
   const controllers = executionStreams.get(executionId);
   if (!controllers) return;
 

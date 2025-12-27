@@ -7,6 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectsClient } from '@/lib/github-projects';
+import { githubCache, CACHE_TTL, CacheKeys } from '@/lib/cache';
+import type { ProjectValidation, ProjectField } from '@/lib/github-projects/types';
 
 interface FetchFieldsRequest {
   token: string;
@@ -38,7 +40,19 @@ export async function POST(request: NextRequest) {
       projectNumber: body.projectNumber,
     });
 
-    const validation = await client.validate();
+    // Cache project validation
+    const validationCacheKey = CacheKeys.projectValidation(
+      body.projectOwner,
+      body.projectNumber
+    );
+    let validation = githubCache.get<ProjectValidation>(validationCacheKey);
+
+    if (!validation) {
+      validation = await client.validate();
+      if (validation.valid) {
+        githubCache.set(validationCacheKey, validation, CACHE_TTL.PROJECT_VALIDATION);
+      }
+    }
 
     if (!validation.valid) {
       return NextResponse.json(
@@ -50,9 +64,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch all fields
-    const fieldsMap = await client.fetchAllFields();
-    const fields = Array.from(fieldsMap.values());
+    // Cache project fields
+    const fieldsCacheKey = CacheKeys.projectFields(
+      body.projectOwner,
+      body.projectNumber
+    );
+    let fields = githubCache.get<ProjectField[]>(fieldsCacheKey);
+
+    if (!fields) {
+      const fieldsMap = await client.fetchAllFields();
+      fields = Array.from(fieldsMap.values());
+      // Only cache successful responses
+      if (fields && fields.length > 0) {
+        githubCache.set(fieldsCacheKey, fields, CACHE_TTL.PROJECT_FIELDS);
+      }
+    }
 
     return NextResponse.json({
       project: validation.project,

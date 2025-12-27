@@ -7,6 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { IssuesClient } from '@/lib/github-issues';
+import { githubCache, CACHE_TTL, CacheKeys } from '@/lib/cache';
+import type { GitHubUser } from '@/lib/github-issues/types';
 
 interface FetchCollaboratorsRequest {
   token: string;
@@ -34,12 +36,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create client and fetch collaborators
-    const client = new IssuesClient({
-      token: body.token,
-    });
+    // Cache repository collaborators
+    const cacheKey = CacheKeys.repoCollaborators(body.owner, body.repo);
+    let collaborators = githubCache.get<GitHubUser[]>(cacheKey);
 
-    const collaborators = await client.getRepositoryCollaborators(body.owner, body.repo);
+    if (!collaborators) {
+      // Create client and fetch collaborators
+      const client = new IssuesClient({
+        token: body.token,
+      });
+
+      collaborators = await client.getRepositoryCollaborators(body.owner, body.repo);
+
+      // Only cache successful responses
+      if (collaborators && collaborators.length >= 0) {
+        githubCache.set(cacheKey, collaborators, CACHE_TTL.REPO_COLLABORATORS);
+      }
+    }
 
     return NextResponse.json({
       collaborators,
