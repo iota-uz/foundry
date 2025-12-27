@@ -24,6 +24,7 @@ import {
   CpuChipIcon,
   CommandLineIcon,
   GlobeAltIcon,
+  StopCircleIcon,
 } from '@heroicons/react/24/outline';
 import { NodeType } from '@/lib/graph/enums';
 import { NODE_COLORS } from '@/lib/design-system';
@@ -67,6 +68,10 @@ const sections: NodeSection[] = [
     title: 'Integration Nodes',
     types: [NodeType.Http, NodeType.GitHubProject],
   },
+  {
+    title: 'Control Flow',
+    types: [NodeType.End],
+  },
 ];
 
 // ============================================================================
@@ -77,6 +82,7 @@ const sectionIcons: Record<string, typeof CpuChipIcon> = {
   'AI Nodes': CpuChipIcon,
   'Utility Nodes': CommandLineIcon,
   'Integration Nodes': GlobeAltIcon,
+  'Control Flow': StopCircleIcon,
 };
 
 // ============================================================================

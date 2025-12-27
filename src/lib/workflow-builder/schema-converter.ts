@@ -190,8 +190,8 @@ function getNextNode(
   if (!targets || targets.length === 0) {
     return SpecialNode.End;
   }
-  // For now, just use the first target (single output)
-  // TODO: Support conditional routing via edge labels
+  // Use the first target (single output).
+  // Conditional routing is handled via TransitionDef in buildTransitionFn.
   const target = targets[0]!;
 
   // If the target is an End node, return SpecialNode.End instead
@@ -269,7 +269,6 @@ function buildTransitionFn<TNames extends string>(
       // WARNING: This uses eval which can be a security risk.
       // Only use with trusted DSL sources.
       try {
-        // eslint-disable-next-line no-new-func
         const fn = new Function('state', `return (${transition.source})(state);`);
         return (state) => {
           const result = fn(state);

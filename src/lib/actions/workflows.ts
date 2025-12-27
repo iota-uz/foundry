@@ -13,6 +13,7 @@ export const createWorkflowAction = actionClient
   .schema(createWorkflowSchema)
   .action(async ({ parsedInput }) => {
     const workflow = await repo.createWorkflow({
+      projectId: parsedInput.projectId,
       name: parsedInput.name,
       description: parsedInput.description ?? null,
       nodes: parsedInput.nodes as WorkflowNodeData[],

@@ -410,6 +410,23 @@ export const NODE_PORT_SCHEMAS: Record<NodeType, NodePortSchema> = {
       },
     ],
   },
+
+  // ============================================================================
+  // Terminal Nodes
+  // ============================================================================
+
+  [NodeType.End]: {
+    inputs: [
+      {
+        id: 'flow',
+        label: 'Flow',
+        type: PortDataType.Any,
+        required: true,
+        description: 'Incoming workflow flow',
+      },
+    ],
+    outputs: [], // No outputs - this is a terminal node
+  },
 };
 
 /**

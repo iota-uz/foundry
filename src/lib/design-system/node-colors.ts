@@ -17,6 +17,7 @@ import {
   CogIcon,
   PlayCircleIcon,
   ArrowDownTrayIcon,
+  StopCircleIcon,
 } from '@heroicons/react/24/outline';
 import { ClaudeIcon, GitHubIcon } from '@/components/icons';
 import { NodeType } from '@/lib/graph/enums';
@@ -158,6 +159,16 @@ export const NODE_COLORS: Record<NodeType, NodeColorConfig> = {
     bgColor: 'bg-teal-500/10',
     borderColor: 'border-teal-500/30',
     accentBorder: 'border-l-teal-500',
+  },
+  [NodeType.End]: {
+    label: 'End',
+    description: 'Workflow terminal with status transition',
+    icon: StopCircleIcon,
+    hex: '#10b981',
+    textColor: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/10',
+    borderColor: 'border-emerald-500/30',
+    accentBorder: 'border-l-emerald-500',
   },
 };
 

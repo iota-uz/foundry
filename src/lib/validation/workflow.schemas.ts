@@ -44,6 +44,7 @@ const dockerImageRegex = /^[a-z0-9]([a-z0-9._/-]*[a-z0-9])?(:[\w][\w.-]*)?(@sha2
  * Create workflow request schema
  */
 export const createWorkflowSchema = z.object({
+  projectId: z.string().uuid('Invalid project ID format'),
   name: z.string().min(1, 'Workflow name is required').max(255, 'Name too long'),
   description: z.string().max(2000, 'Description too long').optional(),
   nodes: z.array(workflowNodeSchema).default([]),

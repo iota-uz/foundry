@@ -121,7 +121,13 @@ export interface BaseState {
   /**
    * Workflow context data.
    * Stores runtime variables including port data for typed data flow.
-   * Contains __portData and __portMappings for port-based execution.
+   *
+   * Reserved metadata fields (prefixed with __):
+   * - __portData: Port output data from executed nodes
+   * - __portMappings: Port input mappings for each node
+   * - __endNodeMappings: Maps End node ID to target status (from schema converter)
+   * - __endNodeTargets: Maps source node ID to End node ID (from schema converter)
+   * - __reachedEndNodeId: ID of the End node that was reached (set by engine on completion)
    */
   context?: Record<string, unknown>;
 }

@@ -221,6 +221,21 @@ export class GraphEngine<TState extends BaseState> {
         // Determine next node
         const nextNode = node.next(state);
         nodeLogger.info(`Transitioning to: ${nextNode}`);
+
+        // If transitioning to END, record which End node was targeted
+        if (nextNode === SpecialNode.End) {
+          const endNodeTargets = stateContext.__endNodeTargets as Record<string, string> | undefined;
+          const targetEndNodeId = endNodeTargets?.[node.name];
+          if (targetEndNodeId) {
+            stateContext.__reachedEndNodeId = targetEndNodeId;
+            // Update state.context with the new value
+            if ('context' in state) {
+              (state as unknown as { context: Record<string, unknown> }).context = stateContext;
+            }
+            nodeLogger.info(`Reached End node: ${targetEndNodeId}`);
+          }
+        }
+
         state.currentNode = nextNode;
 
         // Reset retry count on successful execution

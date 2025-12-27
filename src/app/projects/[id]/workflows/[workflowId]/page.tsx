@@ -36,7 +36,7 @@ import { WorkflowStatus } from '@/lib/graph/enums';
 import { Button, Skeleton } from '@/components/shared';
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; workflowId: string }>;
 }
 
 type RightDrawerView = 'config' | 'execution' | 'history' | 'settings' | null;
@@ -87,9 +87,9 @@ function EditorSkeleton() {
 // ============================================================================
 
 export default function WorkflowEditorPage({ params }: PageProps) {
-  const { id } = use(params);
+  const { id: projectId, workflowId } = use(params);
   const router = useRouter();
-  const { loadWorkflow, isLoading, error, selectedNodeId, selectNode } =
+  const { loadWorkflow, isLoading, error, selectedNodeId, selectNode, updateMetadata } =
     useWorkflowBuilderStore();
   const { status: executionStatus, reset: resetExecution } =
     useWorkflowExecutionStore();
@@ -114,12 +114,19 @@ export default function WorkflowEditorPage({ params }: PageProps) {
   }, [executionStatus]);
 
   useEffect(() => {
-    if (id !== null && id !== '') {
-      void loadWorkflow(id);
+    if (workflowId !== null && workflowId !== '') {
+      void loadWorkflow(workflowId, projectId);
       // Reset execution state when loading a new workflow
       resetExecution();
     }
-  }, [id, loadWorkflow, resetExecution]);
+  }, [workflowId, projectId, loadWorkflow, resetExecution]);
+
+  // Ensure projectId is set in metadata after loading
+  useEffect(() => {
+    if (projectId) {
+      updateMetadata({ projectId });
+    }
+  }, [projectId, updateMetadata]);
 
   // Close drawer handler
   const closeDrawer = useCallback(() => {
@@ -149,10 +156,10 @@ export default function WorkflowEditorPage({ params }: PageProps) {
           <p className="text-sm text-text-tertiary mb-6">{error}</p>
           <Button
             variant="secondary"
-            onClick={() => router.push('/')}
+            onClick={() => router.push(`/projects/${projectId}`)}
             icon={<ArrowLeftIcon className="w-4 h-4" />}
           >
-            Back to Workflows
+            Back to Project
           </Button>
         </div>
       </div>
@@ -170,6 +177,7 @@ export default function WorkflowEditorPage({ params }: PageProps) {
       <div className="flex flex-col h-full bg-bg-primary">
         {/* Toolbar with execution/history/settings buttons */}
         <WorkflowToolbar
+          projectId={projectId}
           onExecutionClick={() => setRightDrawerView(rightDrawerView === 'execution' ? null : 'execution')}
           onHistoryClick={() => setRightDrawerView(rightDrawerView === 'history' ? null : 'history')}
           onSettingsClick={() => setRightDrawerView(rightDrawerView === 'settings' ? null : 'settings')}
@@ -255,7 +263,7 @@ export default function WorkflowEditorPage({ params }: PageProps) {
                 {rightDrawerView === 'history' && (
                   <div className="h-full overflow-y-auto p-4">
                     <ExecutionHistory
-                      workflowId={id}
+                      workflowId={workflowId}
                       onSelect={(executionId) => {
                         console.log('Selected execution:', executionId);
                       }}
@@ -267,8 +275,8 @@ export default function WorkflowEditorPage({ params }: PageProps) {
                 )}
                 {rightDrawerView === 'settings' && (
                   <div className="h-full overflow-y-auto">
-                    <DockerImageConfig workflowId={id} />
-                    <EnvEditor mode="encrypted" workflowId={id} />
+                    <DockerImageConfig workflowId={workflowId} />
+                    <EnvEditor mode="encrypted" workflowId={workflowId} />
                   </div>
                 )}
               </div>

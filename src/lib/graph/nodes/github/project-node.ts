@@ -231,7 +231,34 @@ export class GitHubProjectNodeRuntime<TContext extends Record<string, unknown>>
 
     try {
       const issueNumber = this.resolveIssueNumber(state);
-      const updateArray = Array.isArray(updates) ? updates : [updates];
+      let updateArray = Array.isArray(updates) ? updates : [updates];
+
+      // Check for Status field updates (not allowed in GitHubProjectNode)
+      const statusUpdates = updateArray.filter(
+        (update: FieldUpdate) =>
+          update.type === 'single_select' && update.field.toLowerCase() === 'status'
+      );
+
+      if (statusUpdates.length > 0) {
+        const error = 'Status updates are not allowed in GitHubProjectNode. Use an End node with a target status instead.';
+        context.logger.warn('[GitHubProjectNode] Attempted Status update has been blocked. Use End nodes for status transitions.');
+
+        if (throwOnError !== false) {
+          throw new NodeExecutionError(
+            error,
+            'validation',
+            this.nodeType,
+            undefined,
+            { blockedUpdates: statusUpdates }
+          );
+        }
+
+        // If not throwing, filter out the status updates and continue with others
+        updateArray = updateArray.filter(
+          (update: FieldUpdate) =>
+            !(update.type === 'single_select' && update.field.toLowerCase() === 'status')
+        );
+      }
 
       context.logger.info(
         `[GitHubProjectNode] Processing ${updateArray.length} update(s) on ${owner}/${repo}#${issueNumber}`

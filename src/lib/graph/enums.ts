@@ -42,6 +42,9 @@ export enum NodeType {
 
   /** Git checkout node - clones a repository */
   GitCheckout = 'git-checkout',
+
+  /** End node - workflow terminal with optional status transition */
+  End = 'end',
 }
 
 /**

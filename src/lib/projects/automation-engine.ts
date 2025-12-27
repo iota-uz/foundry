@@ -16,6 +16,7 @@ import {
   type ProjectAutomation,
   type ProjectStatusTransition,
 } from '@/lib/db/repositories/automation.repository';
+import type { EndNodeMappings } from '@/lib/workflow-builder/schema-converter';
 import {
   getIssueMetadata,
   updateCurrentStatus,
@@ -131,6 +132,27 @@ function evaluateCustomExpression(
     logger.error('Error evaluating custom expression:', error);
     return false;
   }
+}
+
+/**
+ * Get target status from workflow execution's End node
+ *
+ * The schema converter stores:
+ * - __endNodeMappings: Maps End node ID → target status
+ * - __reachedEndNodeId: ID of the End node that was reached (set by engine)
+ *
+ * @returns Target status string, or null if no status change
+ */
+function getEndNodeTargetStatus(executionContext: Record<string, unknown>): string | null {
+  const endNodeMappings = executionContext.__endNodeMappings as EndNodeMappings | undefined;
+  const reachedEndNodeId = executionContext.__reachedEndNodeId as string | undefined;
+
+  if (!endNodeMappings || !reachedEndNodeId) {
+    return null;
+  }
+
+  const targetStatus = endNodeMappings[reachedEndNodeId];
+  return targetStatus ?? null;
 }
 
 /**
@@ -292,19 +314,34 @@ async function executeAutomation(
         ? 'success'
         : 'failure';
 
-    // Get transitions for this automation
-    const transitions = await getTransitions(automation.id);
+    // NEW: Get target status from End node (primary method)
+    let targetStatus: string | null = null;
+    if (executionResult === 'success' && updatedExecution?.context) {
+      targetStatus = getEndNodeTargetStatus(updatedExecution.context);
+      if (targetStatus) {
+        logger.info(`End node target status: ${targetStatus}`);
+      }
+    }
 
-    // Evaluate which transition to apply (pass execution context for custom expressions)
-    const transition = evaluateTransition(
-      transitions,
-      executionResult,
-      updatedExecution?.context ?? {}
-    );
+    // FALLBACK: Legacy transition evaluation (for workflows without End nodes)
+    if (targetStatus === null) {
+      const transitions = await getTransitions(automation.id);
+      const transition = evaluateTransition(
+        transitions,
+        executionResult,
+        updatedExecution?.context ?? {}
+      );
+      if (transition) {
+        targetStatus = transition.nextStatus;
+        logger.info(`Legacy transition target status: ${targetStatus}`);
+      } else {
+        logger.info('No End node target status or legacy transition found');
+      }
+    }
 
-    // If there's a transition, update GitHub Project status
+    // If there's a target status, update GitHub Project status
     let appliedStatus: string | null = null;
-    if (transition) {
+    if (targetStatus) {
       const updated = await updateGitHubStatus(
         automation.projectId,
         {
@@ -312,13 +349,13 @@ async function executeAutomation(
           repo: issue.repo,
           issueNumber: issue.issueNumber,
         },
-        transition.nextStatus
+        targetStatus
       );
 
       if (updated) {
-        appliedStatus = transition.nextStatus;
+        appliedStatus = targetStatus;
         // Update local issue metadata status
-        await updateCurrentStatus(issueMetadataId, transition.nextStatus);
+        await updateCurrentStatus(issueMetadataId, targetStatus);
       }
     }
 

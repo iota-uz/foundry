@@ -205,6 +205,8 @@ function ConfigForm({ nodeType, config, nodeColor, onChange }: ConfigFormProps) 
       return <GitHubProjectConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     case NodeType.GitCheckout:
       return <GitCheckoutConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
+    case NodeType.End:
+      return <EndConfigForm config={config} nodeColor={nodeColor} onChange={onChange} />;
     default:
       return (
         <div className="p-4 text-center text-text-muted text-sm">
@@ -1167,6 +1169,13 @@ function GitHubProjectConfigForm({
 }) {
   if (config.type !== 'github-project') return null;
 
+  // Check if any update is trying to set Status
+  const updates = Array.isArray(config.updates) ? config.updates : (config.updates ? [config.updates] : []);
+  const hasStatusUpdate = updates.some(
+    (update: { type?: string; field?: string }) =>
+      update.type === 'single_select' && update.field?.toLowerCase() === 'status'
+  );
+
   return (
     <div className="divide-y divide-border-subtle">
       {/* Info */}
@@ -1180,10 +1189,25 @@ function GitHubProjectConfigForm({
         >
           <GlobeAltIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: nodeColor }} />
           <span className="text-text-secondary">
-            Update GitHub Project fields and issue metadata (status, labels, assignees, etc.)
+            Update GitHub Project fields and issue metadata (labels, assignees, etc.)
           </span>
         </div>
       </div>
+
+      {/* Status update warning */}
+      {hasStatusUpdate && (
+        <div className="p-4">
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+            <div className="flex items-start gap-2">
+              <ExclamationTriangleIcon className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-700 dark:text-amber-300">
+                <p className="font-medium">Status updates not recommended</p>
+                <p className="mt-1">Use an End node with a target status instead. Status updates via this node will be blocked at runtime.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* GitHub Token */}
       <FieldGroup>
@@ -1444,6 +1468,84 @@ function GitCheckoutConfigForm({
           </div>
         </div>
       </CollapsibleSection>
+    </div>
+  );
+}
+
+// ============================================================================
+// End Config Form
+// ============================================================================
+
+function EndConfigForm({
+  config,
+  nodeColor,
+  onChange,
+}: {
+  config: NodeConfig;
+  nodeColor: string;
+  onChange: (config: Partial<NodeConfig>) => void;
+}) {
+  if (config.type !== 'end') return null;
+
+  return (
+    <div className="divide-y divide-border-subtle">
+      {/* Info */}
+      <div className="p-4">
+        <div
+          className="flex items-start gap-2 p-3 rounded-lg text-xs leading-relaxed"
+          style={{
+            background: `${nodeColor}08`,
+            borderLeft: `2px solid ${nodeColor}`,
+          }}
+        >
+          <SparklesIcon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: nodeColor }} />
+          <span className="text-text-secondary">
+            Terminal node that ends the workflow. Optionally set a target status for the issue.
+          </span>
+        </div>
+      </div>
+
+      {/* Label */}
+      <FieldGroup>
+        <FieldLabel>Label</FieldLabel>
+        <TextInput
+          value={config.label ?? 'End'}
+          onChange={(v) => onChange({ label: v })}
+          placeholder="End"
+          accentColor={nodeColor}
+        />
+      </FieldGroup>
+
+      {/* Target Status */}
+      <FieldGroup>
+        <FieldLabel optional>Target Status</FieldLabel>
+        <TextInput
+          value={config.targetStatus ?? ''}
+          onChange={(v) => {
+            if (v) {
+              onChange({ targetStatus: v });
+            }
+            // Note: Cannot set to undefined due to exactOptionalPropertyTypes
+          }}
+          placeholder="Done, Closed, etc."
+          accentColor={nodeColor}
+        />
+        <p className="text-[10px] text-text-muted mt-1.5">
+          Issue status to transition to when workflow ends. Leave empty for no status change.
+        </p>
+      </FieldGroup>
+
+      {/* Preview */}
+      {config.targetStatus && (
+        <div className="p-4">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+            <div className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-xs text-emerald-400 font-medium">
+              Will set status to &ldquo;{config.targetStatus}&rdquo;
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

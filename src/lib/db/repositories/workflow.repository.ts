@@ -5,7 +5,7 @@
  * Uses Drizzle ORM for type-safe queries.
  */
 
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { getDatabase } from '../client';
 import {
   workflows,
@@ -49,11 +49,36 @@ export async function getWorkflow(id: string): Promise<Workflow | undefined> {
 }
 
 /**
- * List all workflows, ordered by most recently updated
+ * Get a workflow by ID and project ID (for route validation)
  */
-export async function listWorkflows(): Promise<Workflow[]> {
+export async function getWorkflowByProject(
+  id: string,
+  projectId: string
+): Promise<Workflow | undefined> {
   const db = getDatabase();
-  return db.select().from(workflows).orderBy(desc(workflows.updatedAt));
+  const [workflow] = await db
+    .select()
+    .from(workflows)
+    .where(
+      and(
+        eq(workflows.id, id),
+        eq(workflows.projectId, projectId)
+      )
+    )
+    .limit(1);
+  return workflow;
+}
+
+/**
+ * List workflows for a project, ordered by most recently updated
+ */
+export async function listWorkflows(projectId: string): Promise<Workflow[]> {
+  const db = getDatabase();
+  return db
+    .select()
+    .from(workflows)
+    .where(eq(workflows.projectId, projectId))
+    .orderBy(desc(workflows.updatedAt));
 }
 
 /**

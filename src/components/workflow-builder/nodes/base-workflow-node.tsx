@@ -308,6 +308,99 @@ function RegularNodeContent({ id, data, selected }: RegularNodeContentProps) {
 }
 
 // ============================================================================
+// End Node Component
+// ============================================================================
+
+interface EndNodeContentProps {
+  id: string;
+  data: WorkflowNodeData;
+  selected?: boolean | undefined;
+}
+
+function EndNodeContent({ id, data, selected }: EndNodeContentProps) {
+  const nodeState = useWorkflowExecutionStore((s) => s.nodeStates[id]);
+  const currentNodeId = useWorkflowExecutionStore((s) => s.currentNodeId);
+
+  const colorConfig = getNodeColor(NodeType.End);
+  const Icon = colorConfig.icon;
+  const portSchema = getNodePortSchema(NodeType.End);
+
+  const isRunning = currentNodeId === id || nodeState?.status === 'running';
+  const isCompleted = nodeState?.status === 'completed';
+  const isFailed = nodeState?.status === 'failed';
+
+  // Get target status from config
+  const targetStatus = data.config.type === 'end' ? data.config.targetStatus : undefined;
+
+  return (
+    <div
+      className={`
+        group relative min-w-[160px] rounded-full
+        bg-bg-secondary border-2
+        transition-all duration-200
+        ${
+          isRunning
+            ? 'border-accent-warning animate-border-pulse'
+            : isCompleted
+              ? 'border-accent-success'
+              : isFailed
+                ? 'border-accent-error'
+                : selected === true
+                  ? 'border-accent-primary shadow-lg shadow-accent-primary/20 ring-1 ring-accent-primary/30'
+                  : colorConfig.borderColor
+        }
+      `}
+    >
+      {/* Input Handles */}
+      <div className="absolute left-0 right-0 top-0 h-0">
+        {portSchema.inputs.map((port, index) => (
+          <PortHandle
+            key={port.id}
+            port={port}
+            type="target"
+            position={Position.Top}
+            index={index}
+            total={portSchema.inputs.length}
+          />
+        ))}
+      </div>
+
+      {/* Node Content */}
+      <div className="px-5 py-3 flex items-center gap-3">
+        {/* Icon */}
+        <div
+          className={`
+            flex items-center justify-center
+            w-10 h-10 rounded-full
+            ${colorConfig.bgColor}
+          `}
+        >
+          <Icon className={`w-5 h-5 ${colorConfig.textColor}`} />
+        </div>
+
+        {/* Label & Status */}
+        <div className="flex flex-col">
+          <span className="text-sm font-semibold text-text-primary">
+            {data.label}
+          </span>
+          {targetStatus ? (
+            <span className="text-[10px] text-emerald-400 uppercase tracking-wide">
+              → {targetStatus}
+            </span>
+          ) : (
+            <span className="text-[10px] text-text-tertiary uppercase tracking-wide">
+              Terminal
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* No output handles - this is a terminal node */}
+    </div>
+  );
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -315,6 +408,10 @@ function BaseWorkflowNode({ id, data, selected }: WorkflowNodeProps) {
   // Render different component based on node type
   if (data.nodeType === NodeType.Trigger) {
     return <TriggerNodeContent data={data} selected={selected} />;
+  }
+
+  if (data.nodeType === NodeType.End) {
+    return <EndNodeContent id={id} data={data} selected={selected} />;
   }
 
   return <RegularNodeContent id={id} data={data} selected={selected} />;
@@ -354,6 +451,8 @@ function getConfigPreview(data: WorkflowNodeData): string {
       return 'Update GitHub Project fields';
     case 'git-checkout':
       return config.useIssueContext ? 'Checkout from issue context' : `${config.owner}/${config.repo}`;
+    case 'end':
+      return config.targetStatus ? `Set status to "${config.targetStatus}"` : 'Workflow terminal';
     default:
       return 'Configure this node';
   }
