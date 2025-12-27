@@ -16,7 +16,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   type Node,
   type Edge,
   type NodeChange,
@@ -28,8 +27,6 @@ import '@xyflow/react/dist/style.css';
 
 import { Select, Skeleton, EmptyState } from '@/components/shared';
 import { WorkflowNode } from '@/components/workflow-builder/nodes/base-workflow-node';
-import { getNodeHexColor } from '@/lib/design-system';
-import { NodeType } from '@/lib/graph/enums';
 import { ShareIcon } from '@heroicons/react/24/outline';
 
 // =============================================================================
@@ -84,12 +81,12 @@ export function WorkflowGraphViewer() {
         const response = await fetch('/api/workflows');
         if (!response.ok) throw new Error('Failed to fetch workflows');
 
-        const data = await response.json() as Workflow[];
-        setWorkflows(data);
+        const data = await response.json() as { workflows: Workflow[] };
+        setWorkflows(data.workflows);
 
         // Auto-select first workflow if available
-        if (data.length > 0 && data[0] !== undefined) {
-          setSelectedWorkflowId(data[0].id);
+        if (data.workflows.length > 0 && data.workflows[0] !== undefined) {
+          setSelectedWorkflowId(data.workflows[0].id);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -160,16 +157,6 @@ export function WorkflowGraphViewer() {
       }),
     [workflows]
   );
-
-  // Get node color for MiniMap
-  const getNodeColor = useCallback((node: Node) => {
-    const nodeData = node.data as { nodeType?: string } | undefined;
-    const nodeType = nodeData?.nodeType as NodeType | undefined;
-    if (nodeType !== undefined && nodeType !== null) {
-      return getNodeHexColor(nodeType);
-    }
-    return '#3f3f46';
-  }, []);
 
   if (error !== null && error !== '') {
     return (
@@ -256,17 +243,6 @@ export function WorkflowGraphViewer() {
               showZoom={true}
               showFitView={true}
               showInteractive={false}
-            />
-
-            <MiniMap
-              nodeColor={getNodeColor}
-              nodeStrokeColor="#3f3f46"
-              nodeStrokeWidth={2}
-              nodeBorderRadius={4}
-              position="bottom-right"
-              pannable
-              zoomable
-              className="!bg-bg-secondary !border !border-border-default !rounded-lg"
             />
           </ReactFlow>
         )}
