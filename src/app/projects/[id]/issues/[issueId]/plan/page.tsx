@@ -51,6 +51,13 @@ export default async function PlanPage({ params }: PlanPageProps) {
         };
         const client = createProjectsClient(config);
 
+        // Validate the client before using it
+        const validation = await client.validate();
+        if (!validation.valid) {
+          console.error('GitHub Projects client validation failed:', validation.errors);
+          throw new Error(`GitHub Projects validation failed: ${validation.errors.join(', ')}`);
+        }
+
         // Get GitHub issue data - fetch from all statuses
         const statuses = ['Todo', 'In Progress', 'Done', 'Backlog'];
         for (const status of statuses) {
