@@ -20,11 +20,14 @@
 
 import { NextResponse } from 'next/server';
 import { parseDSL, dslToReactFlow, validateDSL } from '@/lib/workflow-dsl';
+import { createLogger } from '@/lib/logging';
 
 interface ParseRequest {
   dsl: string;
   projectId?: string;
 }
+
+const logger = createLogger({ route: 'POST /api/workflows/parse-dsl' });
 
 /**
  * Parse workflow DSL without saving
@@ -72,7 +75,7 @@ export async function POST(request: Request) {
       warnings: parsedWorkflow.warnings,
     });
   } catch (error) {
-    console.error('Failed to parse DSL:', error);
+    logger.error('Failed to parse DSL', { error: error });
     return NextResponse.json(
       {
         error: 'Failed to parse DSL',

@@ -9,6 +9,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { IssuesClient } from '@/lib/github-issues';
 import { githubCache, CACHE_TTL, CacheKeys } from '@/lib/cache';
 import type { GitHubLabel } from '@/lib/github-issues/types';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger({ route: 'POST /api/github/repos/labels' });
 
 interface FetchLabelsRequest {
   token: string;
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
       labels,
     });
   } catch (error) {
-    console.error('[API] /github/repos/labels error:', error);
+    logger.error('Failed to fetch repository labels', { error: error });
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to fetch repository labels',

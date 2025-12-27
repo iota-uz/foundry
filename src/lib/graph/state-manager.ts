@@ -6,6 +6,7 @@
  */
 
 import type { BaseState } from './types';
+import { createLogger } from '@/lib/logging';
 
 /**
  * Configuration for state persistence.
@@ -24,6 +25,7 @@ export interface StateManagerConfig {
  */
 export class StateManager<TState extends BaseState> {
   private stateDir: string;
+  private logger = createLogger({ component: 'StateManager' });
 
   constructor(config: StateManagerConfig) {
     this.stateDir = config.stateDir;
@@ -48,7 +50,7 @@ export class StateManager<TState extends BaseState> {
       return JSON.parse(content) as TState;
     } catch (error) {
       // If the file is corrupted or unreadable, log and return null
-      console.error(`Failed to load state for workflow ${id}:`, error);
+      this.logger.error(`Failed to load state for workflow ${id}`, { error, workflowId: id });
       return null;
     }
   }
@@ -87,10 +89,12 @@ export class StateManager<TState extends BaseState> {
         await fs.unlink(tempPath);
       } catch (cleanupError) {
         // Log cleanup errors at debug level for troubleshooting
-        console.debug(`Failed to clean up temp state file "${tempPath}":`, cleanupError);
+        this.logger.debug(`Failed to clean up temp state file "${tempPath}"`, { cleanupError });
       }
 
-      throw new Error(`Failed to save state for workflow ${id}: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = `Failed to save state for workflow ${id}: ${error instanceof Error ? error.message : String(error)}`;
+      this.logger.error(errorMessage, { error, workflowId: id });
+      throw new Error(errorMessage);
     }
   }
 
@@ -108,7 +112,9 @@ export class StateManager<TState extends BaseState> {
     } catch (error: unknown) {
       // Ignore if file doesn't exist
       if (error !== null && error !== undefined && typeof error === 'object' && 'code' in error && error.code !== 'ENOENT') {
-        throw new Error(`Failed to delete state for workflow ${id}: ${error instanceof Error ? error.message : String(error)}`);
+        const errorMessage = `Failed to delete state for workflow ${id}: ${error instanceof Error ? error.message : String(error)}`;
+        this.logger.error(errorMessage, { error, workflowId: id });
+        throw new Error(errorMessage);
       }
     }
   }
@@ -134,7 +140,7 @@ export class StateManager<TState extends BaseState> {
         .filter((file) => file.endsWith('.json'))
         .map((file) => file.replace('.json', ''));
     } catch (error) {
-      console.error('Failed to list workflows:', error);
+      this.logger.error('Failed to list workflows', { error });
       return [];
     }
   }

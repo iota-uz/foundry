@@ -13,10 +13,13 @@ import {
   getProjectRepos,
 } from '@/lib/db/repositories/project.repository';
 import { validateUuid } from '@/lib/validation';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/projects/:id' });
 
 /**
  * Get project by ID with repositories
@@ -55,7 +58,7 @@ export async function GET(
 
     return NextResponse.json(safeProject);
   } catch (error) {
-    console.error('Failed to get project:', error);
+    logger.error('Failed to get project', { error: error });
     return NextResponse.json({ error: 'Failed to get project' }, { status: 500 });
   }
 }

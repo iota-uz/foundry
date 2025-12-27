@@ -10,6 +10,7 @@
 
 import type { WorkflowStatus } from '@/lib/graph/enums';
 import { emitExecutionEvent, type ExecutionEvent } from '@/server/trpc/events';
+import type { AgentActivityType, AgentActivityData } from '@/lib/planning/types';
 
 // Global map of active execution streams
 const executionStreams = new Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>();
@@ -74,6 +75,14 @@ export function broadcastExecutionEvent(
     error?: string;
     /** Artifacts summary for planning_completed events */
     summary?: unknown;
+    /** Agent activity for agent_activity events */
+    activity?: {
+      id: string;
+      activityType: AgentActivityType;
+      timestamp: string;
+      nodeId: string;
+      data: AgentActivityData;
+    };
   }
 ): void {
   // Emit to tRPC subscriptions
@@ -103,4 +112,42 @@ export function broadcastExecutionEvent(
 export function hasSubscribers(executionId: string): boolean {
   const controllers = executionStreams.get(executionId);
   return controllers ? controllers.size > 0 : false;
+}
+
+/**
+ * Generate a unique activity ID
+ */
+function generateActivityId(): string {
+  return `act-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+/**
+ * Broadcast an agent activity event to all subscribers.
+ *
+ * This is a specialized helper for emitting granular agent activity events
+ * during planning execution (tool calls, text generation, thinking, errors).
+ *
+ * @param executionId - The execution/session ID
+ * @param nodeId - The current node being executed
+ * @param activityType - Type of activity (tool_start, tool_result, text_delta, thinking, error)
+ * @param data - Activity-specific data
+ */
+export function broadcastAgentActivity(
+  executionId: string,
+  nodeId: string,
+  activityType: AgentActivityType,
+  data: AgentActivityData
+): void {
+  const activity = {
+    id: generateActivityId(),
+    activityType,
+    timestamp: new Date().toISOString(),
+    nodeId,
+    data,
+  };
+
+  broadcastExecutionEvent(executionId, {
+    type: 'agent_activity',
+    activity,
+  });
 }

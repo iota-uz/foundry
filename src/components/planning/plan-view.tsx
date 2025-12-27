@@ -28,6 +28,7 @@ import { usePlanningStore } from '@/store/planning.store';
 import { Button } from '@/components/shared/button';
 import { PlanArtifactsPanel } from './plan-artifacts-panel';
 import { QAPanel } from './qa';
+import { ActivityDrawer, ActivityIndicator } from './activity';
 import type { SubmitAnswersRequest } from '@/lib/planning/types';
 
 // ============================================================================
@@ -110,6 +111,8 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
     isLoading,
     isSubmitting,
     error,
+    activities,
+    activityDrawerOpen,
     startPlanning,
     loadExistingPlan,
     submitAnswers,
@@ -117,6 +120,8 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
     resumePlanning,
     cancelPlanning,
     clearError,
+    clearActivities,
+    toggleActivityDrawer,
     reset,
   } = usePlanningStore();
 
@@ -180,6 +185,10 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
   const canPause = isActive && !isLoading;
   const canResume = status !== 'not_started' && !isActive && status !== 'completed' && status !== 'failed';
 
+  // Activity counts for the indicator
+  const activityCount = activities.length;
+  const errorCount = activities.filter((a) => a.activityType === 'error').length;
+
   if (!isInitialized || isLoading) {
     return (
       <div className="flex items-center justify-center h-full bg-bg-primary">
@@ -216,6 +225,14 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
         {/* Right side - Status and Controls */}
         <div className="flex items-center gap-4">
           <StatusBadge status={status} connected={connected} />
+
+          {/* Activity indicator */}
+          <ActivityIndicator
+            activityCount={activityCount}
+            errorCount={errorCount}
+            isRunning={isActive}
+            onClick={toggleActivityDrawer}
+          />
 
           <div className="flex items-center gap-2">
             {canStart && (
@@ -364,6 +381,15 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
           <PlanArtifactsPanel />
         </div>
       </div>
+
+      {/* Activity drawer */}
+      <ActivityDrawer
+        open={activityDrawerOpen}
+        onClose={toggleActivityDrawer}
+        activities={activities}
+        onClearActivities={clearActivities}
+        isRunning={isActive}
+      />
     </div>
   );
 }

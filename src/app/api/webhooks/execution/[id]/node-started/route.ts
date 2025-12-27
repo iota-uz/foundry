@@ -10,6 +10,7 @@ import { requireValidToken } from '@/lib/railway/auth';
 import { getExecution, updateExecution } from '@/lib/db/repositories/workflow.repository';
 import { broadcastExecutionEvent } from '@/lib/workflow-builder/execution-events';
 import type { NodeExecutionState } from '@/lib/db/schema/workflow-executions';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -18,6 +19,8 @@ interface RouteParams {
 interface RequestBody {
   nodeId: string;
 }
+
+const logger = createLogger({ route: 'POST /api/webhooks/execution/:id/node-started' });
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[webhook:node-started] Error:', error);
+    logger.error('Error processing node-started webhook', { error: error });
 
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

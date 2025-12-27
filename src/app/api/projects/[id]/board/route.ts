@@ -14,10 +14,13 @@ import { githubCache, CACHE_TTL, CacheKeys } from '@/lib/cache';
 import type { ProjectItemWithFields, ProjectsConfig, ProjectValidation } from '@/lib/github-projects/types';
 import type { PlanContent } from '@/lib/planning/types';
 import type { IssuePlanStatus } from '@/store/kanban.store';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/projects/:id/board' });
 
 /**
  * Get Kanban board data for a project
@@ -73,7 +76,7 @@ export async function GET(
       }
 
       if (!validation.valid) {
-        console.warn('GitHub project validation failed:', validation.errors);
+        logger.warn('GitHub project validation failed', { errors: validation.errors });
       }
 
       // Get statuses from validation
@@ -106,7 +109,9 @@ export async function GET(
         }
       }
     } catch (error) {
-      console.warn('Failed to fetch GitHub issue data, using metadata only:', error);
+      logger.warn('Failed to fetch GitHub issue data, using metadata only', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // Group issues by status
@@ -191,7 +196,7 @@ export async function GET(
       lastSyncedAt: project.lastSyncedAt,
     });
   } catch (error) {
-    console.error('Failed to get board data:', error);
+    logger.error('Failed to get board data', { error: error });
     return NextResponse.json(
       { error: 'Failed to get board data' },
       { status: 500 }

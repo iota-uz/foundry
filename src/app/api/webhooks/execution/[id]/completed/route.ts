@@ -11,6 +11,7 @@ import { getExecution, updateExecution } from '@/lib/db/repositories/workflow.re
 import { broadcastExecutionEvent } from '@/lib/workflow-builder/execution-events';
 import { getRailwayClient } from '@/lib/railway/client';
 import { WorkflowStatus, SpecialNode } from '@/lib/graph/enums';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -19,6 +20,8 @@ interface RouteParams {
 interface RequestBody {
   context?: Record<string, unknown>;
 }
+
+const logger = createLogger({ route: 'POST /api/webhooks/execution/:id/completed' });
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       try {
         const railway = getRailwayClient();
         await railway.deleteService(execution.railwayServiceId);
-        console.log(`[webhook:completed] Deleted Railway service: ${execution.railwayServiceId}`);
+        logger.info(`Deleted Railway service: ${execution.railwayServiceId}`);
 
         // Clear Railway IDs from execution
         await updateExecution(id, {
@@ -75,13 +78,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         });
       } catch (cleanupError) {
         // Log but don't fail the request
-        console.error('[webhook:completed] Failed to cleanup Railway service:', cleanupError);
+        logger.error('Failed to cleanup Railway service', { error: cleanupError });
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[webhook:completed] Error:', error);
+    logger.error('Error processing completed webhook', { error: error });
 
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

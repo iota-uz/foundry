@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { IssuesClient } from '@/lib/github-issues';
 import { githubCache, CACHE_TTL, CacheKeys } from '@/lib/cache';
 import type { GitHubUser } from '@/lib/github-issues/types';
+import { createLogger } from '@/lib/logging';
 
 interface FetchCollaboratorsRequest {
   token: string;
@@ -19,6 +20,8 @@ interface FetchCollaboratorsRequest {
 function validateRequest(body: Partial<FetchCollaboratorsRequest>): body is FetchCollaboratorsRequest {
   return Boolean(body.token && body.owner && body.repo);
 }
+
+const logger = createLogger({ route: 'POST /api/github/repos/collaborators' });
 
 /**
  * POST /api/github/repos/collaborators
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
       collaborators,
     });
   } catch (error) {
-    console.error('[API] /github/repos/collaborators error:', error);
+    logger.error('Failed to fetch repository collaborators', { error: error });
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to fetch repository collaborators',

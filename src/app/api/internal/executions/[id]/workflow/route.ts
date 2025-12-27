@@ -13,10 +13,13 @@ import {
   getByWorkflowExecutionId,
   getIssueMetadata,
 } from '@/lib/db/repositories/issue-metadata.repository';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/internal/executions/:id/workflow' });
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
@@ -74,7 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       initialContext: enrichedContext,
     });
   } catch (error) {
-    console.error('[internal:workflow] Error:', error);
+    logger.error('Failed to get execution workflow', { error: error });
 
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

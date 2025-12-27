@@ -12,10 +12,13 @@ import { validateUuid, isValidationError } from '@/lib/validation';
 import { generateDSL } from '@/lib/workflow-dsl';
 import type { Node, Edge } from '@xyflow/react';
 import type { WorkflowNodeData } from '@/store/workflow-builder.store';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/workflows/:id/export-dsl' });
 
 /**
  * Export workflow as TypeScript DSL
@@ -73,7 +76,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error('Failed to export DSL:', error);
+    logger.error('Failed to export DSL', { error: error });
     return NextResponse.json(
       { error: 'Failed to export DSL' },
       { status: 500 }

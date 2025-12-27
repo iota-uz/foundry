@@ -16,10 +16,13 @@ import {
   createPlanningInitialState,
 } from '@/lib/planning/execution';
 import { randomUUID } from 'crypto';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string; issueId: string }>;
 }
+
+const logger = createLogger({ route: 'POST /api/projects/:id/issues/:issueId/plan/start' });
 
 /**
  * Start planning workflow for an issue
@@ -102,7 +105,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Run the first step of the workflow asynchronously
     void runPlanningStep(execution.id, validIssueId, initialState).catch((error) => {
-      console.error('Planning workflow failed:', error);
+      logger.error('Planning workflow failed', { error: error });
     });
 
     const response: StartPlanResponse = {
@@ -114,7 +117,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    console.error('Failed to start planning:', error);
+    logger.error('Failed to start planning', { error: error });
     return NextResponse.json(
       { error: 'Failed to start planning' },
       { status: 500 }

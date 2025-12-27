@@ -18,12 +18,15 @@ import {
 import { validateUuid, isValidationError } from '@/lib/validation';
 import { parseDSL, dslToReactFlow, validateDSL } from '@/lib/workflow-dsl';
 import type { WorkflowNodeData as DbNodeData, WorkflowEdgeData as DbEdgeData } from '@/lib/db/schema';
+import { createLogger } from '@/lib/logging';
 
 interface ImportRequest {
   dsl: string;
   projectId: string;
   workflowId?: string;
 }
+
+const logger = createLogger({ route: 'POST /api/workflows/import-dsl' });
 
 /**
  * Import workflow from TypeScript DSL
@@ -167,7 +170,7 @@ export async function POST(request: Request) {
       });
     }
   } catch (error) {
-    console.error('Failed to import DSL:', error);
+    logger.error('Failed to import DSL', { error: error });
     return NextResponse.json(
       {
         error: 'Failed to import DSL',

@@ -6,6 +6,9 @@
 
 import { NextResponse } from 'next/server';
 import { getExecutionStats } from '@/lib/db/repositories/analytics.repository';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger({ route: 'GET /api/visualizations/stats' });
 
 /**
  * Get aggregated execution statistics
@@ -18,7 +21,7 @@ export async function GET() {
 
     return NextResponse.json(stats);
   } catch (error) {
-    console.error('Failed to get execution stats:', error);
+    logger.error('Failed to get execution stats', { error: error });
     return NextResponse.json(
       { error: 'Failed to get execution statistics' },
       { status: 500 }

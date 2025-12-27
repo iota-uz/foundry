@@ -12,7 +12,7 @@
  * eval node pattern.
  */
 
-import { createLogger } from '../graph/utils/logger';
+import { createLogger } from '@/lib/logging';
 import {
   FetchIssuesNodeRuntime,
   type FetchIssuesNodeConfig,
@@ -160,8 +160,8 @@ const nullAgentWrapper: GraphContext['agent'] = {
 /**
  * Creates a mock GraphContext for node execution.
  */
-function createGraphContext(verbose: boolean): GraphContext {
-  const logger = createLogger(verbose ? { level: 'debug' } : {});
+function createGraphContext(_verbose: boolean): GraphContext {
+  const logger = createLogger({ component: 'DispatchWorkflow' });
 
   return {
     logger,

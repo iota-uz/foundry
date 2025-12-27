@@ -16,10 +16,13 @@ import {
 } from '@/lib/db/repositories/issue-metadata.repository';
 import { getProject } from '@/lib/db/repositories/project.repository';
 import { getWithDecryptedToken } from '@/lib/db/repositories/github-credential.repository';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/internal/executions/:id/secrets' });
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Return secrets as key-value pairs
     return NextResponse.json(secrets);
   } catch (error) {
-    console.error('[internal:secrets] Error:', error);
+    logger.error('Failed to get execution secrets', { error: error });
 
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

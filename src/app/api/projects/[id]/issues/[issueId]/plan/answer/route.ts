@@ -17,10 +17,13 @@ import type {
   Answer,
 } from '@/lib/planning/types';
 import { resumePlanningWithAnswers } from '@/lib/planning/execution';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string; issueId: string }>;
 }
+
+const logger = createLogger({ route: 'POST /api/projects/:id/issues/:issueId/plan/answer' });
 
 /**
  * Submit answers to current question batch
@@ -143,7 +146,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Resume workflow execution with the submitted answers
     void resumePlanningWithAnswers(execution.id, validIssueId, updatedAnswers).catch((error) => {
-      console.error('Planning workflow resume failed:', error);
+      logger.error('Planning workflow resume failed', { error: error });
     });
 
     // Return success - workflow will continue asynchronously
@@ -155,7 +158,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Failed to submit answers:', error);
+    logger.error('Failed to submit answers', { error: error });
     return NextResponse.json(
       { error: 'Failed to submit answers' },
       { status: 500 }

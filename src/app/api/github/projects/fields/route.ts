@@ -9,6 +9,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProjectsClient } from '@/lib/github-projects';
 import { githubCache, CACHE_TTL, CacheKeys } from '@/lib/cache';
 import type { ProjectValidation, ProjectField } from '@/lib/github-projects/types';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger({ route: 'POST /api/github/projects/fields' });
 
 interface FetchFieldsRequest {
   token: string;
@@ -85,7 +88,7 @@ export async function POST(request: NextRequest) {
       fields,
     });
   } catch (error) {
-    console.error('[API] /github/projects/fields error:', error);
+    logger.error('Failed to fetch project fields', { error: error });
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to fetch project fields',

@@ -7,10 +7,13 @@
 import { NextResponse } from 'next/server';
 import { getExecution } from '@/lib/db/repositories/workflow.repository';
 import { validateUuid, isValidationError } from '@/lib/validation';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/workflows/executions/:id' });
 
 /**
  * Get execution by ID
@@ -34,7 +37,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     return NextResponse.json(execution);
   } catch (error) {
-    console.error('Failed to get execution:', error);
+    logger.error('Failed to get execution', { error: error });
     return NextResponse.json(
       { error: 'Failed to get execution' },
       { status: 500 }

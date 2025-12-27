@@ -12,10 +12,13 @@ import {
 } from '@/lib/db/repositories';
 import { validateUuid } from '@/lib/validation';
 import type { GetPlanResponse, PlanContent } from '@/lib/planning/types';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string; issueId: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/projects/:id/issues/:issueId/plan' });
 
 /**
  * Get current plan state for an issue
@@ -68,7 +71,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Failed to get plan:', error);
+    logger.error('Failed to get plan', { error: error });
     return NextResponse.json(
       { error: 'Failed to get plan' },
       { status: 500 }

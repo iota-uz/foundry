@@ -245,6 +245,15 @@ export function IssueDetailPanel({
             </h2>
           </div>
 
+          {/* Plan Button - Prominent placement */}
+          <div className="px-5 pb-4">
+            <PlanButton
+              projectId={projectId}
+              issueId={issue.id}
+              planStatus={issue.planStatus}
+            />
+          </div>
+
           {/* Status and metadata bar */}
           <div className="px-5 pb-4 flex flex-wrap items-center gap-3">
             {/* Status badge */}
@@ -392,31 +401,28 @@ export function IssueDetailPanel({
               )}
 
               {/* Quick Actions */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <BoltIcon className="w-4 h-4 text-text-muted" />
-                  <span className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider">
-                    Quick Actions
-                  </span>
-                  <div className="flex-1 h-px bg-border-subtle" />
+              {manualAutomations.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <BoltIcon className="w-4 h-4 text-text-muted" />
+                    <span className="text-[10px] font-mono text-text-tertiary uppercase tracking-wider">
+                      Quick Actions
+                    </span>
+                    <div className="flex-1 h-px bg-border-subtle" />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {manualAutomations.map((automation) => (
+                      <ManualTriggerButton
+                        key={automation.id}
+                        automation={automation}
+                        projectId={projectId}
+                        issueId={issue.id}
+                        onTrigger={fetchExecutions}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <PlanButton
-                    projectId={projectId}
-                    issueId={issue.id}
-                    planStatus={issue.planStatus}
-                  />
-                  {manualAutomations.map((automation) => (
-                    <ManualTriggerButton
-                      key={automation.id}
-                      automation={automation}
-                      projectId={projectId}
-                      issueId={issue.id}
-                      onTrigger={fetchExecutions}
-                    />
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           ) : (
             <div className="p-5">

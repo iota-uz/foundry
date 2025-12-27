@@ -13,10 +13,13 @@ import {
   ProjectRepository,
 } from '@/lib/db/repositories';
 import { validateUuid } from '@/lib/validation';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/projects/:id/automations' });
 
 /**
  * List all automations for a project with their transitions
@@ -40,7 +43,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     return NextResponse.json({ data: automations });
   } catch (error) {
-    console.error('Failed to list automations:', error);
+    logger.error('Failed to list automations', { error: error });
     return NextResponse.json(
       { error: 'Failed to list automations' },
       { status: 500 }

@@ -177,9 +177,9 @@ export type { AgentWrapperConfig } from './agent/wrapper';
 export { toSdkTool, toSdkTools } from './agent/tools';
 export type { GraphTool, SdkToolDefinition } from './agent/tools';
 
-// Utilities
-export { createLogger } from './utils/logger';
-export type { LogContext } from './utils/logger';
+// Utilities (re-exported from @/lib/logging for backward compatibility)
+export { createLogger } from '../logging';
+export type { LogContext } from '../logging';
 
 // Config loader
 export {

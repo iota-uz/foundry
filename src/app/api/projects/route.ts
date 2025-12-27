@@ -9,6 +9,9 @@
 
 import { NextResponse } from 'next/server';
 import { listProjects } from '@/lib/db/repositories/project.repository';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger({ route: 'GET /api/projects' });
 
 /**
  * List all projects (excludes GitHub tokens)
@@ -32,7 +35,7 @@ export async function GET() {
 
     return NextResponse.json({ projects: safeProjects });
   } catch (error) {
-    console.error('Failed to list projects:', error);
+    logger.error('Failed to list projects', { error: error });
     return NextResponse.json(
       { error: 'Failed to list projects' },
       { status: 500 }

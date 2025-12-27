@@ -9,7 +9,7 @@ import type { BaseState, GraphNode, GraphContext, GraphEngineConfig, PortInputs 
 import { WorkflowStatus, SpecialNode } from './enums';
 import { StateManager } from './state-manager';
 import { AgentWrapper } from './agent/wrapper';
-import { createLogger } from './utils/logger';
+import { createLogger } from '@/lib/logging';
 
 // ============================================================================
 // Port Data Flow Helpers
@@ -193,7 +193,7 @@ export class GraphEngine<TState extends BaseState> {
         // EXECUTE
         const context: GraphContext = {
           agent: agentWrapper,
-          logger: nodeLogger as Console,
+          logger: nodeLogger,
           portInputs,
         };
 
@@ -244,7 +244,7 @@ export class GraphEngine<TState extends BaseState> {
         // PERSIST (Checkpoint)
         await this.stateManager.save(id, state);
       } catch (error) {
-        nodeLogger.error(`Error in node ${state.currentNode}:`, error);
+        nodeLogger.error(`Error in node ${state.currentNode}:`, { error });
 
         // Check if we should retry
         if (this.config.maxRetries !== undefined && retryCount < this.config.maxRetries) {

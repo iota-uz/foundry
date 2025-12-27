@@ -141,7 +141,7 @@ export abstract class BaseNode<
       const duration = Date.now() - startTime;
       context.logger.error(
         `[${this.nodeType}:${nodeName}] Failed after ${duration}ms:`,
-        error
+        { error }
       );
       throw error;
     }

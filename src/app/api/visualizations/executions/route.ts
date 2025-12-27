@@ -6,6 +6,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { listAllExecutions } from '@/lib/db/repositories/analytics.repository';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger({ route: 'GET /api/visualizations/executions' });
 
 /**
  * List all executions across workflows with pagination
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    console.error('Failed to list executions:', error);
+    logger.error('Failed to list executions', { error: error });
     return NextResponse.json(
       { error: 'Failed to list executions' },
       { status: 500 }

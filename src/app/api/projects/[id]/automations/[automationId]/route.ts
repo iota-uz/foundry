@@ -13,10 +13,13 @@ import {
   ProjectRepository,
 } from '@/lib/db/repositories';
 import { validateUuid } from '@/lib/validation';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string; automationId: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/projects/:id/automations/:automationId' });
 
 /**
  * Get automation by ID with its transitions
@@ -56,7 +59,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     return NextResponse.json({ data: automation });
   } catch (error) {
-    console.error('Failed to get automation:', error);
+    logger.error('Failed to get automation', { error: error });
     return NextResponse.json(
       { error: 'Failed to get automation' },
       { status: 500 }

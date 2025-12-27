@@ -15,6 +15,9 @@ import { runWorkflow, resumeWorkflow } from '@/lib/workflow-builder/workflow-run
 import { getRailwayClient } from '@/lib/railway/client';
 import { generateExecutionToken } from '@/lib/railway/auth';
 import { getEnvVarOptional } from '@/lib/utils/env';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger({ module: 'executions' });
 
 /** Default Docker image for container execution */
 const DEFAULT_DOCKER_IMAGE = 'foundry/workflow-runner:latest';
@@ -102,10 +105,10 @@ export const startExecutionAction = actionClient
           railwayServiceId: result.serviceId,
         });
 
-        console.log(`[execution] Started Railway service: ${result.serviceId}`);
+        logger.info('Started Railway service', { serviceId: result.serviceId });
 
       } catch (error) {
-        console.error('[execution] Failed to start container:', error);
+        logger.error('Failed to start container', { error });
 
         // Fallback to in-process or mark as failed
         await updateExecution(execution.id, {
@@ -127,7 +130,7 @@ export const startExecutionAction = actionClient
         edges: workflow.edges as Edge[],
         initialContext: (workflow.initialContext as Record<string, unknown>) ?? {},
       }).catch((error) => {
-        console.error('Workflow execution error:', error);
+        logger.error('Workflow execution error', { error });
       });
     }
 
@@ -202,7 +205,7 @@ export const resumeExecutionAction = actionClient
 
     // Resume the GraphEngine execution from checkpoint
     resumeWorkflow({ executionId }).catch((error) => {
-      console.error('Workflow resume error:', error);
+      logger.error('Workflow resume error', { error });
     });
 
     return {
@@ -241,9 +244,9 @@ export const cancelExecutionAction = actionClient
       try {
         const railway = getRailwayClient();
         await railway.deleteService(execution.railwayServiceId);
-        console.log(`[execution] Deleted Railway service: ${execution.railwayServiceId}`);
+        logger.info('Deleted Railway service', { serviceId: execution.railwayServiceId });
       } catch (error) {
-        console.error('[execution] Failed to delete Railway service:', error);
+        logger.error('Failed to delete Railway service', { error });
         // Continue with cancellation even if cleanup fails
       }
     }

@@ -14,6 +14,7 @@ import {
   EvalNodeRuntime,
   DynamicAgentNodeRuntime,
   DynamicCommandNodeRuntime,
+  GitCheckoutNodeRuntime,
   type BaseNode,
   type NodeExecutionResult,
   type BaseNodeConfig,
@@ -25,6 +26,7 @@ import type {
   EvalNodeConfig as EvalRuntimeConfig,
   DynamicAgentNodeConfig as DynamicAgentRuntimeConfig,
   DynamicCommandNodeConfig as DynamicCommandRuntimeConfig,
+  GitCheckoutNodeConfig as GitCheckoutRuntimeConfig,
 } from './nodes';
 
 /**
@@ -188,6 +190,21 @@ function createNodeAdapter<
       };
 
       const runtime = new DynamicCommandNodeRuntime<TContext>(config);
+      return new NodeAdapter(nodeDef.name, runtime);
+    }
+
+    case NodeType.GitCheckout: {
+      const config: GitCheckoutRuntimeConfig<TContext> = {
+        next: transition,
+        ...(nodeDef.useIssueContext !== undefined && { useIssueContext: nodeDef.useIssueContext }),
+        ...(nodeDef.owner !== undefined && { owner: nodeDef.owner }),
+        ...(nodeDef.repo !== undefined && { repo: nodeDef.repo }),
+        ...(nodeDef.ref !== undefined && { ref: nodeDef.ref }),
+        ...(nodeDef.depth !== undefined && { depth: nodeDef.depth }),
+        ...(nodeDef.skipIfExists !== undefined && { skipIfExists: nodeDef.skipIfExists }),
+      };
+
+      const runtime = new GitCheckoutNodeRuntime<TContext>(config);
       return new NodeAdapter(nodeDef.name, runtime);
     }
 

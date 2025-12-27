@@ -24,6 +24,7 @@ import type {
   APISpec,
   StartPlanResponse,
   SubmitAnswersRequest,
+  AgentActivityEvent,
 } from '@/lib/planning/types';
 
 // ============================================================================
@@ -66,6 +67,11 @@ interface PlanningState {
   isSubmitting: boolean;
   error: string | null;
 
+  // Activity state (real-time agent activity streaming)
+  activities: AgentActivityEvent[];
+  activityDrawerOpen: boolean;
+  maxActivities: number;
+
   // Actions
   startPlanning: (projectId: string, issueId: string, issueTitle: string, issueBody: string) => Promise<void>;
   submitAnswers: (answers: SubmitAnswersRequest['answers'], skippedQuestions?: string[]) => Promise<void>;
@@ -78,6 +84,11 @@ interface PlanningState {
   setPreviewMode: (mode: 'summary' | 'diff' | 'full') => void;
   clearError: () => void;
   reset: () => void;
+  // Activity actions
+  addActivity: (activity: AgentActivityEvent) => void;
+  clearActivities: () => void;
+  toggleActivityDrawer: () => void;
+  setActivityDrawerOpen: (open: boolean) => void;
 }
 
 // ============================================================================
@@ -121,6 +132,10 @@ const initialState = {
   isLoading: false,
   isSubmitting: false,
   error: null,
+  // Activity state
+  activities: [] as AgentActivityEvent[],
+  activityDrawerOpen: false,
+  maxActivities: 500,
 };
 
 // ============================================================================
@@ -497,6 +512,14 @@ export const usePlanningStore = create<PlanningState>()(
           get().disconnectSSE();
         });
 
+        // Handle agent activity events for real-time visibility
+        eventSource.addEventListener('agent_activity', (event) => {
+          const data = JSON.parse(event.data) as { activity: AgentActivityEvent };
+          if (data.activity) {
+            get().addActivity(data.activity);
+          }
+        });
+
         set({ eventSource });
       },
 
@@ -521,6 +544,29 @@ export const usePlanningStore = create<PlanningState>()(
         set({ error: null });
       },
 
+      // Add activity to the list
+      addActivity: (activity) => {
+        const { activities, maxActivities } = get();
+        // Keep only the last maxActivities items
+        const newActivities = [...activities, activity].slice(-maxActivities);
+        set({ activities: newActivities });
+      },
+
+      // Clear all activities
+      clearActivities: () => {
+        set({ activities: [] });
+      },
+
+      // Toggle activity drawer
+      toggleActivityDrawer: () => {
+        set({ activityDrawerOpen: !get().activityDrawerOpen });
+      },
+
+      // Set activity drawer open state
+      setActivityDrawerOpen: (open) => {
+        set({ activityDrawerOpen: open });
+      },
+
       // Reset store
       reset: () => {
         const { eventSource } = get();
@@ -530,6 +576,8 @@ export const usePlanningStore = create<PlanningState>()(
         set({
           ...initialState,
           eventSource: null,
+          activities: [],
+          activityDrawerOpen: false,
         });
       },
     }),
@@ -575,4 +623,27 @@ export const useArtifactCounts = () => {
       artifacts.uiMockups.length +
       artifacts.apiSpecs.length,
   };
+};
+
+// Activity selectors
+export const useActivities = () => {
+  return usePlanningStore((state) => state.activities);
+};
+
+export const useActivityDrawerOpen = () => {
+  return usePlanningStore((state) => state.activityDrawerOpen);
+};
+
+export const useActivityCounts = () => {
+  const activities = usePlanningStore((state) => state.activities);
+  return {
+    total: activities.length,
+    tools: activities.filter((a) => a.activityType === 'tool_start').length,
+    errors: activities.filter((a) => a.activityType === 'error').length,
+  };
+};
+
+export const useLatestActivity = () => {
+  const activities = usePlanningStore((state) => state.activities);
+  return activities[activities.length - 1] ?? null;
 };

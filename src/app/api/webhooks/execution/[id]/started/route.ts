@@ -9,10 +9,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireValidToken } from '@/lib/railway/auth';
 import { updateExecution } from '@/lib/db/repositories/workflow.repository';
 import { broadcastExecutionEvent } from '@/lib/workflow-builder/execution-events';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'POST /api/webhooks/execution/:id/started' });
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[webhook:started] Error:', error);
+    logger.error('Error processing started webhook', { error: error });
 
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

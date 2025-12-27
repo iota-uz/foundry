@@ -7,10 +7,13 @@
 import { NextResponse } from 'next/server';
 import { listExecutions, getWorkflow } from '@/lib/db/repositories/workflow.repository';
 import { validateUuid, isValidationError } from '@/lib/validation';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/workflows/:id/executions' });
 
 /**
  * List all executions for a workflow
@@ -35,7 +38,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     const executions = await listExecutions(validId);
     return NextResponse.json(executions);
   } catch (error) {
-    console.error('Failed to list executions:', error);
+    logger.error('Failed to list executions', { error: error });
     return NextResponse.json(
       { error: 'Failed to list executions' },
       { status: 500 }

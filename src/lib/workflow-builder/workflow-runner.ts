@@ -16,6 +16,9 @@ import { createNodeRuntimes } from '@/lib/graph/runtime-builders';
 import { createInitialWorkflowState, WorkflowStatus, SpecialNode } from '@/lib/graph';
 import type { BaseState, GraphContext, GraphNode } from '@/lib/graph/types';
 import { AgentWrapper } from '@/lib/graph/agent/wrapper';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger({ module: 'workflow-runner' });
 
 interface RunWorkflowOptions {
   executionId: string;
@@ -54,7 +57,7 @@ function createExecutionLogger(
       level,
       message,
       metadata: metadata ?? null,
-    }).catch(err => console.error('Failed to save log:', err));
+    }).catch(err => logger.error('Failed to save log', { error: err }));
 
     // Broadcast via SSE
     broadcastExecutionEvent(executionId, {

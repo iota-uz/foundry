@@ -7,6 +7,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNodeAnalytics } from '@/lib/db/repositories/analytics.repository';
 import { validateUuid, isValidationError } from '@/lib/validation';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger({ route: 'GET /api/visualizations/analytics' });
 
 /**
  * Get node-level analytics
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
     const nodes = await getNodeAnalytics();
     return NextResponse.json({ nodes });
   } catch (error) {
-    console.error('Failed to get node analytics:', error);
+    logger.error('Failed to get node analytics', { error: error });
     return NextResponse.json(
       { error: 'Failed to get node analytics' },
       { status: 500 }

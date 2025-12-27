@@ -140,7 +140,8 @@ export type PlanningSSEEvent =
   | { type: 'artifact_generated'; data: { artifactType: string; artifactId: string } }
   | { type: 'planning_completed'; data: { summary: PlanArtifacts } }
   | { type: 'planning_failed'; data: { error: string } }
-  | { type: 'progress'; data: { message: string; progress: number } };
+  | { type: 'progress'; data: { message: string; progress: number } }
+  | { type: 'agent_activity'; data: AgentActivityEvent };
 
 // API request/response types
 export interface StartPlanRequest {
@@ -179,4 +180,48 @@ export interface GetPlanResponse {
   planContent: PlanContent | null;
   sessionId?: string;
   workflowStatus?: string;
+}
+
+// Agent Activity Event types (for real-time activity streaming)
+export type AgentActivityType =
+  | 'tool_start'
+  | 'tool_result'
+  | 'text_delta'
+  | 'thinking'
+  | 'error';
+
+export interface AgentActivityData {
+  /** Tool name for tool_start/tool_result events */
+  toolName?: string | undefined;
+  /** Tool input parameters for tool_start events */
+  toolInput?: Record<string, unknown> | undefined;
+  /** Tool output for tool_result events */
+  toolOutput?: unknown;
+  /** Tool use ID to correlate start/result */
+  toolUseId?: string | undefined;
+  /** Whether tool execution succeeded */
+  success?: boolean | undefined;
+  /** Text content for text_delta events */
+  textDelta?: string | undefined;
+  /** Thinking content for thinking events */
+  thinkingContent?: string | undefined;
+  /** Error message for error events */
+  errorMessage?: string | undefined;
+  /** Error code for error events */
+  errorCode?: string | undefined;
+  /** File path for file operations (Read, Write, Edit) */
+  filePath?: string | undefined;
+}
+
+export interface AgentActivityEvent {
+  /** Unique ID for this activity */
+  id: string;
+  /** Type of activity */
+  activityType: AgentActivityType;
+  /** ISO timestamp */
+  timestamp: string;
+  /** Node ID where activity occurred */
+  nodeId: string;
+  /** Activity-specific data */
+  data: AgentActivityData;
 }

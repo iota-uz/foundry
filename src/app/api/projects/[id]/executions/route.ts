@@ -7,10 +7,13 @@
 import { NextResponse } from 'next/server';
 import { ProjectRepository, IssueMetadataRepository } from '@/lib/db/repositories';
 import { validateUuid } from '@/lib/validation';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/projects/:id/executions' });
 
 /**
  * List recent executions for a project
@@ -44,7 +47,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({ data: executions });
   } catch (error) {
-    console.error('Failed to list executions:', error);
+    logger.error('Failed to list executions', { error: error });
     return NextResponse.json(
       { error: 'Failed to list executions' },
       { status: 500 }

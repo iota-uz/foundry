@@ -10,10 +10,13 @@ import {
   IssueMetadataRepository,
 } from '@/lib/db/repositories';
 import { validateUuid } from '@/lib/validation';
+import { createLogger } from '@/lib/logging';
 
 interface RouteParams {
   params: Promise<{ id: string; issueId: string }>;
 }
+
+const logger = createLogger({ route: 'GET /api/projects/:id/issues/:issueId/executions' });
 
 /**
  * List all executions for a specific issue
@@ -49,7 +52,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     return NextResponse.json({ data: executions });
   } catch (error) {
-    console.error('Failed to list issue executions:', error);
+    logger.error('Failed to list issue executions', { error: error });
     return NextResponse.json(
       { error: 'Failed to list issue executions' },
       { status: 500 }

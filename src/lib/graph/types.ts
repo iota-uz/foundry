@@ -147,7 +147,12 @@ export interface GraphContext {
   agent: IAgentWrapper;
 
   /** Structured logger for debugging and observability */
-  logger: Console;
+  logger: {
+    debug(message: string, attributes?: Record<string, unknown>): void;
+    info(message: string, attributes?: Record<string, unknown>): void;
+    warn(message: string, attributes?: Record<string, unknown>): void;
+    error(message: string, attributes?: Record<string, unknown>): void;
+  };
 
   /**
    * Resolved port inputs for this node.
@@ -155,6 +160,12 @@ export interface GraphContext {
    * Key: input port id, Value: data from connected output port
    */
   portInputs?: PortInputs;
+
+  /**
+   * Execution ID for streaming activity events.
+   * When set, nodes can emit real-time activity events.
+   */
+  executionId?: string | undefined;
 }
 
 /**
@@ -189,6 +200,18 @@ export interface GraphNode<TState extends BaseState> {
  * Agent wrapper interface for dependency injection.
  * Allows mocking in tests and provides a clean abstraction.
  */
+/**
+ * Options for streaming activity events during agent execution.
+ */
+export interface AgentStreamingOptions {
+  /** Execution ID for broadcasting events */
+  executionId: string;
+  /** Node ID where execution is happening */
+  nodeId: string;
+  /** Whether to stream text deltas (can be noisy) */
+  streamTextDeltas?: boolean;
+}
+
 export interface IAgentWrapper {
   /**
    * Runs a single turn of the agent.
@@ -196,15 +219,18 @@ export interface IAgentWrapper {
    * @param state - Current workflow state (for hydration)
    * @param userInstruction - The instruction/prompt for this turn
    * @param tools - SDK-compatible tool definitions
+   * @param streaming - Optional streaming options for real-time activity events
    * @returns Updated conversation history and response
    */
   runStep<T extends BaseState>(
     state: T,
     userInstruction: string,
-    tools: unknown[]
+    tools: unknown[],
+    streaming?: AgentStreamingOptions
   ): Promise<{
     response: string;
     updatedHistory: unknown[];
+    toolsUsed?: string[] | undefined;
   }>;
 }
 

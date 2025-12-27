@@ -17,6 +17,9 @@ import { AgentWrapper } from '@/lib/graph/agent/wrapper';
 import * as IssueMetadataRepository from '@/lib/db/repositories/issue-metadata.repository';
 import type { PlanContent, PlanningPhase, QuestionBatch, Answer, PlanArtifacts } from './types';
 import type { BaseState } from '@/lib/graph/types';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger({ module: 'planning' });
 
 // ============================================================================
 // Types
@@ -78,7 +81,7 @@ export async function runPlanningStep(
   // Check for required API key
   if (!apiKey) {
     const error = 'ANTHROPIC_API_KEY is not set. Please configure it in your environment variables.';
-    console.error('[Planning] ' + error);
+    logger.error(error);
 
     // Broadcast failure immediately (use planning_failed for SSE compatibility)
     broadcastExecutionEvent(executionId, {
@@ -140,7 +143,7 @@ export async function runPlanningStep(
     return result;
   } catch (error) {
     const err = error as Error;
-    console.error('[Planning] Workflow execution failed:', err.message);
+    logger.error('Workflow execution failed', { error: err });
 
     // Broadcast failure (use planning_failed for SSE compatibility)
     broadcastExecutionEvent(executionId, {
@@ -184,8 +187,8 @@ async function runWithPauseDetection(
       status: WorkflowStatus.Running,
     });
 
-    // Execute the node
-    const context = createExecutionContext();
+    // Execute the node with executionId for activity streaming
+    const context = createExecutionContext(executionId);
     const updates = await node.execute(state, context);
 
     // Merge updates
@@ -378,8 +381,10 @@ function isTerminalNode(nodeName: string): boolean {
 
 /**
  * Creates a minimal execution context for node execution.
+ *
+ * @param executionId - Optional execution ID for streaming activity events
  */
-function createExecutionContext(): import('@/lib/graph/types').GraphContext {
+function createExecutionContext(executionId?: string): import('@/lib/graph/types').GraphContext {
   return {
     agent: new AgentWrapper({
       apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -387,5 +392,6 @@ function createExecutionContext(): import('@/lib/graph/types').GraphContext {
     }),
     logger: console,
     portInputs: {},
+    executionId,
   };
 }
