@@ -19,6 +19,79 @@ const AGENT_MODEL_MAP: Record<string, string> = {
 };
 
 // ============================================================================
+// MCP Server Configuration
+// ============================================================================
+
+interface McpStdioConfig {
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
+interface McpHttpConfig {
+  type: 'http';
+  url: string;
+  headers?: Record<string, string>;
+}
+
+interface McpSseConfig {
+  type: 'sse';
+  url: string;
+  headers?: Record<string, string>;
+}
+
+type McpServerConfig = McpStdioConfig | McpHttpConfig | McpSseConfig;
+
+interface PresetMcpServer {
+  type: 'preset';
+  presetId: string;
+  env?: Record<string, string>;
+}
+
+interface CustomMcpServer {
+  type: 'custom';
+  name: string;
+  config: McpServerConfig;
+}
+
+type McpServerSelection = PresetMcpServer | CustomMcpServer;
+
+const MCP_PRESETS: Record<string, McpServerConfig> = {
+  playwright: { command: 'npx', args: ['@playwright/mcp@latest', '--headless'] },
+  figma: { type: 'http', url: 'https://mcp.figma.com/mcp' },
+  'sequential-thinking': { command: 'npx', args: ['@anthropic-ai/mcp-server-sequential-thinking'] },
+};
+
+function buildMcpServersConfig(
+  selections: McpServerSelection[]
+): Record<string, McpServerConfig> {
+  const result: Record<string, McpServerConfig> = {};
+
+  for (const selection of selections) {
+    if (selection.type === 'preset') {
+      const preset = MCP_PRESETS[selection.presetId];
+      if (!preset) {
+        console.warn(`[mcp] Unknown preset: ${selection.presetId}, skipping`);
+        continue;
+      }
+
+      // Clone and merge env if needed
+      let config = { ...preset };
+      if (selection.env && !('type' in config)) {
+        config = { ...config, env: { ...(config as McpStdioConfig).env, ...selection.env } };
+      }
+
+      result[selection.presetId] = config;
+    } else {
+      // Custom server
+      result[selection.name] = selection.config;
+    }
+  }
+
+  return result;
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -279,6 +352,7 @@ const nodeExecutors: Record<string, NodeExecutor> = {
       model?: string;
       maxTurns?: number;
       capabilities?: string[];
+      mcpServers?: McpServerSelection[];
     };
 
     await log('info', 'Executing agent node', node.id);
@@ -298,21 +372,27 @@ const nodeExecutors: Record<string, NodeExecutor> = {
     const modelKey = config.model ?? 'sonnet';
     const model = AGENT_MODEL_MAP[modelKey] ?? AGENT_MODEL_MAP.sonnet;
 
+    // Build MCP servers config if present
+    const mcpServers = config.mcpServers?.length
+      ? buildMcpServersConfig(config.mcpServers)
+      : undefined;
+
+    if (mcpServers && Object.keys(mcpServers).length > 0) {
+      await log('info', `Configuring MCP servers: ${Object.keys(mcpServers).join(', ')}`, node.id);
+    }
+
     // Configure SDK options
     const sdkOptions: Options = {
       maxTurns: config.maxTurns ?? 10,
       systemPrompt: prompt,
-      allowedTools: config.capabilities ?? [],
+      // When MCP servers are present, allow all tools including MCP tools
+      allowedTools: mcpServers ? ['*'] : (config.capabilities ?? []),
+      ...(mcpServers && { mcpServers }),
     };
 
     // Only set model if we have one
     if (model) {
       sdkOptions.model = model;
-    }
-
-    // Log MCP warning if configured
-    if ((node.data.config as { mcpServers?: unknown[] }).mcpServers?.length) {
-      await log('warn', 'MCP servers not supported in container execution (v2 feature)', node.id);
     }
 
     try {

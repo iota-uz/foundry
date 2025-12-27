@@ -66,32 +66,191 @@ export function getMcpPreset(id: McpPresetId): McpPresetDefinition | undefined {
   return MCP_PRESETS[id];
 }
 
-export function resolvePresetConfig(
-  presetId: McpPresetId,
-  envOverrides?: Record<string, string>
-): McpServerConfig {
-  const preset = MCP_PRESETS[presetId];
+/**
+ * Resolves a preset configuration with user overrides merged in.
+ *
+ * @param selection - The preset server selection with optional presetConfig
+ * @returns The fully resolved MCP server config ready for SDK consumption
+ */
+export function resolvePresetConfig(selection: PresetMcpServer): McpServerConfig {
+  const preset = MCP_PRESETS[selection.presetId];
   if (!preset) {
-    throw new Error(`Unknown MCP preset: ${presetId}`);
+    throw new Error(`Unknown MCP preset: ${selection.presetId}`);
   }
 
-  const config = { ...preset.config };
+  const baseConfig = { ...preset.config };
 
-  // Only stdio configs support env overrides (they lack a 'type' field)
-  if (envOverrides && !('type' in config)) {
-    const stdioConfig = config as McpStdioConfig;
-    stdioConfig.env = { ...stdioConfig.env, ...envOverrides };
+  // Handle Playwright preset
+  if (selection.presetId === McpPresetId.Playwright) {
+    return resolvePlaywrightConfig(
+      baseConfig as McpStdioConfig,
+      selection.presetConfig as PlaywrightPresetConfig | undefined,
+      selection.env
+    );
   }
 
-  return config;
+  // Handle Figma preset
+  if (selection.presetId === McpPresetId.Figma) {
+    return resolveFigmaConfig(
+      baseConfig as McpHttpConfig,
+      selection.presetConfig as FigmaPresetConfig | undefined
+    );
+  }
+
+  // Handle Sequential Thinking preset
+  if (selection.presetId === McpPresetId.SequentialThinking) {
+    return resolveSequentialThinkingConfig(
+      baseConfig as McpStdioConfig,
+      selection.presetConfig as SequentialThinkingPresetConfig | undefined,
+      selection.env
+    );
+  }
+
+  // Fallback: apply legacy env overrides for unknown presets
+  if (selection.env && !('type' in baseConfig)) {
+    const stdioConfig = baseConfig as McpStdioConfig;
+    stdioConfig.env = { ...stdioConfig.env, ...selection.env };
+  }
+
+  return baseConfig;
+}
+
+/**
+ * Resolves Playwright preset configuration
+ */
+function resolvePlaywrightConfig(
+  base: McpStdioConfig,
+  config?: PlaywrightPresetConfig,
+  legacyEnv?: Record<string, string>
+): McpStdioConfig {
+  const args = ['@playwright/mcp@latest'];
+
+  // Apply headless mode (default: true)
+  if (config?.headless !== false) {
+    args.push('--headless');
+  }
+
+  // Apply viewport if specified
+  if (config?.viewportWidth && config?.viewportHeight) {
+    args.push('--viewport-size', `${config.viewportWidth}x${config.viewportHeight}`);
+  }
+
+  // Apply timeout if specified
+  if (config?.timeout) {
+    args.push('--timeout', config.timeout.toString());
+  }
+
+  // Merge environment variables (presetConfig.env takes precedence over legacy env)
+  const env = { ...legacyEnv, ...config?.env };
+
+  return {
+    command: base.command,
+    args,
+    ...(Object.keys(env).length > 0 && { env }),
+  };
+}
+
+/**
+ * Resolves Figma preset configuration
+ */
+function resolveFigmaConfig(
+  base: McpHttpConfig,
+  config?: FigmaPresetConfig
+): McpHttpConfig {
+  const headers: Record<string, string> = {};
+
+  // Add authorization header if API token is provided
+  if (config?.apiToken) {
+    headers['Authorization'] = `Bearer ${config.apiToken}`;
+  }
+
+  // Merge custom headers
+  if (config?.headers) {
+    Object.assign(headers, config.headers);
+  }
+
+  return {
+    type: 'http',
+    url: base.url,
+    ...(Object.keys(headers).length > 0 && { headers }),
+  };
+}
+
+/**
+ * Resolves Sequential Thinking preset configuration
+ */
+function resolveSequentialThinkingConfig(
+  base: McpStdioConfig,
+  config?: SequentialThinkingPresetConfig,
+  legacyEnv?: Record<string, string>
+): McpStdioConfig {
+  // Merge environment variables
+  const env = { ...legacyEnv, ...config?.env };
+
+  return {
+    command: base.command,
+    ...(base.args && { args: base.args }),
+    ...(Object.keys(env).length > 0 && { env }),
+  };
 }
 
 export type McpServerSelection = PresetMcpServer | CustomMcpServer;
 
+// ============================================================================
+// Preset-Specific Configuration Types
+// ============================================================================
+
+/**
+ * Playwright MCP server configuration options
+ */
+export interface PlaywrightPresetConfig {
+  /** Run browser in headless mode (default: true) */
+  headless?: boolean;
+  /** Viewport width in pixels (default: 1280) */
+  viewportWidth?: number;
+  /** Viewport height in pixels (default: 720) */
+  viewportHeight?: number;
+  /** Navigation timeout in milliseconds (default: 30000) */
+  timeout?: number;
+  /** Additional environment variables */
+  env?: Record<string, string>;
+}
+
+/**
+ * Figma MCP server configuration options
+ */
+export interface FigmaPresetConfig {
+  /** Figma personal access token for authentication */
+  apiToken?: string;
+  /** Custom HTTP headers */
+  headers?: Record<string, string>;
+}
+
+/**
+ * Sequential Thinking MCP server configuration options
+ */
+export interface SequentialThinkingPresetConfig {
+  /** Additional environment variables */
+  env?: Record<string, string>;
+}
+
+/** Union of all preset-specific configurations */
+export type PresetConfig =
+  | PlaywrightPresetConfig
+  | FigmaPresetConfig
+  | SequentialThinkingPresetConfig;
+
+// ============================================================================
+// MCP Server Selection Types
+// ============================================================================
+
 export interface PresetMcpServer {
   type: 'preset';
   presetId: McpPresetId;
+  /** @deprecated Use presetConfig.env instead */
   env?: Record<string, string>;
+  /** Preset-specific configuration */
+  presetConfig?: PresetConfig;
 }
 
 export interface CustomMcpServer {

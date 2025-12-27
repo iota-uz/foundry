@@ -731,6 +731,17 @@ export class ProjectsClient {
                       owner { login }
                       name
                     }
+                    labels(first: 10) {
+                      nodes {
+                        name
+                        color
+                      }
+                    }
+                    assignees(first: 10) {
+                      nodes {
+                        login
+                      }
+                    }
                   }
                 }
                 fieldValues(first: 20) {
@@ -763,6 +774,17 @@ export class ProjectsClient {
         repository?: {
           owner: { login: string };
           name: string;
+        };
+        labels?: {
+          nodes: Array<{
+            name: string;
+            color: string;
+          }>;
+        };
+        assignees?: {
+          nodes: Array<{
+            login: string;
+          }>;
         };
       } | null;
       fieldValues?: {
@@ -823,6 +845,8 @@ export class ProjectsClient {
           body: rawItem.content.body ?? '',
           state: rawItem.content.state ?? 'OPEN',
           repository: rawItem.content.repository!,
+          labels: rawItem.content.labels?.nodes ?? [],
+          assignees: rawItem.content.assignees?.nodes.map(a => a.login) ?? [],
         },
         fieldValues,
       });

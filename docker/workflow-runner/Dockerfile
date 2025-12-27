@@ -17,14 +17,16 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app
 
-# Install common utilities
+# Install common utilities including Node.js/npm for MCP stdio servers
 RUN apk add --no-cache \
     git \
     curl \
     jq \
     bash \
     openssh-client \
-    ca-certificates
+    ca-certificates \
+    nodejs \
+    npm
 
 # Create non-root user for security
 RUN addgroup -g 1001 foundry && \

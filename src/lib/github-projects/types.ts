@@ -257,6 +257,16 @@ export type ProjectsErrorCode =
   | 'VALIDATION_ERROR';
 
 /**
+ * GitHub issue label with color
+ */
+export interface GitHubLabel {
+  /** Label name */
+  name: string;
+  /** Label color (hex without #, e.g., "d73a4a") */
+  color: string;
+}
+
+/**
  * Project item with field values for dispatch
  */
 export interface ProjectItemWithFields {
@@ -280,6 +290,10 @@ export interface ProjectItemWithFields {
       owner: { login: string };
       name: string;
     };
+    /** Issue labels */
+    labels: GitHubLabel[];
+    /** Issue assignees (login usernames) */
+    assignees: string[];
   } | null;
 
   /** Field values (lowercase field name → value) */

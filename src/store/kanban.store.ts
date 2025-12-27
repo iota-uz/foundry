@@ -60,7 +60,7 @@ export interface BoardApiResponse {
     title: string;
     body: string;
     state: 'OPEN' | 'CLOSED';
-    labels: string[];
+    labels: { name: string; color: string }[];
     assignees: string[];
     hasPlan: boolean;
     lastExecutionStatus?: string;
@@ -184,7 +184,7 @@ export const useKanbanStore = create<KanbanState>()(
                 status,
                 owner: issue.owner,
                 repo: issue.repo,
-                labels: issue.labels.map((name) => ({ name, color: '6b7280' })),
+                labels: issue.labels,
                 assignees: issue.assignees,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),

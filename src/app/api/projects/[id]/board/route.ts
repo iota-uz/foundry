@@ -88,7 +88,7 @@ export async function GET(
       title: string;
       body: string;
       state: 'OPEN' | 'CLOSED';
-      labels: string[];
+      labels: { name: string; color: string }[];
       assignees: string[];
       hasPlan: boolean;
       lastExecutionStatus?: string;
@@ -124,8 +124,8 @@ export async function GET(
         title: content?.title ?? `Issue #${metadata.issueNumber}`,
         body: content?.body ?? '',
         state: content?.state ?? ('OPEN' as const),
-        labels: [] as string[], // TODO: Add labels to GraphQL query if needed
-        assignees: [] as string[], // TODO: Add assignees to GraphQL query if needed
+        labels: content?.labels ?? [],
+        assignees: content?.assignees ?? [],
         hasPlan: metadata.planContent !== null,
         ...(latestExecution?.result && { lastExecutionStatus: latestExecution.result }),
       };

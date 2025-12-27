@@ -11,6 +11,15 @@
 
 set -e
 
+# Cleanup handler for MCP and child processes
+cleanup() {
+    echo "[entrypoint] Cleaning up child processes..."
+    # Kill all child processes (including MCP servers spawned by npx)
+    pkill -P $$ 2>/dev/null || true
+    exit 0
+}
+trap cleanup SIGTERM SIGINT EXIT
+
 echo "[entrypoint] Starting Foundry Workflow Runner"
 
 # Validate required environment variables
