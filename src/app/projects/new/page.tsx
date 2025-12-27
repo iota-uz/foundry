@@ -195,7 +195,7 @@ export default function CreateProjectPage() {
     <div className="flex flex-col h-screen bg-bg-primary">
       <Breadcrumbs
         items={[
-          { label: 'Projects', href: '/projects' },
+          { label: 'Projects', href: '/' },
           { label: 'New Project' },
         ]}
       />

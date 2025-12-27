@@ -15,7 +15,6 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  BoltIcon,
   ChartBarIcon,
   RectangleStackIcon,
 } from '@heroicons/react/24/outline';
@@ -38,14 +37,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    name: 'Workflows',
-    href: '/',
-    icon: BoltIcon,
-    shortcut: 'W',
-  },
-  {
     name: 'Projects',
-    href: '/projects',
+    href: '/',
     icon: RectangleStackIcon,
     shortcut: 'P',
   },
