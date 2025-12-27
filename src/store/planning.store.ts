@@ -328,7 +328,7 @@ export const usePlanningStore = create<PlanningState>()(
 
           get().disconnectSSE();
           get().reset();
-        } catch (error) {
+        } catch (_error) {
           // Reset anyway on cancel
           get().disconnectSSE();
           get().reset();

@@ -11,6 +11,8 @@ import { validateUuid } from '@/lib/validation';
 import { createProjectsClient } from '@/lib/github-projects/client';
 import { resolveProjectToken } from '@/lib/github';
 import type { ProjectItemWithFields, ProjectsConfig } from '@/lib/github-projects/types';
+import type { PlanContent } from '@/lib/planning/types';
+import type { IssuePlanStatus } from '@/store/kanban.store';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -91,6 +93,7 @@ export async function GET(
       labels: { name: string; color: string }[];
       assignees: string[];
       hasPlan: boolean;
+      planStatus: IssuePlanStatus;
       lastExecutionStatus?: string;
     }>> = {};
 
@@ -115,6 +118,14 @@ export async function GET(
       const githubData = githubIssueMap.get(key);
       const content = githubData?.content;
 
+      // Determine plan status from planContent
+      const hasPlan = metadata.planContent !== null;
+      let planStatus: IssuePlanStatus = 'none';
+      if (hasPlan && metadata.planContent) {
+        const planContent = metadata.planContent as unknown as PlanContent;
+        planStatus = planContent.status ?? 'none';
+      }
+
       const issue = {
         id: metadata.id,
         githubIssueId: metadata.githubIssueId,
@@ -126,7 +137,8 @@ export async function GET(
         state: content?.state ?? ('OPEN' as const),
         labels: content?.labels ?? [],
         assignees: content?.assignees ?? [],
-        hasPlan: metadata.planContent !== null,
+        hasPlan,
+        planStatus,
         ...(latestExecution?.result && { lastExecutionStatus: latestExecution.result }),
       };
 

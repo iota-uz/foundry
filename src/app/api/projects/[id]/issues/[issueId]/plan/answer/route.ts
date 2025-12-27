@@ -58,7 +58,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const planContent = issue.planContent as any as PlanContent;
+    const planContent = issue.planContent as unknown as PlanContent;
 
     // Parse request body
     const body = await request.json() as SubmitAnswersRequest;
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     };
 
     // Save to database
-    await IssueMetadataRepository.updatePlanContent(validIssueId, updatedPlanContent as any);
+    await IssueMetadataRepository.updatePlanContent(validIssueId, updatedPlanContent as Record<string, unknown>);
 
     // TODO: Resume workflow execution
     // For now, we'll just return success

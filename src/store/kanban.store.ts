@@ -11,6 +11,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import type { PlanningStatus } from '@/lib/planning/types';
 
 // ============================================================================
 // Types
@@ -20,6 +21,8 @@ export interface IssueLabel {
   name: string;
   color: string;
 }
+
+export type IssuePlanStatus = 'none' | PlanningStatus;
 
 export interface KanbanIssue {
   id: string;
@@ -32,6 +35,8 @@ export interface KanbanIssue {
   repo: string;
   labels: IssueLabel[];
   assignees: string[];
+  hasPlan: boolean;
+  planStatus: IssuePlanStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,6 +68,7 @@ export interface BoardApiResponse {
     labels: { name: string; color: string }[];
     assignees: string[];
     hasPlan: boolean;
+    planStatus: IssuePlanStatus;
     lastExecutionStatus?: string;
   }>>;
   repos: Array<{ id: string; owner: string; repo: string }>;
@@ -186,6 +192,8 @@ export const useKanbanStore = create<KanbanState>()(
                 repo: issue.repo,
                 labels: issue.labels,
                 assignees: issue.assignees,
+                hasPlan: issue.hasPlan,
+                planStatus: issue.planStatus,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               });

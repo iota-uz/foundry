@@ -76,7 +76,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     };
 
     // Update issue metadata with initial plan content
-    await IssueMetadataRepository.updatePlanContent(validIssueId, planContent as any);
+    await IssueMetadataRepository.updatePlanContent(validIssueId, planContent as Record<string, unknown>);
 
     // TODO: Start workflow execution
     // For now, we'll create a placeholder execution record

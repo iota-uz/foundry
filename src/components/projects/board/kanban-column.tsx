@@ -28,6 +28,7 @@ import type { KanbanColumn as ColumnType, KanbanIssue } from '@/store/kanban.sto
 interface KanbanColumnProps {
   column: ColumnType;
   issues: KanbanIssue[];
+  projectId: string;
   isOver?: boolean;
   onIssueClick?: (issue: KanbanIssue) => void;
 }
@@ -36,7 +37,7 @@ interface KanbanColumnProps {
 // Component
 // ============================================================================
 
-export function KanbanColumn({ column, issues, isOver, onIssueClick }: KanbanColumnProps) {
+export function KanbanColumn({ column, issues, projectId, isOver, onIssueClick }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: column.name,
     data: {
@@ -109,7 +110,7 @@ export function KanbanColumn({ column, issues, isOver, onIssueClick }: KanbanCol
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         <SortableContext items={issueIds} strategy={verticalListSortingStrategy}>
           {issues.map((issue) => (
-            <IssueCard key={issue.id} issue={issue} onClick={onIssueClick} />
+            <IssueCard key={issue.id} issue={issue} projectId={projectId} onClick={onIssueClick} />
           ))}
         </SortableContext>
 

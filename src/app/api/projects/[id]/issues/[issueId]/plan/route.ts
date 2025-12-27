@@ -48,12 +48,12 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     // Return plan content from issue metadata
     const response: GetPlanResponse = {
-      planContent: issue.planContent as any || null,
+      planContent: (issue.planContent as PlanContent | null) ?? null,
     };
 
     // If there's a planning session, try to get workflow status
     if (issue.planContent && typeof issue.planContent === 'object' && 'sessionId' in issue.planContent) {
-      const sessionId = (issue.planContent as any).sessionId;
+      const sessionId = (issue.planContent as PlanContent).sessionId;
       
       // Try to get the latest execution for this issue
       const latestExecution = await IssueMetadataRepository.getLatestExecution(validIssueId);

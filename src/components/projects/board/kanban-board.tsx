@@ -39,6 +39,7 @@ import {
 
 export function KanbanBoard() {
   const columns = useKanbanStore((state) => state.columns);
+  const projectId = useKanbanStore((state) => state.projectId);
   const activeIssueId = useKanbanStore((state) => state.activeIssueId);
   const overColumnId = useKanbanStore((state) => state.overColumnId);
   const setActiveIssue = useKanbanStore((state) => state.setActiveIssue);
@@ -171,6 +172,7 @@ export function KanbanBoard() {
                 key={column.id}
                 column={column}
                 issues={issuesByColumn[column.name] || []}
+                projectId={projectId ?? ''}
                 isOver={overColumnId === column.name}
                 onIssueClick={handleIssueClick}
               />
@@ -195,7 +197,7 @@ export function KanbanBoard() {
 
       {/* Drag overlay - follows cursor */}
       <DragOverlay dropAnimation={null}>
-        {activeIssue ? <IssueCardOverlay issue={activeIssue} /> : null}
+        {activeIssue ? <IssueCardOverlay issue={activeIssue} projectId={projectId ?? ''} /> : null}
       </DragOverlay>
     </DndContext>
   );

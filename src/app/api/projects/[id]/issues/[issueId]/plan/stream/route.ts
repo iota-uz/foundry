@@ -61,7 +61,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       // Send initial state
-      const planContent = issue.planContent as any as PlanContent | null;
+      const planContent = issue.planContent as unknown as PlanContent | null;
       
       const initialEvent: PlanningSSEEvent = {
         type: 'connected',
@@ -109,7 +109,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       const heartbeatInterval = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': heartbeat\n\n'));
-        } catch (error) {
+        } catch (_error) {
           clearInterval(heartbeatInterval);
         }
       }, 30000); // 30 seconds
