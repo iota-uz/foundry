@@ -3,6 +3,7 @@
  */
 
 export { ProjectCard } from './project-card';
+export { ProjectSettingsDrawer } from './project-settings-drawer';
 export { GitHubTokenInput } from './github-token-input';
 export { GitHubPATSelector } from './github-pat-selector';
 export { GitHubCredentialModal } from './github-credential-modal';

@@ -8,11 +8,12 @@
  * - Last sync timestamp
  * - Hover effects with gradient glow
  * - Quick action buttons
+ * - Settings drawer integration
  */
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   FolderIcon,
@@ -23,6 +24,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { formatRelativeTime } from '@/lib/design-system';
 import type { Project } from '@/store/project.store';
+import { ProjectSettingsDrawer } from './project-settings-drawer';
 
 // ============================================================================
 // GitHub Icon (custom for branding)
@@ -54,6 +56,7 @@ interface ProjectCardProps {
   onDelete: () => void;
   onSync?: () => void;
   isSyncing?: boolean;
+  onProjectUpdated?: (project: Project) => void;
 }
 
 export function ProjectCard({
@@ -61,7 +64,9 @@ export function ProjectCard({
   onDelete,
   onSync,
   isSyncing,
+  onProjectUpdated,
 }: ProjectCardProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const repoCount = project.repos?.length ?? 0;
   const lastSynced = project.lastSyncedAt !== undefined && project.lastSyncedAt !== null && project.lastSyncedAt !== ''
     ? formatRelativeTime(new Date(project.lastSyncedAt))
@@ -181,8 +186,12 @@ export function ProjectCard({
             />
           </button>
         )}
-        <Link
-          href={`/projects/${project.id}/settings`}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsSettingsOpen(true);
+          }}
           className={`
             p-1.5 rounded-md cursor-pointer
             text-text-secondary hover:text-text-primary
@@ -190,10 +199,9 @@ export function ProjectCard({
             transition-colors
           `}
           title="Settings"
-          onClick={(e) => e.stopPropagation()}
         >
           <Cog6ToothIcon className="w-4 h-4" />
-        </Link>
+        </button>
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -211,6 +219,15 @@ export function ProjectCard({
           <TrashIcon className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Settings Drawer */}
+      <ProjectSettingsDrawer
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        project={project}
+        {...(onProjectUpdated ? { onProjectUpdated } : {})}
+        onProjectDeleted={onDelete}
+      />
     </div>
   );
 }
