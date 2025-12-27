@@ -9,6 +9,7 @@
 
 import { useState, useCallback } from 'react';
 import {
+  BoltIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   DocumentDuplicateIcon,
@@ -188,7 +189,7 @@ export function APISpecViewer({ specs, className = '' }: APISpecViewerProps) {
     return (
       <div className={`flex flex-col items-center justify-center py-12 text-center ${className}`}>
         <div className="w-12 h-12 rounded-xl bg-bg-tertiary flex items-center justify-center mb-4">
-          <span className="text-2xl">🔌</span>
+          <BoltIcon className="w-6 h-6 text-text-secondary" />
         </div>
         <h3 className="text-sm font-medium text-text-primary mb-1">No API specs yet</h3>
         <p className="text-xs text-text-tertiary max-w-xs">

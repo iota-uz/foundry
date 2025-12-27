@@ -5,11 +5,17 @@
 'use client';
 
 import React from 'react';
+import {
+  CircleStackIcon,
+  SignalIcon,
+  BoltIcon,
+  LinkIcon,
+} from '@heroicons/react/24/outline';
 
 interface Tab {
   id: 'dbml' | 'openapi' | 'graphql' | 'dependencies';
   label: string;
-  icon: string;
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
 interface VisualizationTabsProps {
@@ -18,10 +24,10 @@ interface VisualizationTabsProps {
 }
 
 const TABS: Tab[] = [
-  { id: 'dbml', label: 'Database Schema', icon: '🗄️' },
-  { id: 'openapi', label: 'API Reference', icon: '📡' },
-  { id: 'graphql', label: 'GraphQL Schema', icon: '⚡' },
-  { id: 'dependencies', label: 'Dependencies', icon: '🔗' },
+  { id: 'dbml', label: 'Database Schema', Icon: CircleStackIcon },
+  { id: 'openapi', label: 'API Reference', Icon: SignalIcon },
+  { id: 'graphql', label: 'GraphQL Schema', Icon: BoltIcon },
+  { id: 'dependencies', label: 'Dependencies', Icon: LinkIcon },
 ];
 
 export function VisualizationTabs({
@@ -49,7 +55,7 @@ export function VisualizationTabs({
               }
             `}
           >
-            <span className="text-base">{tab.icon}</span>
+            <tab.Icon className="w-4 h-4" />
             {tab.label}
           </button>
         ))}

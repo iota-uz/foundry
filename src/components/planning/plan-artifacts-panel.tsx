@@ -6,7 +6,13 @@
  * Tabbed container for viewing all artifact types generated during planning.
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
+import {
+  ChartBarIcon,
+  ClipboardDocumentListIcon,
+  SwatchIcon,
+  BoltIcon,
+} from '@heroicons/react/24/outline';
 import { usePlanningStore, useArtifactCounts } from '@/store/planning.store';
 import {
   MermaidDiagramViewer,
@@ -29,11 +35,11 @@ interface PlanArtifactsPanelProps {
 // Tab Configuration
 // ============================================================================
 
-const tabConfig: Record<ArtifactTab, { label: string; icon: string }> = {
-  diagrams: { label: 'Diagrams', icon: '📊' },
-  tasks: { label: 'Tasks', icon: '📋' },
-  ui: { label: 'UI Specs', icon: '🎨' },
-  api: { label: 'API Specs', icon: '🔌' },
+const tabConfig: Record<ArtifactTab, { label: string; Icon: React.ComponentType<React.SVGProps<SVGSVGElement>> }> = {
+  diagrams: { label: 'Diagrams', Icon: ChartBarIcon },
+  tasks: { label: 'Tasks', Icon: ClipboardDocumentListIcon },
+  ui: { label: 'UI Specs', Icon: SwatchIcon },
+  api: { label: 'API Specs', Icon: BoltIcon },
 };
 
 // ============================================================================
@@ -79,7 +85,7 @@ export function PlanArtifactsPanel({ className = '' }: PlanArtifactsPanelProps) 
                 }
               `}
             >
-              <span>{config.icon}</span>
+              <config.Icon className="w-4 h-4" />
               <span>{config.label}</span>
               {count > 0 && (
                 <span

@@ -11,6 +11,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   EyeIcon,
+  SwatchIcon,
   TableCellsIcon,
 } from '@heroicons/react/24/outline';
 import type { ComponentSpec } from '@/lib/planning/types';
@@ -224,7 +225,7 @@ export function UIMockupViewer({ mockups, className = '' }: UIMockupViewerProps)
     return (
       <div className={`flex flex-col items-center justify-center py-12 text-center ${className}`}>
         <div className="w-12 h-12 rounded-xl bg-bg-tertiary flex items-center justify-center mb-4">
-          <span className="text-2xl">🎨</span>
+          <SwatchIcon className="w-6 h-6 text-text-secondary" />
         </div>
         <h3 className="text-sm font-medium text-text-primary mb-1">No UI mockups yet</h3>
         <p className="text-xs text-text-tertiary max-w-xs">

@@ -8,6 +8,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
+import { CheckIcon } from '@heroicons/react/24/solid';
 import type { QuestionBatch } from '@/lib/planning/types';
 import { QuestionCard } from './question-card';
 import { ProgressIndicator } from './progress-indicator';
@@ -195,9 +196,10 @@ export function QuestionBatch({
           {isComplete && onCompleteBatch && (
             <button
               onClick={handleCompleteBatch}
-              className="rounded-lg bg-accent-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              className="rounded-lg bg-accent-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center gap-1.5"
             >
-              Complete Batch ✓
+              Complete Batch
+              <CheckIcon className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -214,7 +216,7 @@ export function QuestionBatch({
               <button
                 key={question.id}
                 onClick={() => setCurrentQuestionIndex(index)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors flex items-center gap-1 ${
                   index === currentQuestionIndex
                     ? 'bg-accent-primary text-white'
                     : answeredQuestions.has(question.id)
@@ -224,7 +226,7 @@ export function QuestionBatch({
                 disabled={disabled}
               >
                 Q{index + 1}
-                {answeredQuestions.has(question.id) && ' ✓'}
+                {answeredQuestions.has(question.id) && <CheckIcon className="w-3 h-3" />}
               </button>
             ))}
           </div>

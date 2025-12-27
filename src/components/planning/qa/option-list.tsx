@@ -8,6 +8,7 @@
  */
 
 import { useMemo, useState, useCallback } from 'react';
+import { CheckIcon } from '@heroicons/react/24/solid';
 import type { QuestionOption } from '@/lib/planning/types';
 
 interface OptionListProps {
@@ -130,7 +131,7 @@ export function OptionList({
                       : 'border-border-default bg-bg-tertiary'
                   }`}
                 >
-                  {isSelected && <span className="text-white text-sm font-bold">✓</span>}
+                  {isSelected && <CheckIcon className="w-3 h-3 text-white" />}
                 </div>
               )}
             </div>

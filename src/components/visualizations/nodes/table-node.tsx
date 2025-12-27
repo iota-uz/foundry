@@ -10,6 +10,7 @@ import {
   Position,
   useUpdateNodeInternals,
 } from '@xyflow/react';
+import { KeyIcon, LinkIcon } from '@heroicons/react/24/outline';
 
 interface DatabaseField {
   id: string;
@@ -140,20 +141,16 @@ export const DatabaseTableNode = memo(
                   {/* Field icons */}
                   <div className="flex items-center gap-1 flex-shrink-0 w-5">
                     {field.isPrimaryKey && (
-                      <span
+                      <KeyIcon
                         title="Primary Key"
-                        className="text-accent-success"
-                      >
-                        🔑
-                      </span>
+                        className="w-3.5 h-3.5 text-accent-success"
+                      />
                     )}
                     {field.isForeignKey && (
-                      <span
+                      <LinkIcon
                         title="Foreign Key"
-                        className="text-accent-primary"
-                      >
-                        🔗
-                      </span>
+                        className="w-3.5 h-3.5 text-accent-primary"
+                      />
                     )}
                     {!field.isPrimaryKey && !field.isForeignKey && field.isRequired && (
                       <span

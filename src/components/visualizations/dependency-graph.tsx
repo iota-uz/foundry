@@ -16,6 +16,11 @@ import {
   EdgeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import {
+  ArrowDownIcon,
+  ArrowRightIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/react/24/outline';
 
 import { FeatureNodeComponent } from './nodes/feature-node';
 import { RelationshipEdgeComponent } from './edges/relationship-edge';
@@ -199,8 +204,9 @@ export function DependencyGraph({
       {/* Circular dependency warning */}
       {circularDeps.length > 0 && (
         <div className="bg-accent-error/10 border-b border-accent-error/20 px-4 py-3">
-          <p className="text-accent-error text-sm font-medium">
-            ⚠️ {circularDeps.length} circular dependenc{circularDeps.length !== 1 ? 'ies' : 'y'} detected
+          <p className="text-accent-error text-sm font-medium flex items-center gap-1.5">
+            <ExclamationTriangleIcon className="w-4 h-4" />
+            {circularDeps.length} circular dependenc{circularDeps.length !== 1 ? 'ies' : 'y'} detected
           </p>
           <p className="text-accent-error/80 text-xs mt-1">
             Red edges indicate features that depend on each other directly or indirectly.
@@ -234,7 +240,7 @@ export function DependencyGraph({
               "
               title="Vertical layout"
             >
-              ⬇️
+              <ArrowDownIcon className="w-4 h-4" />
             </button>
             <button
               onClick={() => setLayoutDirection('LR')}
@@ -244,7 +250,7 @@ export function DependencyGraph({
               "
               title="Horizontal layout"
             >
-              ➡️
+              <ArrowRightIcon className="w-4 h-4" />
             </button>
           </Controls>
 

@@ -16,6 +16,7 @@ import {
   EdgeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { ArrowDownIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
 import { DatabaseTableNode } from './nodes/table-node';
 import { RelationshipEdgeComponent } from './edges/relationship-edge';
@@ -148,7 +149,7 @@ export function DBMLDiagram({ dbml, loading, error }: DBMLDiagramProps) {
             "
             title="Vertical layout"
           >
-            ⬇️
+            <ArrowDownIcon className="w-4 h-4" />
           </button>
           <button
             onClick={() => setLayoutDirection('LR')}
@@ -158,7 +159,7 @@ export function DBMLDiagram({ dbml, loading, error }: DBMLDiagramProps) {
             "
             title="Horizontal layout"
           >
-            ➡️
+            <ArrowRightIcon className="w-4 h-4" />
           </button>
         </Controls>
 

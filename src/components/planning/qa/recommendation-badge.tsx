@@ -7,6 +7,8 @@
  * Updated for current design system with modern minimal dark theme.
  */
 
+import { LightBulbIcon } from '@heroicons/react/24/outline';
+
 interface AIRecommendation {
   confidence: 'high' | 'medium';
   reasoning: string;
@@ -30,8 +32,6 @@ export function RecommendationBadge({
 }: RecommendationBadgeProps) {
   const isHighConfidence = recommendation.confidence === 'high';
 
-  const icon = '💡';
-
   return (
     <div
       className={`rounded-lg border ${
@@ -44,7 +44,7 @@ export function RecommendationBadge({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2 flex-1">
-          <span className="flex-shrink-0 text-lg">{icon}</span>
+          <LightBulbIcon className="w-5 h-5 flex-shrink-0 text-accent-primary" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span

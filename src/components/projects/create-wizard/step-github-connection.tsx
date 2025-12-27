@@ -9,6 +9,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { CheckIcon } from '@heroicons/react/24/solid';
 import { Input } from '@/components/shared';
 import { GitHubPATSelector } from '../github-pat-selector';
 import { parseGitHubProjectUrl } from '@/lib/projects/github-url-parser';
@@ -116,7 +117,10 @@ export function StepGitHubConnection({
         {parsedProject && (
           <div className="mt-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-emerald-400 font-medium">✓ Parsed:</span>
+              <span className="text-emerald-400 font-medium flex items-center gap-1">
+                <CheckIcon className="w-3.5 h-3.5" />
+                Parsed:
+              </span>
               <span className="font-mono text-text-primary">
                 {parsedProject.owner}
               </span>

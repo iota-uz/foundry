@@ -703,8 +703,9 @@ function LlmConfigForm({
                   </span>
                 )}
                 {currentModel?.supportsWebSearch && (
-                  <span className="px-1 py-0.5 rounded bg-blue-500/15 text-blue-400 text-[9px] font-medium">
-                    🌐 Web
+                  <span className="px-1 py-0.5 rounded bg-blue-500/15 text-blue-400 text-[9px] font-medium flex items-center gap-0.5">
+                    <GlobeAltIcon className="w-2.5 h-2.5" />
+                    Web
                   </span>
                 )}
               </div>
@@ -757,7 +758,7 @@ function LlmConfigForm({
                               <span className="text-[9px] text-amber-400">✦</span>
                             )}
                             {model.supportsWebSearch && (
-                              <span className="text-[9px] text-blue-400">🌐</span>
+                              <GlobeAltIcon className="w-2.5 h-2.5 text-blue-400" />
                             )}
                           </div>
                         </div>

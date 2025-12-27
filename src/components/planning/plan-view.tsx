@@ -14,9 +14,12 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  AdjustmentsHorizontalIcon,
   ArrowLeftIcon,
+  CheckCircleIcon,
   PauseIcon,
   PlayIcon,
+  XCircleIcon,
   XMarkIcon,
   SignalIcon,
   SignalSlashIcon,
@@ -289,7 +292,7 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
           {status === 'not_started' ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-8">
               <div className="w-16 h-16 rounded-2xl bg-bg-tertiary flex items-center justify-center mb-6">
-                <span className="text-3xl">🎯</span>
+                <AdjustmentsHorizontalIcon className="w-8 h-8 text-text-secondary" />
               </div>
               <h2 className="text-lg font-semibold text-text-primary mb-2">
                 Ready to Plan
@@ -310,7 +313,7 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
           ) : status === 'completed' ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-8">
               <div className="w-16 h-16 rounded-2xl bg-accent-success/20 flex items-center justify-center mb-6">
-                <span className="text-3xl">✅</span>
+                <CheckCircleIcon className="w-8 h-8 text-accent-success" />
               </div>
               <h2 className="text-lg font-semibold text-text-primary mb-2">
                 Planning Complete
@@ -325,7 +328,7 @@ export function PlanView({ projectId, issueId, issueTitle, issueBody }: PlanView
           ) : status === 'failed' ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-8">
               <div className="w-16 h-16 rounded-2xl bg-accent-error/20 flex items-center justify-center mb-6">
-                <span className="text-3xl">❌</span>
+                <XCircleIcon className="w-8 h-8 text-accent-error" />
               </div>
               <h2 className="text-lg font-semibold text-text-primary mb-2">
                 Planning Failed
